@@ -1,0 +1,101 @@
+[
+  {
+    "id": "US-001",
+    "title": "User Login",
+    "file": "docs/stories/US-001.md",
+    "status": "done",
+    "created": "2026-06-23",
+    "updated": "2026-06-23",
+    "notes": "✅ COMPLETADO: Sistema de autenticación completo con Supabase Auth, middleware de protección de rutas, API endpoints, UI components y flujo completo de login/logout implementado"
+  },
+  {
+    "id": "US-002",
+    "title": "Onboarding Process",
+    "file": "docs/stories/US-002.md",
+    "status": "todo",
+    "created": "2025-01-27",
+    "updated": "2025-01-27",
+    "notes": "User experience customization based on trading level"
+  },
+  {
+    "id": "US-003",
+    "title": "Subscribe to Signal Bundles",
+    "file": "docs/stories/US-003.md",
+    "status": "todo",
+    "created": "2025-01-27",
+    "updated": "2025-01-27",
+    "notes": "Signal provider marketplace and subscription management"
+  },
+  {
+    "id": "US-004",
+    "title": "Receive Signal Alerts",
+    "file": "docs/stories/US-004.md",
+    "status": "todo",
+    "created": "2025-01-27",
+    "updated": "2025-01-27",
+    "notes": "Real-time signal delivery with push notifications"
+  },
+  {
+    "id": "US-005",
+    "title": "Connect to Trading Bot",
+    "file": "docs/stories/US-005.md",
+    "status": "todo",
+    "created": "2025-01-27",
+    "updated": "2025-01-27",
+    "notes": "Automated trading bot integration with security"
+  },
+  {
+    "id": "US-006",
+    "title": "Track Signal Performance",
+    "file": "docs/stories/US-006.md",
+    "status": "todo",
+    "created": "2025-01-27",
+    "updated": "2025-01-27",
+    "notes": "Performance analytics dashboard with Chart.js"
+  },
+  {
+    "id": "US-007",
+    "title": "Senior-Friendly UX",
+    "file": "docs/stories/US-007.md",
+    "status": "todo",
+    "created": "2025-01-27",
+    "updated": "2025-01-27",
+    "notes": "Accessibility features for senior users"
+  },
+  {
+    "id": "US-008",
+    "title": "Cross-Device Syncing",
+    "file": "docs/stories/US-008.md",
+    "status": "todo",
+    "created": "2025-01-27",
+    "updated": "2025-01-27",
+    "notes": "Data synchronization using Supabase Realtime"
+  },
+  {
+    "id": "US-009",
+    "title": "User Registration",
+    "file": "docs/stories/US-009.md",
+    "status": "todo",
+    "created": "2025-01-27",
+    "updated": "2025-01-27",
+    "notes": "New user account creation with email verification"
+  },
+  {
+    "id": "US-010",
+    "title": "User Profile Management",
+    "file": "docs/stories/US-010.md",
+    "status": "todo",
+    "created": "2025-01-27",
+    "updated": "2025-01-27",
+    "notes": "Profile editing and account management"
+  },
+  {
+    "id": "US-011",
+    "title": "Admin Management",
+    "file": "docs/stories/US-011.md",
+    "status": "todo",
+    "created": "2025-01-27",
+    "updated": "2025-01-27",
+    "notes": "Admin dashboard for user and provider management"
+  }
+]

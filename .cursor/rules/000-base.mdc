@@ -1,0 +1,42 @@
+---
+description: Reglas base para el proyecto Tradeia con Next.js 15.3.4 y TypeScript 5.4.3
+globs: **/*.{ts,tsx,js,jsx}
+alwaysApply: true
+---
+
+# Reglas Base del Proyecto
+
+## Estructura del Proyecto
+- Usar la estructura de carpetas de Next.js App Router con src/app
+- Mantener componentes reutilizables en src/components
+- Colocar utilidades y configuraciones en src/lib
+- Usar TypeScript para todos los archivos de código
+- Seguir las convenciones de nomenclatura de Next.js 15
+
+## TypeScript
+- Usar TypeScript estrictamente para todos los archivos de código
+- Definir tipos explícitos para props de componentes
+- Usar interfaces para definir estructuras de datos
+- Evitar el uso de any, preferir tipos específicos
+- Usar type assertions solo cuando sea absolutamente necesario
+
+## Next.js 15
+- Usar el App Router para todas las rutas
+- Implementar Server Components por defecto
+- Usar Client Components solo cuando sea necesario
+- Aprovechar las optimizaciones automáticas de Next.js
+- Usar las nuevas APIs de React 19 integradas en Next.js 15
+
+## Gestión de Estado
+- Usar React Context API para estado global ligero
+- Implementar patrones de estado inmutable
+- Evitar prop drilling usando Context cuando sea apropiado
+- Mantener estado local en componentes cuando sea posible
+- Usar date-fns 3.6.0 para manipulación de fechas
+
+## Estructura de Archivos
+- Usar kebab-case para nombres de archivos
+- Agrupar archivos relacionados en carpetas
+- Mantener un archivo por componente
+- Usar index.ts para exportaciones de barril
+- Seguir la estructura de carpetas de Next.js App Router 
