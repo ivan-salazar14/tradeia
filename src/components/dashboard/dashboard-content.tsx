@@ -3,24 +3,44 @@
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 export function DashboardContent() {
   const { user, loading, signOut } = useAuth()
   const router = useRouter()
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null)
+  const [onboardingLoading, setOnboardingLoading] = useState(true)
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login")
+    if (!loading && user) {
+      // Fetch onboarding status for the current user
+      const fetchOnboarding = async () => {
+        setOnboardingLoading(true)
+        try {
+          const res = await fetch("/api/onboarding", {
+            headers: { "x-user-id": user.id },
+          })
+          if (res.ok) {
+            const data = await res.json()
+            setOnboardingComplete(!!data.onboarding_complete)
+          } else {
+            setOnboardingComplete(false)
+          }
+        } catch (e) {
+          setOnboardingComplete(false)
+        }
+        setOnboardingLoading(false)
+      }
+      fetchOnboarding()
     }
-  }, [user, loading, router])
+  }, [user, loading])
 
   const handleLogout = async () => {
     await signOut()
     router.push("/login")
   }
 
-  if (loading) {
+  if (loading || onboardingLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -52,6 +72,14 @@ export function DashboardContent() {
           </div>
         </div>
       </header>
+
+      {/* Onboarding Banner Reminder */}
+      {onboardingComplete === false && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 flex items-center justify-between">
+          <span>¡Completa tu onboarding para personalizar tu experiencia!</span>
+          <Button size="sm" variant="outline" onClick={() => router.push("/onboarding")}>Ir al Onboarding</Button>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">

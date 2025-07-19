@@ -12,10 +12,10 @@
     "id": "US-002",
     "title": "Onboarding Process",
     "file": "docs/stories/US-002.md",
-    "status": "todo",
+    "status": "done",
     "created": "2025-01-27",
-    "updated": "2025-01-27",
-    "notes": "User experience customization based on trading level"
+    "updated": "2026-06-23",
+    "notes": "✅ COMPLETADO: Onboarding process implemented with multi-step wizard, experience customization, save/resume, and Supabase integration."
   },
   {
     "id": "US-003",
