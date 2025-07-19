@@ -23,18 +23,27 @@ export interface Database {
           email: string
           created_at: string
           updated_at: string
+          onboarding_complete: boolean
+          experience_level: string | null
+          trading_goals: string | null
         }
         Insert: {
           id?: string
           email: string
           created_at?: string
           updated_at?: string
+          onboarding_complete?: boolean
+          experience_level?: string | null
+          trading_goals?: string | null
         }
         Update: {
           id?: string
           email?: string
           created_at?: string
           updated_at?: string
+          onboarding_complete?: boolean
+          experience_level?: string | null
+          trading_goals?: string | null
         }
       }
       // Agrega más tablas según necesites
