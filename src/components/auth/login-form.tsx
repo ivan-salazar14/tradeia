@@ -21,8 +21,26 @@ export function LoginForm() {
     setError('')
 
     try {
-      await login(email, password)
-      router.push('/dashboard')
+      // Llamar al endpoint de login del backend
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+      const result = await res.json()
+
+      if (!res.ok) {
+        setError(result.error || "Error desconocido al iniciar sesión.")
+        setIsLoading(false)
+        return
+      }
+
+      // Login exitoso
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        router.push("/dashboard")
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
     } finally {

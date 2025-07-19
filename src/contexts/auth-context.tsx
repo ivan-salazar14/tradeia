@@ -19,14 +19,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!supabase) {
+      console.warn("[AuthContext] Supabase no está configurado. El contexto de autenticación funcionará en modo desconectado.")
+      setSession(null)
+      setUser(null)
+      setLoading(false)
+      return
+    }
     // Obtener sesión inicial
     const getInitialSession = async () => {
+      if (!supabase) {
+        console.warn("[AuthContext] Supabase no está configurado. El contexto de autenticación funcionará en modo desconectado.")
+        setSession(null)
+        setUser(null)
+        setLoading(false)
+        return
+      }
       const { data: { session }, error } = await supabase.auth.getSession()
-      
       if (error) {
         console.error("Error getting session:", error)
       }
-      
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
@@ -47,6 +59,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signOut = async () => {
+    if (!supabase) {
+      console.warn("[AuthContext] Supabase no está configurado. No se puede cerrar sesión.")
+      return
+    }
     const { error } = await supabase.auth.signOut()
     if (error) {
       console.error("Error signing out:", error)

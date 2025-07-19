@@ -37,6 +37,11 @@ export default function RegisterPage() {
       return
     }
     try {
+      if (!supabase) {
+        setError("Supabase no está configurado correctamente en el cliente")
+        setIsLoading(false)
+        return
+      }
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,

@@ -23,6 +23,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Autenticación con Supabase
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Supabase no está configurado correctamente en el servidor" },
+        { status: 500 }
+      )
+    }
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -35,8 +41,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Login exitoso
-    return NextResponse.json(
+    // Login exitoso: establecer cookies de sesión
+    const response = NextResponse.json(
       {
         message: "Login exitoso",
         user: data.user,
@@ -44,6 +50,31 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     )
+
+    // Establecer cookies de acceso y refresh token
+    if (data.session) {
+      // Acceso
+      response.cookies.set({
+        name: "sb-access-token",
+        value: data.session.access_token,
+        httpOnly: true,
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: data.session.expires_in || 3600,
+      })
+      // Refresh
+      response.cookies.set({
+        name: "sb-refresh-token",
+        value: data.session.refresh_token,
+        httpOnly: true,
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24 * 30, // 30 días
+      })
+    }
+    return response
   } catch (error) {
     console.error("Error en login:", error)
     return NextResponse.json(

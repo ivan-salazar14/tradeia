@@ -75,10 +75,10 @@
     "id": "US-009",
     "title": "User Registration",
     "file": "docs/stories/US-009.md",
-    "status": "todo",
-    "created": "2025-01-27",
-    "updated": "2025-01-27",
-    "notes": "New user account creation with email verification"
+    "status": "done",
+    "created": "2026-06-23",
+    "updated": "2026-06-23",
+    "notes": "✅ COMPLETADO: Sistema de registro completo con Supabase Auth, middleware de protección de rutas, API endpoints, UI components y flujo completo de registro implementado"
   },
   {
     "id": "US-010",
