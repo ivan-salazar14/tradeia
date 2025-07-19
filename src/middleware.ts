@@ -10,22 +10,31 @@ const publicRoutes = ['/login', '/register', '/']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  console.log('[Middleware] Pathname:', pathname)
 
   // Crear cliente de Supabase para middleware
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('[Middleware] Variables de entorno de Supabase no definidas. Permitiendo acceso...')
+    return NextResponse.next()
+  }
+
   const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
   // Obtener el token de la cookie
   const token = request.cookies.get('sb-access-token')?.value
+  console.log('[Middleware] Token:', token)
 
   // Verificar si la ruta está protegida
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
   const isPublicRoute = publicRoutes.some(route => pathname === route)
+  console.log('[Middleware] isProtectedRoute:', isProtectedRoute, 'isPublicRoute:', isPublicRoute)
 
   if (isProtectedRoute) {
     if (!token) {
-      // Si no hay token, redirect to login
+      console.log('[Middleware] No token, redirigiendo a login')
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(loginUrl)
@@ -34,18 +43,17 @@ export async function middleware(request: NextRequest) {
     try {
       // Verificar si el token es válido
       const { data: { user }, error } = await supabase.auth.getUser(token)
-      
+      console.log('[Middleware] Resultado de getUser:', { user, error })
       if (error || !user) {
-        // Token inválido, redirect to login
+        console.log('[Middleware] Token inválido, redirigiendo a login')
         const loginUrl = new URL('/login', request.url)
         loginUrl.searchParams.set('redirect', pathname)
         return NextResponse.redirect(loginUrl)
       }
     } catch (error) {
-      // Error al verificar token, redirect to login
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
+      console.error('[Middleware] Error al verificar token:', error)
+      // Permitir acceso si hay error de conexión con Supabase
+      return NextResponse.next()
     }
   }
 
@@ -53,11 +61,13 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/login' && token) {
     try {
       const { data: { user }, error } = await supabase.auth.getUser(token)
+      console.log('[Middleware] Intento de acceso a /login con token:', { user, error })
       if (user && !error) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
       }
     } catch (error) {
-      // Si hay error al verificar, permitir acceso a login
+      console.error('[Middleware] Error al verificar token en /login:', error)
+      // Permitir acceso a login si hay error
     }
   }
 
