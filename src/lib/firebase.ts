@@ -13,8 +13,7 @@ const requiredEnvVars = [
 // Verificar variables de entorno
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName])
 if (missingVars.length > 0) {
-  console.error('❌ Error: Faltan las siguientes variables de entorno de Firebase:', missingVars)
-  throw new Error('Variables de entorno de Firebase no configuradas')
+  console.warn('⚠️ Faltan las siguientes variables de entorno de Firebase:', missingVars)
 }
 
 console.log('🔄 Iniciando conexión con Firebase...')
@@ -28,12 +27,14 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
 
-let app;
+let app = null;
 let messaging: any = null;
 
 try {
-  app = initializeApp(firebaseConfig)
-  messaging = typeof window !== 'undefined' ? getMessaging(app) : null
+  if (missingVars.length === 0) {
+    app = initializeApp(firebaseConfig)
+    messaging = typeof window !== 'undefined' ? getMessaging(app) : null
+  }
 } catch (error) {
   console.error('Error inicializando Firebase:', error)
 }

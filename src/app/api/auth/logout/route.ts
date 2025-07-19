@@ -3,6 +3,12 @@ import { supabase } from "@/lib/supabase"
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Supabase no está configurado correctamente en el servidor" },
+        { status: 500 }
+      )
+    }
     const { error } = await supabase.auth.signOut()
 
     if (error) {

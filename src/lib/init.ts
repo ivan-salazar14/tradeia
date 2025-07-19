@@ -3,6 +3,10 @@ import { supabase } from './supabase'
 export async function initializeServices() {
   console.log('🚀 Iniciando servicios...')
   
+  if (!supabase) {
+    console.warn('⚠️ Supabase no está configurado. No se puede verificar la conexión.')
+    return false
+  }
   try {
     // Verificar conexión con Supabase
     const { data, error } = await supabase.from('users').select('count').single()
