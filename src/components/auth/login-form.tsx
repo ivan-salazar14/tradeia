@@ -65,10 +65,10 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
-          <label htmlFor="email" className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <label htmlFor="email" className="text-sm font-medium text-gray-900 dark:text-gray-100 font-inter">
             Email
           </label>
           <Input
@@ -83,7 +83,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="password" className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <label htmlFor="password" className="text-sm font-medium text-gray-900 dark:text-gray-100 font-inter">
             Contraseña
           </label>
           <Input
@@ -98,14 +98,14 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         </div>
 
         {error && (
-          <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+          <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 font-inter">
             {error}
           </div>
         )}
 
         <Button
           type="submit"
-          className="w-full"
+          className="w-full font-inter"
           disabled={isLoading}
         >
           {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}

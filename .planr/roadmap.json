@@ -54,15 +54,6 @@
     "notes": "Performance analytics dashboard with Chart.js"
   },
   {
-    "id": "US-007",
-    "title": "Senior-Friendly UX",
-    "file": "docs/stories/US-007.md",
-    "status": "todo",
-    "created": "2025-01-27",
-    "updated": "2025-01-27",
-    "notes": "Accessibility features for senior users"
-  },
-  {
     "id": "US-008",
     "title": "Cross-Device Syncing",
     "file": "docs/stories/US-008.md",
