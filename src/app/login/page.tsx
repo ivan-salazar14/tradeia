@@ -1,12 +1,23 @@
-import { Metadata } from "next"
+"use client"
 import { LoginForm } from "@/components/auth/login-form"
+import { useAuth } from "@/contexts/auth-context"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
-export const metadata: Metadata = {
-  title: "Iniciar Sesión - Tradeia",
-  description: "Inicia sesión en tu cuenta de Tradeia para acceder a señales de trading exclusivas",
-}
 
 export default function LoginPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    console.log("[LOGIN] loading:", loading, "user:", user);
+    if (!loading && user) {
+      console.log("[LOGIN] Usuario autenticado, redirigiendo a /dashboard");
+      router.push("/dashboard");
+      window.location.reload();
+    }
+  }, [user, loading, router]);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">

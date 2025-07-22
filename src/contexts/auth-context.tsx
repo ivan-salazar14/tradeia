@@ -1,11 +1,15 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import { User, Session } from "@supabase/supabase-js"
+import { User as SupabaseUser, Session } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 
+interface UserWithUUID extends SupabaseUser {
+  id_uuid?: string | null;
+}
+
 interface AuthContextType {
-  user: User | null
+  user: UserWithUUID | null
   session: Session | null
   loading: boolean
   signOut: () => Promise<void>
@@ -14,7 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<UserWithUUID | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -40,7 +44,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("Error getting session:", error)
       }
       setSession(session)
-      setUser(session?.user ?? null)
+      if (session?.user) {
+        // Buscar id_uuid en los metadatos del usuario o en la sesión
+        const id_uuid = (session.user.user_metadata && session.user.user_metadata.id_uuid) || null;
+        setUser({ ...session.user, id_uuid });
+      } else {
+        setUser(null);
+      }
       setLoading(false)
     }
 
@@ -50,7 +60,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session)
-        setUser(session?.user ?? null)
+        if (session?.user) {
+          const id_uuid = (session.user.user_metadata && session.user.user_metadata.id_uuid) || null;
+          setUser({ ...session.user, id_uuid });
+        } else {
+          setUser(null);
+        }
         setLoading(false)
       }
     )

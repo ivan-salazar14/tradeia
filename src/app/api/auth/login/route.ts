@@ -42,10 +42,44 @@ export async function POST(request: NextRequest) {
     }
 
     // Login exitoso: establecer cookies de sesión
+    // Buscar el id_uuid en la tabla users y actualizar los metadatos del usuario en Auth
+    let id_uuid = null;
+    if (data.user && data.user.email) {
+      // 1. Verificar si el usuario existe en la tabla users
+      let userRow, userError;
+      ({ data: userRow, error: userError } = await supabase
+        .from('users')
+        .select('id_uuid')
+        .eq('email', data.user.email)
+        .single());
+
+      // 2. Si no existe, crearlo
+      if (userError || !userRow) {
+        const { data: newUser, error: insertError } = await supabase
+          .from('users')
+          .insert([{ email: data.user.email }])
+          .select('id_uuid')
+          .single();
+        if (insertError) {
+          console.error("Error insertando usuario en tabla users:", insertError);
+        }
+        if (!insertError && newUser?.id_uuid) {
+          userRow = newUser;
+        }
+      }
+
+      // 3. Si existe o fue creado, actualizar los metadatos
+      if (userRow?.id_uuid) {
+        await supabase.auth.updateUser({
+          data: { id_uuid: userRow.id_uuid }
+        });
+        id_uuid = userRow.id_uuid;
+      }
+    }
     const response = NextResponse.json(
       {
         message: "Login exitoso",
-        user: data.user,
+        user: id_uuid ? { ...data.user, id_uuid } : data.user,
         session: data.session,
       },
       { status: 200 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { cookies } from "next/headers";
 
 // Rutas que requieren autenticación
 const protectedRoutes = ['/dashboard', '/profile', '/signals', '/bot', '/performance']
@@ -32,6 +33,11 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.some(route => pathname === route)
   console.log('[Middleware] isProtectedRoute:', isProtectedRoute, 'isPublicRoute:', isPublicRoute)
 
+  // Permitir acceso directo a rutas públicas
+  if (isPublicRoute) {
+    return NextResponse.next();
+  }
+
   if (isProtectedRoute) {
     if (!token) {
       console.log('[Middleware] No token, redirigiendo a login')
@@ -41,17 +47,27 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      // Verificar si el token es válido
       const { data: { user }, error } = await supabase.auth.getUser(token)
       console.log('[Middleware] Resultado de getUser:', { user, error })
       if (error || !user) {
         console.log('[Middleware] Token inválido, redirigiendo a login')
         const loginUrl = new URL('/login', request.url)
         loginUrl.searchParams.set('redirect', pathname)
-        return NextResponse.redirect(loginUrl)
+        const response = NextResponse.redirect(loginUrl)
+        if (error?.status === 403 || error?.code === 'bad_jwt') {
+          response.cookies.set('sb-access-token', '', { maxAge: 0, path: '/' })
+        }
+        return response
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Middleware] Error al verificar token:', error)
+      if (error?.status === 403 || error?.code === 'bad_jwt') {
+        const loginUrl = new URL('/login', request.url)
+        loginUrl.searchParams.set('redirect', pathname)
+        const response = NextResponse.redirect(loginUrl)
+        response.cookies.set('sb-access-token', '', { maxAge: 0, path: '/' })
+        return response
+      }
       // Permitir acceso si hay error de conexión con Supabase
       return NextResponse.next()
     }
@@ -65,9 +81,19 @@ export async function middleware(request: NextRequest) {
       if (user && !error) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
       }
-    } catch (error) {
-      console.error('[Middleware] Error al verificar token en /login:', error)
-      // Permitir acceso a login si hay error
+      // Si el token es inválido, limpiar la cookie y permitir acceso a login
+      if (error?.status === 403 || error?.code === 'bad_jwt') {
+        const response = NextResponse.next()
+        response.cookies.set('sb-access-token', '', { maxAge: 0, path: '/' })
+        return response
+      }
+    } catch (error: any) {
+      if (error?.status === 403 || error?.code === 'bad_jwt') {
+        const response = NextResponse.next()
+        response.cookies.set('sb-access-token', '', { maxAge: 0, path: '/' })
+        return response
+      }
+      // Permitir acceso a login si hay otro error
     }
   }
 

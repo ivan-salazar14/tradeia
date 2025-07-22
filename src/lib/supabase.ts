@@ -20,6 +20,7 @@ export interface Database {
       users: {
         Row: {
           id: string
+          id_uuid: string
           email: string
           created_at: string
           updated_at: string
@@ -29,6 +30,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          id_uuid?: string
           email: string
           created_at?: string
           updated_at?: string
@@ -38,6 +40,7 @@ export interface Database {
         }
         Update: {
           id?: string
+          id_uuid?: string
           email?: string
           created_at?: string
           updated_at?: string
