@@ -88,5 +88,23 @@
     "created": "2025-01-27",
     "updated": "2025-01-27",
     "notes": "Admin dashboard for user and provider management"
+  },
+  {
+    "id": "US-012",
+    "title": "Interfaz de Usuario Principal (SPA)",
+    "file": "docs/stories/US-012.md",
+    "status": "todo",
+    "created": "2026-06-23",
+    "updated": "2026-06-23",
+    "notes": "Implementación de toda la UI principal (SPA) con barra lateral, menú y vistas, siguiendo base.md, sin lógica de datos."
+  },
+  {
+    "id": "US-013",
+    "title": "Integración de UI con Backend y Datos Reales",
+    "file": "docs/stories/US-013.md",
+    "status": "todo",
+    "created": "2026-06-23",
+    "updated": "2026-06-23",
+    "notes": "Conectar la UI a los endpoints y mostrar datos reales en cada vista."
   }
 ]

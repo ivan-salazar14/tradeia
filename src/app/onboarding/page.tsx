@@ -53,7 +53,7 @@ export default function OnboardingPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": user.id,
+          "x-user-id": user.id_uuid || "",
         },
         body: JSON.stringify({
           experience_level: experienceLevel,
