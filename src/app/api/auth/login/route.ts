@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { createApiToken } from "@/lib/tokens"
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    const { email, password, generateToken, tokenPermissions, tokenDescription } = await request.json()
 
     // Validación de campos requeridos
     if (!email || !password) {
@@ -76,11 +77,35 @@ export async function POST(request: NextRequest) {
         id_uuid = userRow.id_uuid;
       }
     }
+    
+    // Generate API token if requested
+    let apiToken = null;
+    if (generateToken && data.user) {
+      const permissions = Array.isArray(tokenPermissions) ? tokenPermissions : ['read'];
+      const description = tokenDescription || 'Token generated during login';
+      
+      const tokenResult = await createApiToken({
+        userId: data.user.id,
+        description,
+        permissions
+      });
+      
+      if (tokenResult) {
+        apiToken = {
+          token: tokenResult.token,
+          id: tokenResult.id,
+          permissions: tokenResult.permissions,
+          expiresAt: tokenResult.expiresAt
+        };
+      }
+    }
+    
     const response = NextResponse.json(
       {
         message: "Login exitoso",
         user: id_uuid ? { ...data.user, id_uuid } : data.user,
         session: data.session,
+        apiToken: apiToken
       },
       { status: 200 }
     )
@@ -116,4 +141,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}

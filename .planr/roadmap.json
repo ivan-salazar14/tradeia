@@ -106,5 +106,41 @@
     "created": "2026-06-23",
     "updated": "2026-06-23",
     "notes": "Conectar la UI a los endpoints y mostrar datos reales en cada vista."
+  },
+  {
+    "id": "US-014",
+    "title": "API Token Management for Signals Generation API",
+    "file": ".planr/stories/US-014.md",
+    "status": "done",
+    "created": "2024-07-22",
+    "updated": "2024-07-24",
+    "notes": "✅ COMPLETADO: Implementación completa de gestión de tokens API con generación, validación, revocación, UI de administración y documentación"
+  },
+  {
+    "id": "US-015",
+    "title": "Signals Generation API Integration",
+    "file": ".planr/stories/US-015.md",
+    "status": "todo",
+    "created": "2024-07-22",
+    "updated": "2024-07-22",
+    "notes": "Integration with external signals generation APIs to receive and process trading signals"
+  },
+  {
+    "id": "US-016",
+    "title": "Signals Webhook Endpoint",
+    "file": ".planr/stories/US-016.md",
+    "status": "todo",
+    "created": "2024-07-22",
+    "updated": "2024-07-22",
+    "notes": "Implementation of webhook endpoint to receive signals from external providers"
+  },
+  {
+    "id": "US-017",
+    "title": "Signal Provider Authentication System",
+    "file": ".planr/stories/US-017.md",
+    "status": "todo",
+    "created": "2024-07-22",
+    "updated": "2024-07-22",
+    "notes": "Implementation of secure authentication system for signal providers"
   }
 ]
