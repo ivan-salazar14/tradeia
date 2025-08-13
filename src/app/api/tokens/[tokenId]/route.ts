@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { RouteHandlerContext } from 'next/server'; // Add this import
+// Removed invalid RouteHandlerContext import
 import { revokeToken } from '@/lib/tokens';
 import { supabase } from '@/lib/supabase';
 
 // DELETE /api/tokens/[tokenId] - Revoke a token
 export async function DELETE(
   request: NextRequest,
-  context: RouteHandlerContext // Use the correct type here
+  context: { params: { tokenId: string } }
 ) {
   try {
     const tokenId = context.params.tokenId;
