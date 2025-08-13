@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { RouteHandlerContext } from 'next/server'; // Add this import
 import { revokeToken } from '@/lib/tokens';
 import { supabase } from '@/lib/supabase';
 
 // DELETE /api/tokens/[tokenId] - Revoke a token
-export async function DELETE(request: NextRequest, { params }: { params: { tokenId: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  context: RouteHandlerContext // Use the correct type here
+) {
   try {
-    const tokenId = params.tokenId;
+    const tokenId = context.params.tokenId;
     
     if (!tokenId) {
       return NextResponse.json({ error: 'Token ID is required' }, { status: 400 });
