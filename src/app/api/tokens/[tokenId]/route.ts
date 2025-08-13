@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-// Removed invalid RouteHandlerContext import
+// Removed invalid import of NextApiRequestContext
 import { revokeToken } from '@/lib/tokens';
 import { supabase } from '@/lib/supabase';
 
-// DELETE /api/tokens/[tokenId] - Revoke a token
 export async function DELETE(
   request: NextRequest,
   context: { params: { tokenId: string } }
