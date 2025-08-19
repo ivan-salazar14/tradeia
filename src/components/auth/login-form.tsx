@@ -58,21 +58,40 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       // Guardar el access_token en una cookie para el middleware (vía API)
       if (data.session?.access_token) {
         console.log('[LOGIN] access_token recibido:', data.session.access_token)
-        const setCookieRes = await fetch("/api/auth/set-cookie", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ access_token: data.session.access_token }),
-          credentials: "include"
-        })
-        console.log('[LOGIN] Respuesta de /api/auth/set-cookie:', setCookieRes.status)
-        const setCookieJson = await setCookieRes.json()
-        console.log('[LOGIN] Body de respuesta de /api/auth/set-cookie:', setCookieJson)
-      }
-      // Login exitoso
-      if (onSuccess) {
-        onSuccess()
-      } else {
-        window.location.href = "/dashboard"
+        try {
+          const setCookieRes = await fetch("/api/auth/set-cookie", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ access_token: data.session.access_token }),
+            credentials: "include"
+          })
+          
+          if (!setCookieRes.ok) {
+            throw new Error('Failed to set auth cookie')
+          }
+          
+          const setCookieJson = await setCookieRes.json()
+          console.log('[LOGIN] Cookie set successfully:', setCookieJson)
+          
+          // Login exitoso
+          setIsLoading(false)
+          
+          // Get redirect URL from query params if it exists
+          const searchParams = new URLSearchParams(window.location.search)
+          const redirectTo = searchParams.get('redirect') || '/dashboard'
+          
+          if (onSuccess) {
+            onSuccess()
+          } else {
+            // Use a full page reload to ensure all auth state is properly loaded
+            window.location.href = redirectTo
+          }
+          
+        } catch (error) {
+          console.error('[LOGIN] Error setting auth cookie:', error)
+          setError("Error al iniciar sesión. Por favor intenta de nuevo.")
+          setIsLoading(false)
+        }
       }
     } catch (err) {
       setError("Error de conexión. Por favor intenta de nuevo.")
