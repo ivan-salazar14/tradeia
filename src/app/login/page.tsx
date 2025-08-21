@@ -12,9 +12,11 @@ export default function LoginPage() {
   useEffect(() => {
     console.log("[LOGIN] loading:", loading, "user:", user);
     if (!loading && user) {
-      console.log("[LOGIN] Usuario autenticado, redirigiendo a /dashboard");
-      router.push("/dashboard");
-      window.location.reload();
+      // Get redirect URL from query params if it exists, otherwise default to /dashboard
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirectTo = searchParams.get('redirect') || '/dashboard';
+      console.log(`[LOGIN] Usuario autenticado, redirigiendo a ${redirectTo}`);
+      router.push(redirectTo);
     }
   }, [user, loading, router]);
 
