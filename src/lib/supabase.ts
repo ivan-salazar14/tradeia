@@ -48,8 +48,46 @@ export interface Database {
           experience_level?: string | null
           trading_goals?: string | null
         }
+      },
+      api_tokens: {
+        Row: {
+          id: string
+          user_id: string
+          token_hash: string
+          description: string | null
+          permissions: string[] // JSON array stored as string[]
+          last_used_at: string | null
+          created_at: string
+          expires_at: string | null
+          revoked: boolean
+          revoked_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          token_hash: string
+          description?: string | null
+          permissions?: string[]
+          last_used_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          revoked?: boolean
+          revoked_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          token_hash?: string
+          description?: string | null
+          permissions?: string[]
+          last_used_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          revoked?: boolean
+          revoked_at?: string | null
+        }
       }
       // Agrega más tablas según necesites
     }
   }
-} 
+}

@@ -1,0 +1,307 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "TradeIA Signals API",
+    "description": "Collection for testing TradeIA Signals Generation API integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login and Generate API Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"generateToken\": true,\n  \"tokenPermissions\": [\"read\", \"write\"],\n  \"tokenDescription\": \"Token for signals generation API\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login and generate a new API token for accessing the signals API"
+          },
+          "response": []
+        },
+        {
+          "name": "Generate API Token (Standalone)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissions\": [\"read\", \"write\"],\n  \"description\": \"Token for signals generation API\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tokens",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tokens"]
+            },
+            "description": "Generate a new API token for accessing the signals API (requires authentication)"
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke API Token",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tokens/{{tokenId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tokens", "{{tokenId}}"]
+            },
+            "description": "Revoke an existing API token"
+          },
+          "response": []
+        },
+        {
+          "name": "List API Tokens",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tokens",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tokens"]
+            },
+            "description": "List all API tokens for the current user"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for managing API tokens"
+    },
+    {
+      "name": "Signals",
+      "item": [
+        {
+          "name": "Get Signals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/signals?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "signals"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Get signals for the current user"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Signal (Webhook)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"BTC/USDT\",\n  \"type\": \"LONG\",\n  \"entry\": 50000,\n  \"takeProfit\": 55000,\n  \"stopLoss\": 48000,\n  \"timestamp\": \"2024-07-22T12:00:00Z\",\n  \"provider\": \"ExampleProvider\",\n  \"confidence\": 0.85,\n  \"timeframe\": \"4h\",\n  \"notes\": \"Strong bullish pattern forming\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhook/signals",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhook", "signals"]
+            },
+            "description": "Send a new signal via webhook"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Signal by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/signals/{{signalId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "signals", "{{signalId}}"]
+            },
+            "description": "Get a specific signal by ID"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for managing trading signals"
+    },
+    {
+      "name": "Providers",
+      "item": [
+        {
+          "name": "List Signal Providers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/signals/providers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "signals", "providers"]
+            },
+            "description": "List all signal providers"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Provider Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/signals/providers/{{providerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "signals", "providers", "{{providerId}}"]
+            },
+            "description": "Get details for a specific signal provider"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for managing signal providers"
+    },
+    {
+      "name": "Performance",
+      "item": [
+        {
+          "name": "Get Signal Performance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/signals/performance?dateRange=last30days",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "signals", "performance"],
+              "query": [
+                {
+                  "key": "dateRange",
+                  "value": "last30days"
+                }
+              ]
+            },
+            "description": "Get performance metrics for signals"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for tracking signal performance"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "apiToken",
+      "value": "your-api-token-here",
+      "type": "string"
+    },
+    {
+      "key": "tokenId",
+      "value": "token-id-here",
+      "type": "string"
+    },
+    {
+      "key": "signalId",
+      "value": "signal-id-here",
+      "type": "string"
+    },
+    {
+      "key": "providerId",
+      "value": "provider-id-here",
+      "type": "string"
+    }
+  ]
+}

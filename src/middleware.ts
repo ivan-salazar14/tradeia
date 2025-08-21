@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from "next/headers";
+import { validateApiToken } from './lib/middleware/validateApiToken';
 
 // Rutas que requieren autenticación
 const protectedRoutes = ['/dashboard', '/profile', '/signals', '/bot', '/performance']
@@ -12,6 +13,18 @@ const publicRoutes = ['/login', '/register', '/']
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   console.log('[Middleware] Pathname:', pathname)
+  
+  // Check for API token validation for API routes
+  if (pathname.startsWith('/api/')) {
+    // Skip token validation for auth endpoints
+    if (!pathname.startsWith('/api/auth/')) {
+      const apiTokenResponse = await validateApiToken(request);
+      if (apiTokenResponse) {
+        return apiTokenResponse;
+      }
+    }
+    return NextResponse.next();
+  }
 
   // Crear cliente de Supabase para middleware
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -104,11 +117,11 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/api/:path*',
   ],
-} 
+}
