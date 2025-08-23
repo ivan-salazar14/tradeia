@@ -1,0 +1,509 @@
+{
+	"info": {
+		"_postman_id": "5a273c77-b2d9-493d-90fd-a0df0b064678",
+		"name": "Cryptocurrency Trading Service API Copy",
+		"description": "API collection for the Cryptocurrency Trading Service with backtesting and signal generation capabilities",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "921710"
+	},
+	"item": [
+		{
+			"name": "Market Data",
+			"item": [
+				{
+					"name": "Fetch and Store Market Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/market-data/fetch?symbol=BTC/USDT&timeframe=1h",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"market-data",
+								"fetch"
+							],
+							"query": [
+								{
+									"key": "symbol",
+									"value": "BTC/USDT",
+									"description": "Trading pair"
+								},
+								{
+									"key": "timeframe",
+									"value": "1h",
+									"description": "Timeframe (1h, 4h, 1d)"
+								}
+							]
+						},
+						"description": "Fetch current market data from Binance and store it in the database with calculated indicators"
+					},
+					"response": []
+				},
+				{
+					"name": "Populate Historical Market Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/market-data/populate-historical?symbol=BTC/USDT&timeframe=1h&start_date=2024-05-01T00:00:00&end_date=2024-07-01T00:00:00",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"market-data",
+								"populate-historical"
+							],
+							"query": [
+								{
+									"key": "symbol",
+									"value": "BTC/USDT",
+									"description": "Trading pair"
+								},
+								{
+									"key": "timeframe",
+									"value": "1h",
+									"description": "Timeframe (1h, 4h, 1d)"
+								},
+								{
+									"key": "start_date",
+									"value": "2024-05-01T00:00:00",
+									"description": "Start date in ISO format"
+								},
+								{
+									"key": "end_date",
+									"value": "2024-07-01T00:00:00",
+									"description": "End date in ISO format"
+								}
+							]
+						},
+						"description": "Populate the database with historical OHLCV data from Binance for backtesting and analysis"
+					},
+					"response": []
+				},
+				{
+					"name": "Start Periodic Market Data Fetch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/market-data/start-periodic?symbol=BTC/USDT&timeframe=1h",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"market-data",
+								"start-periodic"
+							],
+							"query": [
+								{
+									"key": "symbol",
+									"value": "BTC/USDT",
+									"description": "Trading pair"
+								},
+								{
+									"key": "timeframe",
+									"value": "1h",
+									"description": "Timeframe (1h, 4h, 1d)"
+								}
+							]
+						},
+						"description": "Starts a background thread to periodically fetch market data for the specified symbol and timeframe"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Signals",
+			"item": [
+				{
+					"name": "Generate Trading Signals",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/signals/generate?symbol=BTC/USDT&timeframe=1h",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"signals",
+								"generate"
+							],
+							"query": [
+								{
+									"key": "symbol",
+									"value": "BTC/USDT",
+									"description": "Trading pair"
+								},
+								{
+									"key": "timeframe",
+									"value": "1h",
+									"description": "Timeframe (1h, 4h, 1d)"
+								}
+							]
+						},
+						"description": "Generate trading signals based on current market data and technical indicators stored in the database. Now includes strategy_id for each signal (US-038)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Signals with Filters",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/signals?symbol=BTC/USDT&timeframe=1h&strategy_id=moderate&limit=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"signals"
+							],
+							"query": [
+								{
+									"key": "symbol",
+									"value": "BTC/USDT",
+									"description": "Trading pair (optional)"
+								},
+								{
+									"key": "timeframe",
+									"value": "1h",
+									"description": "Timeframe (optional)"
+								},
+								{
+									"key": "strategy_id",
+									"value": "moderate",
+									"description": "Strategy ID filter (optional)"
+								},
+								{
+									"key": "limit",
+									"value": "50",
+									"description": "Limit of results (default: 100)"
+								}
+							]
+						},
+						"description": "Query stored signals with optional filters by symbol, timeframe, and strategy_id. Supports filtering by strategy for analysis (US-038)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Backtesting",
+			"item": [
+				{
+					"name": "Run Backtesting",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/backtest/run?symbol=BTC/USDT&timeframe=1h&start_date=2024-05-01T00:00:00&end_date=2024-07-01T00:00:00",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"backtest",
+								"run"
+							],
+							"query": [
+								{
+									"key": "symbol",
+									"value": "BTC/USDT",
+									"description": "Trading pair"
+								},
+								{
+									"key": "timeframe",
+									"value": "1h",
+									"description": "Timeframe (1h, 4h, 1d)"
+								},
+								{
+									"key": "start_date",
+									"value": "2024-05-01T00:00:00",
+									"description": "Start date in ISO format"
+								},
+								{
+									"key": "end_date",
+									"value": "2024-07-01T00:00:00",
+									"description": "End date in ISO format"
+								}
+							]
+						},
+						"description": "Execute backtesting of the trading strategy on historical data for a symbol, timeframe, and date range"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Backtest Signals",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/backtest/signals?symbol=BTC/USDT&timeframe=1h&start_date=2024-05-01T00:00:00&end_date=2024-07-01T00:00:00",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"backtest",
+								"signals"
+							],
+							"query": [
+								{
+									"key": "symbol",
+									"value": "BTC/USDT",
+									"description": "Trading pair"
+								},
+								{
+									"key": "timeframe",
+									"value": "1h",
+									"description": "Timeframe (1h, 4h, 1d)"
+								},
+								{
+									"key": "start_date",
+									"value": "2024-05-01T00:00:00",
+									"description": "Start date in ISO format"
+								},
+								{
+									"key": "end_date",
+									"value": "2024-07-01T00:00:00",
+									"description": "End date in ISO format"
+								}
+							]
+						},
+						"description": "Retrieve backtesting signals for a symbol, timeframe, and date range"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Strategies",
+			"item": [
+				{
+					"name": "Get Available Strategies",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/strategies/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"strategies",
+								""
+							]
+						},
+						"description": "Obtiene todas las estrategias disponibles y la estrategia actual del usuario."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Strategy Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/strategies/moderate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"strategies",
+								"moderate"
+							]
+						},
+						"description": "Obtiene información detallada de una estrategia específica."
+					},
+					"response": []
+				},
+				{
+					"name": "Set User Strategy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"strategy_name\": \"conservative\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/strategies/set",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"strategies",
+								"set"
+							]
+						},
+						"description": "Establece la estrategia para el usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User Strategy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/strategies/user/current",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"strategies",
+								"user",
+								"current"
+							]
+						},
+						"description": "Obtiene la estrategia actual del usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Strategies Comparison",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/strategies/comparison",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"strategies",
+								"comparison"
+							]
+						},
+						"description": "Obtiene una comparación de todas las estrategias disponibles."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Signals with User Strategy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/strategies/signals/generate?symbol=BTC/USDT&timeframe=4h",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"strategies",
+								"signals",
+								"generate"
+							],
+							"query": [
+								{
+									"key": "symbol",
+									"value": "BTC/USDT",
+									"description": "Trading pair"
+								},
+								{
+									"key": "timeframe",
+									"value": "4h",
+									"description": "Timeframe (1h, 4h, 1d)"
+								}
+							]
+						},
+						"description": "Genera señales usando la estrategia configurada del usuario."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
