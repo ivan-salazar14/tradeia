@@ -13,6 +13,16 @@ export default function BotsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Descripciones detalladas por estrategia (fuente: docs/integrations/STRATEGIES_DEV_REFERENCE.md)
+  const descriptions: Record<string, string> = {
+    conservative:
+      "Estrategia Conservadora: muy estricta; exige cumplir 5/5 condiciones. Umbrales altos: RSI < 25 o > 75, ADX > 30, |SQZMOM| > 15, |DMI+ - DMI-| > 12, ATR > 100. Dirección exige extremo de RSI y confirmación por DMI. TP1=ATR×1.5, TP2=ATR×2.5, SL=ATR×1.0.",
+    moderate:
+      "Estrategia Moderada: balancea calidad y frecuencia; requiere 3/5 condiciones. Umbrales: RSI < 30 o > 70, ADX > 20, |SQZMOM| > 7, |DMI+ - DMI-| > 6, ATR > 35. Dirección prioriza extremos de RSI o dominancia DMI. TP1=ATR×2.0, TP2=ATR×4.0, SL=ATR×1.5.",
+    aggressive:
+      "Estrategia Agresiva: mayor frecuencia y riesgo. Condiciones menos estrictas y objetivos más amplios. Úsala para capturar más oportunidades con mayor volatilidad. (Descripción detallada próximamente).",
+  };
+
   const load = useMemo(() => async () => {
     try {
       setLoading(true);
@@ -93,24 +103,78 @@ export default function BotsPage() {
               {saving ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {options.map((s) => (
-              <label key={s.id} className="flex items-center gap-3 p-3 border rounded-md">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4"
-                  checked={active.includes(s.id)}
-                  onChange={() => toggle(s.id)}
-                />
-                <span className="capitalize">{s.name || s.id}</span>
-                {current === s.id && (
-                  <span className="ml-auto text-xs px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">Actual</span>
-                )}
-              </label>
-            ))}
-          </div>
+          <StrategyList
+            options={options}
+            selected={active}
+            onToggle={toggle}
+            current={current}
+            descriptions={descriptions}
+          />
         </div>
       )}
     </div>
+  );
+}
+
+// Lista de estrategias con tarjetas y switch on/off
+function StrategyList({
+  options,
+  selected,
+  onToggle,
+  current,
+  descriptions,
+}: {
+  options: { id: string; name: string }[];
+  selected: string[];
+  onToggle: (id: string) => void;
+  current?: string;
+  descriptions: Record<string, string>;
+}) {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-600">Active o desactive las estrategias que desee usar. Puede guardar los cambios con el botón superior.</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {options.map((s) => {
+          const isSelected = selected.includes(s.id);
+          const desc = descriptions[s.id] || "Estrategia disponible.";
+          return (
+            <div key={s.id} className={`rounded-lg border ${isSelected ? 'border-indigo-300' : 'border-gray-200'} bg-white p-4 shadow-sm`}> 
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium capitalize">{s.name || s.id}</h4>
+                    {current === s.id && (
+                      <span className="text-xs px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">Actual</span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-sm text-gray-600 leading-relaxed">{desc}</p>
+                </div>
+                <Switch checked={isSelected} onChange={() => onToggle(s.id)} />
+              </div>
+            </div>
+          );
+        })}
+        {options.length === 0 && (
+          <div className="text-gray-500">No hay estrategias disponibles</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Toggle accesible con estilo tipo switch
+function Switch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={onChange}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${checked ? 'bg-indigo-600' : 'bg-gray-300'}`}
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-1'}`}
+      />
+    </button>
   );
 }

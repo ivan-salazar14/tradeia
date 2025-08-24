@@ -24,6 +24,9 @@ export default function SignalsPage() {
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<string>('4h');
   const timeframeOptions = ['1m','5m','15m','1h','4h','1d','1w'];
+  const [symbol, setSymbol] = useState<string>("");
+  const [strategyOptions, setStrategyOptions] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedStrategies, setSelectedStrategies] = useState<string[]>([]);
 
   const fetchSignals = useMemo(() => async () => {
     try {
@@ -33,7 +36,9 @@ export default function SignalsPage() {
       const { data: sessionData } = await supabase!.auth.getSession();
       const token = sessionData.session?.access_token;
       const meta = sessionData.session?.user?.user_metadata as any;
-      const activeStrategies: string[] = meta?.active_strategies || [];
+      const userActive: string[] = meta?.active_strategies || [];
+      // If user selected strategies locally, prefer those; otherwise, fallback to user's active strategies metadata
+      const activeStrategies: string[] = selectedStrategies.length > 0 ? selectedStrategies : userActive;
 
       if (!token) {
         setError("Sesión no válida. Inicie sesión nuevamente.");
@@ -42,6 +47,7 @@ export default function SignalsPage() {
       }
 
       const params = new URLSearchParams({ timeframe });
+      if (symbol.trim()) params.set('symbol', symbol.trim().toUpperCase());
       // If exactly one strategy is active, pass as strategy_id param
       if (Array.isArray(activeStrategies) && activeStrategies.length === 1) {
         params.set('strategy_id', activeStrategies[0]);
@@ -64,11 +70,30 @@ export default function SignalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [timeframe]);
+  }, [timeframe, symbol, selectedStrategies]);
 
   useEffect(() => {
     fetchSignals();
   }, [fetchSignals]);
+
+  // Load available strategies for filter options
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase!.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) return;
+        const res = await fetch('/api/strategies', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        const strategies = Array.isArray(json?.strategies) ? json.strategies : [];
+        setStrategyOptions(strategies);
+      } catch {}
+    })();
+  }, []);
 
   return (
     <div className="p-6">
@@ -79,6 +104,27 @@ export default function SignalsPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Señales</h2>
           <div className="flex items-center gap-3">
+            <label className="text-sm text-gray-600">Símbolo</label>
+            <input
+              className="border rounded px-2 py-1 text-sm w-36"
+              placeholder="BTC/USDT"
+              value={symbol}
+              onChange={(e) => setSymbol(e.target.value)}
+            />
+            <label className="text-sm text-gray-600">Estrategias</label>
+            <select
+              multiple
+              className="border rounded px-2 py-1 text-sm min-w-40 h-24"
+              value={selectedStrategies}
+              onChange={(e) => {
+                const opts = Array.from(e.target.selectedOptions).map(o => o.value);
+                setSelectedStrategies(opts);
+              }}
+            >
+              {strategyOptions.map((opt) => (
+                <option key={opt.id} value={opt.id}>{opt.name}</option>
+              ))}
+            </select>
             <label className="text-sm text-gray-600">Timeframe</label>
             <select
               className="border rounded px-2 py-1 text-sm"
@@ -106,6 +152,8 @@ export default function SignalsPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timeframe</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dirección</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entrada</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TP1</th>
@@ -117,7 +165,7 @@ export default function SignalsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {signals.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={10} className="px-6 py-4 text-center text-gray-500">
                       No hay señales disponibles. Seleccione una estrategia activa en "Gestión de Bots" o intente refrescar.
                     </td>
                   </tr>
@@ -126,6 +174,14 @@ export default function SignalsPage() {
                   <tr key={s.id}>
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{s.symbol}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{s.timeframe}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${s.type?.toLowerCase() === 'buy' ? 'bg-green-100 text-green-700' : s.type?.toLowerCase() === 'sell' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}
+                      >
+                        {s.type ? s.type.toUpperCase() : '-'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">{s.timestamp ? new Date(s.timestamp).toLocaleString() : '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{s.direction}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{s.entry ?? '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{s.tp1 ?? '-'}</td>
