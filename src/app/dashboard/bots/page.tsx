@@ -21,6 +21,8 @@ export default function BotsPage() {
       "Estrategia Moderada: balancea calidad y frecuencia; requiere 3/5 condiciones. Umbrales: RSI < 30 o > 70, ADX > 20, |SQZMOM| > 7, |DMI+ - DMI-| > 6, ATR > 35. Dirección prioriza extremos de RSI o dominancia DMI. TP1=ATR×2.0, TP2=ATR×4.0, SL=ATR×1.5.",
     aggressive:
       "Estrategia Agresiva: mayor frecuencia y riesgo. Condiciones menos estrictas y objetivos más amplios. Úsala para capturar más oportunidades con mayor volatilidad. (Descripción detallada próximamente).",
+    sqzmom_adx:
+      "Estrategia SQZMOM+ADX: Combina el indicador Squeeze Momentum (SQZMOM) con el Average Directional Index (ADX) para identificar tendencias fuertes y momentos de compra/venta. Requiere confirmación de ambos indicadores. TP1=ATR×2.0, TP2=ATR×3.5, SL=ATR×1.2",
   };
 
   const load = useMemo(() => async () => {
