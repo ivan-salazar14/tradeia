@@ -1,7 +1,6 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import type { Database } from '@/types/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +17,8 @@ type BacktestParams = {
 export async function POST(request: Request) {
   try {
     // Verify authentication
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
