@@ -1,24 +1,23 @@
 "use client"
 import { LoginForm } from "@/components/auth/login-form"
 import { useAuth } from "@/contexts/auth-context"
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, Suspense } from "react"
 
-
-export default function LoginPage() {
+function LoginPageContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     console.log("[LOGIN] loading:", loading, "user:", user);
     if (!loading && user) {
       // Get redirect URL from query params if it exists, otherwise default to /dashboard
-      const searchParams = new URLSearchParams(window.location.search);
       const redirectTo = searchParams.get('redirect') || '/dashboard';
       console.log(`[LOGIN] Usuario autenticado, redirigiendo a ${redirectTo}`);
       router.push(redirectTo);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
@@ -52,5 +51,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginPageContent />
+    </Suspense>
+  );
 } 

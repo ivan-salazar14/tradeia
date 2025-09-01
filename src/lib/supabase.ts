@@ -17,13 +17,6 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
         autoRefreshToken: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
-      },
-      cookies: {
-        name: 'sb-auth-token',
-        lifetime: 60 * 60 * 24 * 7, // 7 days
-        domain: '',
-        path: '/',
-        sameSite: 'lax'
       }
     })
   : null
