@@ -1,11 +1,13 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const menu = [
   { label: "Panel de Control", path: "/dashboard", icon: "dashboard" },
   { label: "Señales", path: "/dashboard/signals", icon: "signals" },
   { label: "Análisis", path: "/dashboard/analysis", icon: "analysis" },
+  { label: "Backtesting", path: "/dashboard/backtest", icon: "backtest" },
   { label: "Cartera", path: "/dashboard/portfolio", icon: "portfolio" },
   { label: "Gestión de Bots", path: "/dashboard/bots", icon: "bots" },
   { label: "Soporte", path: "/dashboard/support", icon: "support" },
@@ -30,11 +32,30 @@ const icons: Record<string, JSX.Element> = {
   support: (
     <svg xmlns="http://www.w3.org/2000/svg" className="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
   ),
+  backtest: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m6 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
 };
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+
+  // Clean up any undefined segments in the current path
+  useEffect(() => {
+    if (pathname.includes('undefined')) {
+      const cleanPath = pathname.split('/').filter(segment => segment !== 'undefined').join('/');
+      router.replace(cleanPath);
+    }
+  }, [pathname, router]);
+
+  const handleNavigation = (path: string) => {
+    // Ensure the path doesn't contain any undefined segments
+    const cleanPath = path.replace(/\/undefined/g, '');
+    router.push(cleanPath);
+  };
 
   return (
     <div className="hidden md:flex flex-col w-64 bg-white shadow-lg">
@@ -43,11 +64,15 @@ export default function Sidebar() {
       </div>
       <nav className="flex-1 px-2 py-4 space-y-2">
         {menu.map((item) => {
-          const active = pathname === item.path;
+          // Clean the path for comparison to handle any undefined segments
+          const cleanPathname = pathname.replace(/\/undefined/g, '');
+          const cleanItemPath = item.path.replace(/\/undefined/g, '');
+          const active = cleanPathname === cleanItemPath;
+          
           return (
             <button
               key={item.path}
-              onClick={() => router.push(item.path)}
+              onClick={() => handleNavigation(item.path)}
               className={`nav-item flex items-center w-full px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-200 ${active ? "active" : ""}`}
               style={active ? { backgroundColor: "#e0e7ff", color: "#4f46e5", fontWeight: 600 } : {}}
             >

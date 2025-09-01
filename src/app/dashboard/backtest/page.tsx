@@ -1,0 +1,619 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { format } from 'date-fns';
+
+interface Strategy {
+  id: string;
+  name: string;
+}
+
+interface Trade {
+  entry_time: string;
+  entry_price: number;
+  stop_loss: number;
+  take_profit: number;
+  direction: 'BUY' | 'SELL';
+  exit_time: string;
+  exit_price: number;
+  exit_reason: string;
+  reason: string;
+  profit_pct: number;
+  profit: number;
+  balance_after: number;
+}
+
+interface BacktestResult {
+  trades: Trade[];
+  initial_balance: number;
+  final_balance: number;
+  total_return: number;
+  total_return_pct: number;
+}
+
+export default function BacktestPage({ params }: { params: { id?: string } }) {
+  const [formData, setFormData] = useState({
+    symbol: 'BTC/USDT',
+    timeframe: '4h',
+    start_date: format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+    end_date: format(new Date(), 'yyyy-MM-dd'),
+    strategy: '',
+    initial_balance: '10000',
+    risk_per_trade: '1',
+  });
+  
+  const [strategies, setStrategies] = useState<Strategy[]>([]);
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [tradesPerPage] = useState(10); // Number of trades per page
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Trade; direction: 'asc' | 'desc' }>({ 
+    key: 'entry_time', 
+    direction: 'desc' 
+  });
+  const [filters, setFilters] = useState<{
+    direction?: 'BUY' | 'SELL';
+    minProfit?: number;
+    maxProfit?: number;
+  }>({});
+  const [result, setResult] = useState<BacktestResult | null>(null);
+  
+  // Handle sorting
+  const handleSort = (key: keyof Trade) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+  
+  // Apply sorting and filtering to trades
+  const getProcessedTrades = () => {
+    if (!result) return [];
+    
+    let processedTrades = [...result.trades];
+    
+    // Apply filters
+    if (filters.direction) {
+      processedTrades = processedTrades.filter(trade => trade.direction === filters.direction);
+    }
+    
+    if (filters.minProfit !== undefined) {
+      processedTrades = processedTrades.filter(trade => trade.profit_pct >= (filters.minProfit || 0));
+    }
+    
+    if (filters.maxProfit !== undefined) {
+      processedTrades = processedTrades.filter(trade => trade.profit_pct <= (filters.maxProfit || 0));
+    }
+    
+    // Apply sorting
+    return processedTrades.sort((a, b) => {
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+  
+  const processedTrades = getProcessedTrades();
+  const router = useRouter();
+  const [supabaseReady, setSupabaseReady] = useState(false);
+
+  // Fetch available strategies when component mounts
+  useEffect(() => {
+    const fetchStrategies = async () => {
+      if (!supabase) {
+        setError('Supabase is not initialized');
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+          router.push('/login');
+          return;
+        }
+        
+        const response = await fetch('/api/strategies', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch strategies');
+        }
+        
+        const { strategies: fetchedStrategies } = await response.json();
+        setStrategies(fetchedStrategies || []);
+        
+        // Set default strategy if available
+        if (fetchedStrategies?.length > 0) {
+          setFormData(prev => ({
+            ...prev,
+            strategy: fetchedStrategies[0].id
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching strategies:', error);
+        setError('Failed to load trading strategies');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStrategies();
+  }, []);
+  
+  // Check if Supabase is initialized when component mounts
+  useEffect(() => {
+    if (supabase) {
+      setSupabaseReady(true);
+      setLoading(false);
+    } else {
+      setError('Error initializing Supabase. Please check your environment variables.');
+      setLoading(false);
+    }
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Ensure we have a clean URL without undefined segments
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname.endsWith('undefined')) {
+      router.replace('/dashboard/backtest');
+    }
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!supabaseReady) {
+      setError('Supabase is not ready. Please try again later.');
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // We've already checked that supabase is ready, so we can safely use non-null assertion
+      const { data: sessionData } = await supabase!.auth.getSession();
+      const token = sessionData.session?.access_token;
+      
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      // Format dates for the external API
+      const startDate = new Date(formData.start_date);
+      const endDate = new Date(formData.end_date);
+      
+      // Convert dates to ISO string and remove milliseconds
+      const formatDate = (date: Date) => date.toISOString().split('.')[0] + 'Z';
+      
+      // Construct the URL with query parameters as per Postman collection
+      const params = new URLSearchParams({
+        symbol: formData.symbol,
+        timeframe: formData.timeframe,
+        start_date: formatDate(startDate),
+        end_date: formatDate(endDate),
+        strategy: formData.strategy,
+        initial_balance: formData.initial_balance,
+        risk_per_trade: formData.risk_per_trade
+      });
+
+      // Use our proxy endpoint to avoid CORS issues
+      const response = await fetch('/api/backtest/proxy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token,
+          ...formData,
+          start_date: formatDate(startDate),
+          end_date: formatDate(endDate)
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to run backtest');
+      }
+
+      const data = await response.json();
+      setResult(data);
+    } catch (err) {
+      console.error('Backtest error:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred while running the backtest');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Backtesting</h1>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Backtest Form */}
+        <div className="lg:col-span-1">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Backtest Parameters</h2>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Symbol
+                </label>
+                <input
+                  type="text"
+                  name="symbol"
+                  value={formData.symbol}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Timeframe
+                </label>
+                <select
+                  name="timeframe"
+                  value={formData.timeframe}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                >
+                  <option value="1m">1 Minute</option>
+                  <option value="5m">5 Minutes</option>
+                  <option value="15m">15 Minutes</option>
+                  <option value="1h">1 Hour</option>
+                  <option value="4h">4 Hours</option>
+                  <option value="1d">1 Day</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    name="start_date"
+                    value={formData.start_date}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    name="end_date"
+                    value={formData.end_date}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Strategy
+                </label>
+                <select
+                  name="strategy"
+                  value={formData.strategy}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                  disabled={loading || strategies.length === 0}
+                >
+                  {loading ? (
+                    <option value="">Loading strategies...</option>
+                  ) : strategies.length > 0 ? (
+                    strategies.map((strategy) => (
+                      <option key={strategy.id} value={strategy.id}>
+                        {strategy.name}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">No strategies available</option>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Initial Balance (USDT)
+                </label>
+                <input
+                  type="number"
+                  name="initial_balance"
+                  value={formData.initial_balance}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  min="1"
+                  step="0.01"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Risk per Trade (%)
+                </label>
+                <input
+                  type="number"
+                  name="risk_per_trade"
+                  value={formData.risk_per_trade}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  min="0.01"
+                  max="100"
+                  step="0.01"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  loading ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
+              >
+                {loading ? 'Running Backtest...' : 'Run Backtest'}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Results */}
+        <div className="lg:col-span-2">
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {loading && (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          )}
+
+          {result && (
+            <div className="space-y-6">
+              {/* Summary Card */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold mb-4">Backtest Results</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Initial Balance</p>
+                    <p className="text-2xl font-semibold">${result.initial_balance.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Final Balance</p>
+                    <p className={`text-2xl font-semibold ${
+                      result.final_balance >= result.initial_balance ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      ${result.final_balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Return</p>
+                    <p className={`text-2xl font-semibold ${
+                      result.total_return_pct >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {result.total_return_pct >= 0 ? '+' : ''}{result.total_return_pct.toFixed(2)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Trades Table */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-medium">Trades ({processedTrades.length})</h2>
+                    <div className="flex items-center space-x-4">
+                      <select 
+                        value={filters.direction || ''}
+                        onChange={(e) => setFilters({...filters, direction: e.target.value as 'BUY' | 'SELL' || undefined})}
+                        className="px-2 py-1 border rounded text-sm"
+                      >
+                        <option value="">All Directions</option>
+                        <option value="BUY">Buy</option>
+                        <option value="SELL">Sell</option>
+                      </select>
+                      
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="number"
+                          placeholder="Min P/L %"
+                          value={filters.minProfit ?? ''}
+                          onChange={(e) => setFilters({...filters, minProfit: e.target.value ? Number(e.target.value) : undefined})}
+                          className="w-20 px-2 py-1 border rounded text-sm"
+                        />
+                        <span>to</span>
+                        <input
+                          type="number"
+                          placeholder="Max P/L %"
+                          value={filters.maxProfit ?? ''}
+                          onChange={(e) => setFilters({...filters, maxProfit: e.target.value ? Number(e.target.value) : undefined})}
+                          className="w-20 px-2 py-1 border rounded text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {processedTrades.length > tradesPerPage && (
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 border rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        Page {currentPage} of {Math.ceil(processedTrades.length / tradesPerPage)}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(p + 1, Math.ceil(processedTrades.length / tradesPerPage)))}
+                        disabled={currentPage >= Math.ceil(processedTrades.length / tradesPerPage)}
+                        className="px-3 py-1 border rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr className="cursor-pointer">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Entry Time
+                        </th>
+                        <th 
+                          scope="col" 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                          onClick={() => handleSort('direction')}
+                        >
+                          <div className="flex items-center">
+                            Direction
+                            {sortConfig.key === 'direction' && (
+                              <span className="ml-1">
+                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          scope="col" 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                          onClick={() => handleSort('entry_price')}
+                        >
+                          <div className="flex items-center">
+                            Entry Price
+                            {sortConfig.key === 'entry_price' && (
+                              <span className="ml-1">
+                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          scope="col" 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                          onClick={() => handleSort('exit_price')}
+                        >
+                          <div className="flex items-center">
+                            Exit Price
+                            {sortConfig.key === 'exit_price' && (
+                              <span className="ml-1">
+                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          scope="col" 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                          onClick={() => handleSort('profit_pct')}
+                        >
+                          <div className="flex items-center">
+                            P/L (%)
+                            {sortConfig.key === 'profit_pct' && (
+                              <span className="ml-1">
+                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Balance
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {processedTrades
+                        .slice(
+                          (currentPage - 1) * tradesPerPage,
+                          currentPage * tradesPerPage
+                        )
+                        .map((trade, index) => (
+                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                            {new Date(trade.entry_time).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              trade.direction === 'BUY' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                            }`}>
+                              {trade.direction}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                            {trade.entry_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                            {trade.exit_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          </td>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                            trade.profit_pct >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                          }`}>
+                            {trade.profit_pct >= 0 ? '+' : ''}{trade.profit_pct.toFixed(2)}%
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                            ${trade.balance_after.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
