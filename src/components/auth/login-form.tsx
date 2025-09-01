@@ -1,22 +1,19 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { useRouter, useSearchParams } from "next/navigation"
+import { getSupabaseClient } from "@/lib/supabase-singleton"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import Cookies from "js-cookie"
 
-interface LoginFormProps {
-  onSuccess?: () => void
-}
-
-export function LoginForm({ onSuccess }: LoginFormProps) {
+export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectedFrom') || '/dashboard'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,62 +36,23 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     }
 
     try {
-      // Verificar que supabase no sea null antes de usarlo
-      if (!supabase) {
-        setError("Error de conexión con el servicio de autenticación.")
-        setIsLoading(false)
-        return
-      }
-      // Login directo con Supabase Auth
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const supabase = getSupabaseClient()
+      
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+
       if (error) {
-        setError(error.message)
-        setIsLoading(false)
-        return
+        throw error
       }
-      // Guardar el access_token en una cookie para el middleware (vía API)
-      if (data.session?.access_token) {
-        console.log('[LOGIN] access_token recibido:', data.session.access_token)
-        try {
-          const setCookieRes = await fetch("/api/auth/set-cookie", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ access_token: data.session.access_token }),
-            credentials: "include"
-          })
-          
-          if (!setCookieRes.ok) {
-            throw new Error('Failed to set auth cookie')
-          }
-          
-          const setCookieJson = await setCookieRes.json()
-          console.log('[LOGIN] Cookie set successfully:', setCookieJson)
-          
-          // Login exitoso
-          setIsLoading(false)
-          
-          // Get redirect URL from query params if it exists
-          const searchParams = new URLSearchParams(window.location.search)
-          const redirectTo = searchParams.get('redirect') || '/dashboard'
-          
-          if (onSuccess) {
-            onSuccess()
-          } else {
-            // Use a full page reload to ensure all auth state is properly loaded
-            window.location.href = redirectTo
-          }
-          
-        } catch (error) {
-          console.error('[LOGIN] Error setting auth cookie:', error)
-          setError("Error al iniciar sesión. Por favor intenta de nuevo.")
-          setIsLoading(false)
-        }
-      }
-    } catch (err) {
-      setError("Error de conexión. Por favor intenta de nuevo.")
+
+      // Force a page reload to ensure the session is properly set
+      window.location.href = redirectTo
+    } catch (error) {
+      console.error('Login error:', error)
+      setError(error instanceof Error ? error.message : 'Error al iniciar sesión')
+    } finally {
       setIsLoading(false)
     }
   }
@@ -102,50 +60,52 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   return (
     <div className="w-full max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <label htmlFor="email" className="text-sm font-medium text-gray-900 dark:text-gray-100 font-inter">
-            Email
-          </label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@email.com"
-            required
-            disabled={isLoading}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="password" className="text-sm font-medium text-gray-900 dark:text-gray-100 font-inter">
-            Contraseña
-          </label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Tu contraseña"
-            required
-            disabled={isLoading}
-          />
-        </div>
-
         {error && (
-          <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 font-inter">
-            {error}
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span className="block sm:inline">{error}</span>
           </div>
         )}
+        
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Correo electrónico
+            </label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tu@email.com"
+              disabled={isLoading}
+              className="w-full"
+            />
+          </div>
 
-        <Button
-          type="submit"
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Contraseña
+            </label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              disabled={isLoading}
+              className="w-full"
+            />
+          </div>
+        </div>
+
+        <Button 
+          type="submit" 
           className="w-full font-inter"
           disabled={isLoading}
         >
-          {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+          {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
         </Button>
       </form>
     </div>
   )
-} 
+}

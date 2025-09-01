@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from "next/headers";
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 // Rutas que requieren autenticación
 const protectedRoutes = ['/dashboard', '/profile', '/signals', '/bot', '/performance']
@@ -11,104 +10,80 @@ const publicRoutes = ['/login', '/register', '/']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  console.log('[Middleware] Pathname:', pathname)
-
-  // Crear cliente de Supabase para middleware
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('[Middleware] Variables de entorno de Supabase no definidas. Permitiendo acceso...')
-    return NextResponse.next()
+  
+  // Skip logging for Chrome DevTools and other well-known paths
+  if (!pathname.startsWith('/.well-known/')) {
+    console.log('[Middleware] Pathname:', pathname)
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey)
+  // Create response object
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
-  // Obtener el token de la cookie
-  const token = request.cookies.get('sb-access-token')?.value
-  console.log('[Middleware] Token:', token)
-
-  // Verificar si la ruta está protegida
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
-  const isPublicRoute = publicRoutes.some(route => pathname === route)
-  console.log('[Middleware] isProtectedRoute:', isProtectedRoute, 'isPublicRoute:', isPublicRoute)
-
-  // Permitir acceso directo a rutas públicas
-  if (isPublicRoute) {
-    return NextResponse.next();
-  }
-
-  if (isProtectedRoute) {
-    if (!token) {
-      console.log('[Middleware] No token, redirigiendo a login')
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
+  // Create Supabase client with cookie handling
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+            sameSite: 'lax', // Important for cross-site requests
+            secure: process.env.NODE_ENV === 'production', // Secure in production
+            httpOnly: true, // Prevent XSS
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+            maxAge: 0, // Immediately expire the cookie
+          })
+        },
+      },
     }
+  )
 
-    try {
-      const { data: { user }, error } = await supabase.auth.getUser(token)
-      console.log('[Middleware] Resultado de getUser:', { user, error })
-      if (error || !user) {
-        console.log('[Middleware] Token inválido, redirigiendo a login')
-        const loginUrl = new URL('/login', request.url)
-        loginUrl.searchParams.set('redirect', pathname)
-        const response = NextResponse.redirect(loginUrl)
-        if (error?.status === 403 || error?.code === 'bad_jwt') {
-          response.cookies.set('sb-access-token', '', { maxAge: 0, path: '/' })
-        }
-        return response
-      }
-    } catch (error: any) {
-      console.error('[Middleware] Error al verificar token:', error)
-      if (error?.status === 403 || error?.code === 'bad_jwt') {
-        const loginUrl = new URL('/login', request.url)
-        loginUrl.searchParams.set('redirect', pathname)
-        const response = NextResponse.redirect(loginUrl)
-        response.cookies.set('sb-access-token', '', { maxAge: 0, path: '/' })
-        return response
-      }
-      // Permitir acceso si hay error de conexión con Supabase
-      return NextResponse.next()
-    }
+  // Get the session
+  const { data: { session } } = await supabase.auth.getSession()
+  console.log('[Middleware] Session:', session ? 'Authenticated' : 'Not authenticated')
+
+  // Handle protected routes
+  if (protectedRoutes.some(route => pathname.startsWith(route)) && !session) {
+    console.log('[Middleware] Redirecting to /login')
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirectedFrom', pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
-  // Si el usuario está autenticado y trata de acceder a login, redirect to dashboard
-  if (pathname === '/login' && token) {
-    try {
-      const { data: { user }, error } = await supabase.auth.getUser(token)
-      console.log('[Middleware] Intento de acceso a /login con token:', { user, error })
-      if (user && !error) {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-      }
-      // Si el token es inválido, limpiar la cookie y permitir acceso a login
-      if (error?.status === 403 || error?.code === 'bad_jwt') {
-        const response = NextResponse.next()
-        response.cookies.set('sb-access-token', '', { maxAge: 0, path: '/' })
-        return response
-      }
-    } catch (error: any) {
-      if (error?.status === 403 || error?.code === 'bad_jwt') {
-        const response = NextResponse.next()
-        response.cookies.set('sb-access-token', '', { maxAge: 0, path: '/' })
-        return response
-      }
-      // Permitir acceso a login si hay otro error
-    }
+  // Handle public routes for authenticated users
+  if (publicRoutes.includes(pathname) && session) {
+    console.log('[Middleware] Redirecting to /dashboard')
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  return NextResponse.next()
+  return response
 }
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public folder
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-} 
+}

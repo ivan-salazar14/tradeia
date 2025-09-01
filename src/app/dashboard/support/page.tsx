@@ -33,7 +33,7 @@ export default function SupportPage() {
               </span>
             </summary>
             <p className="text-gray-600 mt-3 px-4 pb-4">
-              Sí, en la sección 'Gestión de Bots' puedes personalizar completamente tus bots, ajustando el nivel de riesgo, la estrategia a seguir y los activos en los que operará.
+              Sí, en la sección &apos;Gestión de Bots&apos; puedes personalizar completamente tus bots, ajustando el nivel de riesgo, la estrategia a seguir y los activos en los que operará.
             </p>
           </details>
           

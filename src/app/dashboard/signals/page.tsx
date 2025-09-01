@@ -166,7 +166,7 @@ export default function SignalsPage() {
                 {signals.length === 0 && (
                   <tr>
                     <td colSpan={10} className="px-6 py-4 text-center text-gray-500">
-                      No hay señales disponibles. Seleccione una estrategia activa en "Gestión de Bots" o intente refrescar.
+                      No hay señales disponibles. Seleccione una estrategia activa en &quot;Gestión de Bots&quot; o intente refrescar.
                     </td>
                   </tr>
                 )}
