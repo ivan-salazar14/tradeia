@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contacto - Plataforma de Trading</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="logo">
+                <a href="index.html">
+                    <img src="https://gradle.org/images/gradle-logo.svg" alt="Logo">
+                </a>
+            </div>
+            <div class="nav-links">
+                <a href="features.html" class="nav-link">Características</a>
+                <a href="pricing.html" class="nav-link">Precios</a>
+                <a href="docs.html" class="nav-link">Documentación</a>
+                <a href="about.html" class="nav-link">Nosotros</a>
+                <a href="contact.html" class="nav-link active">Contacto</a>
+                <a href="#" class="nav-button">Iniciar Sesión</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="page-header contact-header">
+            <div class="container">
+                <h1>Contáctanos</h1>
+                <p class="subtitle">Estamos aquí para ayudarte. Envíanos un mensaje y te responderemos lo antes posible.</p>
+            </div>
+        </section>
+
+        <section class="contact-container">
+            <div class="container">
+                <div class="contact-grid">
+                    <div class="contact-info">
+                        <h2>Información de Contacto</h2>
+                        <p>¿Tienes preguntas sobre nuestra plataforma o necesitas asistencia? No dudes en contactarnos utilizando la información a continuación o completando el formulario.</p>
+                        
+                        <div class="contact-method">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h3>Correo Electrónico</h3>
+                                <p>soporte@tradingplatform.com</p>
+                                <p>ventas@tradingplatform.com</p>
+                            </div>
+                        </div>
+
+                        <div class="contact-method">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h3>Teléfono</h3>
+                                <p>+1 (555) 123-4567</p>
+                                <p>Lunes a Viernes: 9:00 AM - 6:00 PM (EST)</p>
+                            </div>
+                        </div>
+
+                        <div class="contact-method">
+                            <div class="contact-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h3>Oficinas</h3>
+                                <p>123 Calle Principal</p>
+                                <p>Ciudad de México, 11520</p>
+                                <p>México</p>
+                            </div>
+                        </div>
+
+                        <div class="social-media">
+                            <h3>Síguenos</h3>
+                            <div class="social-links">
+                                <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                                <a href="#" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
+                                <a href="#" class="social-icon"><i class="fab fa-telegram"></i></a>
+                                <a href="#" class="social-icon"><i class="fab fa-youtube"></i></a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="contact-form-container">
+                        <h2>Envíanos un Mensaje</h2>
+                        <form class="contact-form">
+                            <div class="form-group">
+                                <label for="name">Nombre Completo *</label>
+                                <input type="text" id="name" name="name" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email">Correo Electrónico *</label>
+                                <input type="email" id="email" name="email" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="subject">Asunto *</label>
+                                <select id="subject" name="subject" required>
+                                    <option value="" disabled selected>Selecciona un asunto</option>
+                                    <option value="support">Soporte Técnico</option>
+                                    <option value="sales">Consultas de Ventas</option>
+                                    <option value="billing">Facturación</option>
+                                    <option value="partnership">Asociaciones</option>
+                                    <option value="other">Otro</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="message">Mensaje *</label>
+                                <textarea id="message" name="message" rows="6" required></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="privacy" name="privacy" required>
+                                    <label for="privacy">Acepto la <a href="#">Política de Privacidad</a> y los <a href="#">Términos de Servicio</a> *</label>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="primary-button">Enviar Mensaje</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="map-section">
+            <div class="map-container">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d120427.00641114735!2d-99.2605576!3d19.4326296!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85d1ff35f5bd1563%3A0x6c366f0e2de02ff7!2sCiudad%20de%20M%C3%A9xico%2C%20CDMX%2C%20M%C3%A9xico!5e0!3m2!1ses-419!2sus!4v1620000000000!5m2!1ses-419!2sus" 
+                width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+            </div>
+        </section>
+
+        <section class="faq-contact">
+            <div class="container">
+                <h2>Preguntas Frecuentes</h2>
+                <div class="faq-grid">
+                    <div class="faq-item">
+                        <h3>¿Cuál es el tiempo de respuesta del soporte?</h3>
+                        <p>Nuestro equipo de soporte responde a todas las consultas en un plazo de 24 horas hábiles. Para problemas urgentes, por favor indícalo en el asunto del correo.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>¿Ofrecen soporte telefónico?</h3>
+                        <p>Sí, ofrecemos soporte telefónico para clientes con planes Profesional y Empresarial. Los clientes Básico pueden contactarnos por correo electrónico o chat en vivo.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>¿Cómo puedo programar una demostración?</h3>
+                        <p>Puedes programar una demostración personalizada completando el formulario de contacto y seleccionando "Demostración" en el campo de asunto.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>¿Dónde puedo encontrar documentación?</h3>
+                        <p>Visita nuestra <a href="docs.html">sección de documentación</a> para encontrar guías, tutoriales y respuestas a preguntas frecuentes.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="https://gradle.org/images/gradle-logo-white.svg" alt="Logo">
+                    <p>Plataforma avanzada de trading cuantitativo</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Producto</h4>
+                        <a href="features.html">Características</a>
+                        <a href="pricing.html">Precios</a>
+                        <a href="docs.html">Documentación</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Empresa</h4>
+                        <a href="about.html">Sobre Nosotros</a>
+                        <a href="#">Carreras</a>
+                        <a href="#">Blog</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Recursos</h4>
+                        <a href="#">Centro de Ayuda</a>
+                        <a href="contact.html">Contacto</a>
+                        <a href="#">Términos de Servicio</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Plataforma de Trading. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
