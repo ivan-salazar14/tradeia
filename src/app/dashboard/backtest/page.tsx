@@ -34,11 +34,18 @@ interface BacktestResult {
 }
 
 interface PageProps {
-  params: { id?: string };
+  params: Promise<{ id?: string }>;
   searchParams?: { [key: string]: string | string[] | undefined };
 }
 
 export default function BacktestPage({ params }: PageProps) {
+  const [resolvedParams, setResolvedParams] = useState<{ id?: string } | null>(null);
+  
+  // Resolve params promise
+  useEffect(() => {
+    params.then(setResolvedParams);
+  }, [params]);
+
   const [formData, setFormData] = useState({
     symbol: 'BTC/USDT',
     timeframe: '4h',
