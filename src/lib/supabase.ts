@@ -9,9 +9,32 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 console.log('🔄 Iniciando conexión con Supabase...')
 
+// Create a single supabase client for browser use
 export const supabase = (supabaseUrl && supabaseAnonKey)
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+      },
+      cookies: {
+        name: 'sb-auth-token',
+        lifetime: 60 * 60 * 24 * 7, // 7 days
+        domain: '',
+        path: '/',
+        sameSite: 'lax'
+      }
+    })
   : null
+
+// Helper function to get the Supabase client with the current session
+export const getSupabaseClient = () => {
+  if (!supabase) {
+    throw new Error('Supabase client is not initialized. Check your environment variables.')
+  }
+  return supabase
+}
 
 // Tipos para las tablas de la base de datos
 export interface Database {

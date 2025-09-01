@@ -33,7 +33,12 @@ interface BacktestResult {
   total_return_pct: number;
 }
 
-export default function BacktestPage({ params }: { params: { id?: string } }) {
+interface PageProps {
+  params: { id?: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
+}
+
+export default function BacktestPage({ params }: PageProps) {
   const [formData, setFormData] = useState({
     symbol: 'BTC/USDT',
     timeframe: '4h',

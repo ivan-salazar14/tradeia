@@ -1,9 +1,12 @@
-import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs';
+import { getSupabaseClient } from '@/lib/supabase-singleton';
 import { Database } from '@/types/supabase';
 import { useState } from 'react';
 
-const supabase = createBrowserSupabaseClient<Database>();
+export function createClient() {
+  return getSupabaseClient();
+}
 
 export const useSupabase = () => {
+  const [supabase] = useState(() => getSupabaseClient());
   return { supabase };
 };
