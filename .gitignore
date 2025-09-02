@@ -1,24 +1,25 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+/apps/landing/node_modules
+/apps/tradeia/node_modules
+/apps/tradeia/.pnp
+/apps/tradeia/.pnp.*
+/apps/tradeia/.yarn/*
+/apps/tradeia/.yarn/patches
+/apps/tradeia/.yarn/plugins
+/apps/tradeia/.yarn/releases
+/apps/tradeia/.yarn/versions
 
 # testing
 /coverage
 
 # next.js
-/.next/
-/out/
+/apps/tradeia/.next/
+/apps/tradeia/out/
 
 # production
-/build
+/apps/tradeia/build
 
 # misc
 .DS_Store
@@ -39,3 +40,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+apps/tradeia/node_modules/.bin/autoprefixer.CMD
