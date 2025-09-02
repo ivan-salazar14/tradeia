@@ -69,21 +69,19 @@ const Header = () => {
             
             <div className="flex items-center ml-2 space-x-2">
               <a
-                href="https://tradeia.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/app"
                 className="flex items-center px-4 py-2 text-sm font-medium text-primary-600 bg-white border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
               >
                 <LogIn size={16} className="mr-2" />
                 Iniciar Sesión
               </a>
-              <Link
-                to="/contact"
+              <a
+                href="/app/register"
                 className="flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
               >
                 <User size={16} className="mr-2" />
-                Contacto
-              </Link>
+                Regístrate
+              </a>
             </div>
           </nav>
 
@@ -126,21 +124,19 @@ const Header = () => {
           ))}
           <div className="pt-2 space-y-2">
             <a
-              href="https://tradeia.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/app"
               className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-primary-600 bg-white border border-primary-200 rounded-lg hover:bg-primary-50"
             >
               <LogIn size={16} className="mr-2" />
               Iniciar Sesión
             </a>
-            <Link
-              to="/contact"
+            <a
+              href="/app/register"
               className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
             >
               <User size={16} className="mr-2" />
-              Contacto
-            </Link>
+              Regístrate
+            </a>
           </div>
         </div>
       </div>

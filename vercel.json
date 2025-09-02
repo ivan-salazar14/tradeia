@@ -15,12 +15,20 @@
   ],
   "routes": [
     {
-      "src": "/landing/(.*)",
+      "src": "/",
+      "dest": "/apps/landing"
+    },
+    {
+      "src": "/landing(?:/(.*))?",
       "dest": "/apps/landing/$1"
     },
     {
+      "src": "/app(?:/(.*))?",
+      "dest": "/apps/tradeia/app/$1"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/apps/tradeia"
+      "dest": "/apps/landing/$1"
     }
   ]
 }
