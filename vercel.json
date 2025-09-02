@@ -23,12 +23,12 @@
       "dest": "/apps/landing/$1"
     },
     {
-      "src": "/api/(.*)",
-      "dest": "/apps/tradeia/api/$1"
+      "src": "/app(?:/(.*))?",
+      "dest": "/apps/tradeia/app/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/apps/tradeia/$1"
+      "dest": "/apps/landing/$1"
     }
   ]
 }
