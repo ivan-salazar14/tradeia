@@ -1,8 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 const menu = [
   { label: "Panel de Control", path: "/dashboard", icon: "dashboard" },
@@ -41,16 +40,51 @@ const icons: Record<string, React.ReactElement> = {
 };
 
 export default function Sidebar() {
-  const pathname = usePathname();
   const router = useRouter();
+  const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [showLoading, setShowLoading] = useState(true);
 
-  // Clean up any undefined segments in the current path
+  // Handle client-side mounting and path cleaning in a single effect
   useEffect(() => {
-    if (pathname.includes('undefined')) {
-      const cleanPath = pathname.split('/').filter(segment => segment !== 'undefined').join('/');
-      router.replace(cleanPath);
+    // Set mounted state
+    setIsMounted(true);
+    
+    // Only run path cleaning on client side
+    if (pathname && pathname.includes('undefined')) {
+      const cleanPath = pathname
+        .split('/')
+        .filter(segment => segment && segment !== 'undefined')
+        .join('/') || '/';
+      
+      if (cleanPath !== pathname) {
+        console.log(`[Sidebar] Cleaning path from ${pathname} to ${cleanPath}`);
+        router.replace(cleanPath);
+        return; // Prevent showing content until after redirect
+      }
     }
+    
+    // If we get here, we can show the actual content
+    setShowLoading(false);
+    
+    // Cleanup function
+    return () => {
+      setShowLoading(true);
+    };
   }, [pathname, router]);
+
+  // Show loading state until we're sure about the path
+  if (!isMounted || showLoading) {
+    return (
+      <div className="w-16 h-screen bg-gray-800 flex flex-col items-center py-4">
+        <div className="w-8 h-8 bg-gray-700 rounded-full animate-pulse mb-6"></div>
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="w-8 h-8 bg-gray-700 rounded-full my-2 animate-pulse"></div>
+        ))}
+      </div>
+    );
+  }
 
   const handleNavigation = (path: string) => {
     // Ensure the path doesn't contain any undefined segments

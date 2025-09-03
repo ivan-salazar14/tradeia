@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase-singleton";
 
 type Strategy = { id: string; name: string };
 
@@ -29,11 +29,21 @@ export default function BotsPage() {
     try {
       setLoading(true);
       setError(null);
-      const { data } = await supabase!.auth.getSession();
+
+      const supabaseClient = getSupabaseClient();
+      if (!supabaseClient) {
+        throw new Error("Error al inicializar cliente de Supabase");
+      }
+
+      const { data } = await supabaseClient.auth.getSession();
       const token = data.session?.access_token;
       if (!token) throw new Error("Sesión inválida");
+
       const res = await fetch('/api/strategies', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-user-id': data.session?.user?.id || ''
+        }
       });
       if (!res.ok) throw new Error(await res.text());
       const json = await res.json();
@@ -58,12 +68,20 @@ export default function BotsPage() {
   const save = async () => {
     try {
       setSaving(true);
-      const { data } = await supabase!.auth.getSession();
+
+      const supabaseClient = getSupabaseClient();
+      if (!supabaseClient) {
+        throw new Error("Error al inicializar cliente de Supabase");
+      }
+
+      const { data } = await supabaseClient.auth.getSession();
       const token = data.session?.access_token;
       if (!token) throw new Error("Sesión inválida");
+
       // 1) Guardar estrategias activas en metadatos del usuario (sin admin)
-      const { error: updErr } = await supabase!.auth.updateUser({ data: { active_strategies: active } });
+      const { error: updErr } = await supabaseClient.auth.updateUser({ data: { active_strategies: active } });
       if (updErr) throw updErr;
+
       // 2) Establecer estrategia actual (si hay alguna elegida)
       const toSet = active[0] || current; // fallback al current si no hay activo
       if (toSet) {
@@ -71,7 +89,8 @@ export default function BotsPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+            'x-user-id': data.session?.user?.id || ''
           },
           body: JSON.stringify({ strategy_name: toSet })
         });

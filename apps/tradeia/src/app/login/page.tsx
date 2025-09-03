@@ -8,16 +8,55 @@ function LoginPageContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
 
   useEffect(() => {
-    console.log("[LOGIN] loading:", loading, "user:", user);
-    if (!loading && user) {
-      // Get redirect URL from query params if it exists, otherwise default to /dashboard
-      const redirectTo = searchParams.get('redirect') || '/dashboard';
-      console.log(`[LOGIN] Usuario autenticado, redirigiendo a ${redirectTo}`);
-      router.push(redirectTo);
+    console.log("[LOGIN] Auth state - loading:", loading, "user:", user?.email);
+    
+    if (loading) {
+      console.log("[LOGIN] Still loading auth state...");
+      return;
     }
-  }, [user, loading, router, searchParams]);
+
+    if (user) {
+      console.log(`[LOGIN] User authenticated, preparing redirect to ${redirectTo}`);
+      
+      // Small delay to ensure all auth state is properly set
+      const timer = setTimeout(() => {
+        console.log('[LOGIN] Executing redirect to:', redirectTo);
+        
+        // Create a promise to handle the navigation
+        const handleNavigation = async () => {
+          try {
+            await router.replace(redirectTo);
+            // If we get here but still on login page, force reload
+            if (window.location.pathname === '/login') {
+              console.log('[LOGIN] Client-side navigation failed, forcing full page reload');
+              window.location.href = redirectTo;
+            }
+          } catch (error: unknown) {
+            console.error('[LOGIN] Error during navigation:', error);
+            window.location.href = redirectTo;
+          }
+        };
+        
+        void handleNavigation();
+      }, 200);
+      
+      return () => clearTimeout(timer);
+    } else {
+      console.log('[LOGIN] No user found, showing login form');
+    }
+  }, [user, loading, router, redirectTo]);
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
@@ -56,8 +95,12 @@ function LoginPageContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    }>
       <LoginPageContent />
     </Suspense>
   );
-} 
+}
