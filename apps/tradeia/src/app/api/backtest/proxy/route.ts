@@ -1,12 +1,28 @@
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
+  console.log('[BACKTEST-PROXY] ===== STARTING BACKTEST PROXY =====');
+
   try {
     const body = await request.json();
     const { token, ...params } = body;
-    
+
+    console.log('[BACKTEST-PROXY] Received token:', token ? 'Present' : 'NULL/MISSING');
+    console.log('[BACKTEST-PROXY] Request params:', params);
+
+    if (!token) {
+      console.error('[BACKTEST-PROXY] No token provided in request');
+      return NextResponse.json(
+        { error: 'No authentication token provided' },
+        { status: 401 }
+      );
+    }
+
     const apiBase = process.env.SIGNALS_API_BASE || 'http://localhost:3001';
     const url = new URL(`${apiBase}/backtest/run`);
+
+    console.log('[BACKTEST-PROXY] External API URL:', apiBase);
+    console.log('[BACKTEST-PROXY] Full URL:', url.toString());
     
     // Add query parameters
     Object.entries(params).forEach(([key, value]) => {

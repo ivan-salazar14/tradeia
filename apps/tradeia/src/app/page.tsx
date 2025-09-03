@@ -11,13 +11,10 @@ export default function Home() {
   const { user, loading } = useAuth()
   const router = useRouter()
 
+  // Only redirect to dashboard if user is authenticated and tries to access root
   useEffect(() => {
-    if (!loading) {
-      if (user) {
-        router.push("/dashboard")
-      } else {
-        router.push("/login")
-      }
+    if (!loading && user) {
+      router.push("/dashboard")
     }
   }, [user, loading, router])
 

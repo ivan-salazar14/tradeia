@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase-singleton';
+console.log('[BACKTEST-PAGE] ===== IMPORTING SUPABASE SINGLETON =====');
 import { format } from 'date-fns';
 
 interface Strategy {
@@ -118,24 +119,45 @@ export default function BacktestPage({ params }: PageProps) {
 
   // Fetch available strategies when component mounts
   useEffect(() => {
+    console.log('[BACKTEST-PAGE] ===== COMPONENT MOUNT - FETCHING STRATEGIES =====');
+
     const fetchStrategies = async () => {
-      if (!supabase) {
-        setError('Supabase is not initialized');
+      console.log('[BACKTEST-PAGE] Getting Supabase client from singleton...');
+
+      const supabaseClient = getSupabaseClient();
+      if (!supabaseClient) {
+        console.error('[BACKTEST-PAGE] Failed to get Supabase client from singleton');
+        setError('Failed to initialize Supabase client');
         setLoading(false);
         return;
       }
-      
+
+      console.log('[BACKTEST-PAGE] Supabase client obtained, getting session...');
+
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+
+        console.log('[BACKTEST-PAGE] Session check result:');
+        console.log('[BACKTEST-PAGE] - Session error:', sessionError);
+        console.log('[BACKTEST-PAGE] - Session exists:', !!session);
+        console.log('[BACKTEST-PAGE] - Access token:', session?.access_token ? 'Present' : 'NULL');
+
+        if (sessionError) {
+          console.error('[BACKTEST-PAGE] Session error details:', sessionError);
+        }
+
         if (sessionError || !session) {
+          console.log('[BACKTEST-PAGE] No valid session found, redirecting to login');
           router.push('/login');
           return;
         }
+
+        console.log('[BACKTEST-PAGE] Session validated, proceeding with strategies fetch');
         
         const response = await fetch('/api/strategies', {
           headers: {
-            'Authorization': `Bearer ${session.access_token}`
+            'Authorization': `Bearer ${session.access_token}`,
+            'x-user-id': session.user?.id || ''
           }
         });
         
@@ -164,13 +186,20 @@ export default function BacktestPage({ params }: PageProps) {
     fetchStrategies();
   }, []);
   
-  // Check if Supabase is initialized when component mounts
+  // Check if Supabase client is available when component mounts
   useEffect(() => {
-    if (supabase) {
+    console.log('[BACKTEST-PAGE] ===== CHECKING SUPABASE CLIENT AVAILABILITY =====');
+
+    const supabaseClient = getSupabaseClient();
+    console.log('[BACKTEST-PAGE] Supabase client from singleton:', supabaseClient ? 'Available' : 'NULL');
+
+    if (supabaseClient) {
+      console.log('[BACKTEST-PAGE] Supabase client ready, setting state');
       setSupabaseReady(true);
       setLoading(false);
     } else {
-      setError('Error initializing Supabase. Please check your environment variables.');
+      console.error('[BACKTEST-PAGE] Supabase client not available from singleton');
+      setError('Error initializing Supabase client. Please check your environment variables.');
       setLoading(false);
     }
   }, []);
@@ -202,14 +231,28 @@ export default function BacktestPage({ params }: PageProps) {
     setError(null);
     
     try {
-      // We've already checked that supabase is ready, so we can safely use non-null assertion
-      const { data: sessionData } = await supabase!.auth.getSession();
+      // Get Supabase client from singleton
+      console.log('[BACKTEST-PAGE] Getting Supabase client for backtest...');
+      const supabaseClient = getSupabaseClient();
+
+      if (!supabaseClient) {
+        throw new Error('Supabase client not available');
+      }
+
+      console.log('[BACKTEST-PAGE] Getting session from Supabase client...');
+      const { data: sessionData } = await supabaseClient.auth.getSession();
       const token = sessionData.session?.access_token;
-      
+
+      console.log('[BACKTEST-PAGE] Session data:', sessionData.session ? 'Present' : 'NULL');
+      console.log('[BACKTEST-PAGE] Token:', token ? 'Present' : 'NULL/MISSING');
+
       if (!token) {
+        console.error('[BACKTEST-PAGE] No token found, redirecting to login');
         router.push('/login');
         return;
       }
+
+      console.log('[BACKTEST-PAGE] Token obtained successfully');
 
       // Format dates for the external API
       const startDate = new Date(formData.start_date);
@@ -243,12 +286,25 @@ export default function BacktestPage({ params }: PageProps) {
         })
       });
 
+      console.log('[BACKTEST-PAGE] API response status:', response.status);
+      console.log('[BACKTEST-PAGE] API response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('[BACKTEST-PAGE] API error response:', errorText);
+
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { error: errorText };
+        }
+
         throw new Error(errorData.error || 'Failed to run backtest');
       }
 
       const data = await response.json();
+      console.log('[BACKTEST-PAGE] API success response received');
       setResult(data);
     } catch (err) {
       console.error('Backtest error:', err);

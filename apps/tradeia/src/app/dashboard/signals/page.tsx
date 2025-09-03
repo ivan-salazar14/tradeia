@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase-singleton";
 
 type Signal = {
   id: string;
@@ -33,7 +33,14 @@ export default function SignalsPage() {
       setLoading(true);
       setError(null);
 
-      const { data: sessionData } = await supabase!.auth.getSession();
+      const supabaseClient = getSupabaseClient();
+      if (!supabaseClient) {
+        setError("Error al inicializar cliente de Supabase.");
+        setLoading(false);
+        return;
+      }
+
+      const { data: sessionData } = await supabaseClient.auth.getSession();
       const token = sessionData.session?.access_token;
       const meta = sessionData.session?.user?.user_metadata as any;
       const userActive: string[] = meta?.active_strategies || [];
@@ -80,11 +87,18 @@ export default function SignalsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await supabase!.auth.getSession();
+        const supabaseClient = getSupabaseClient();
+        if (!supabaseClient) return;
+
+        const { data } = await supabaseClient.auth.getSession();
         const token = data.session?.access_token;
         if (!token) return;
+
         const res = await fetch('/api/strategies', {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'x-user-id': data.session?.user?.id || ''
+          },
           cache: 'no-store',
         });
         if (!res.ok) return;

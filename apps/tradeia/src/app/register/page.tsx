@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("")
@@ -38,7 +39,7 @@ export default function RegisterPage() {
     }
     try {
       if (!supabase) {
-        setError("Supabase no está configurado correctamente en el cliente")
+        setError("Error de conexión. Por favor intenta de nuevo.")
         setIsLoading(false)
         return
       }
@@ -47,17 +48,26 @@ export default function RegisterPage() {
         password,
         options: { emailRedirectTo: `${window.location.origin}/login` }
       })
+
       if (signUpError) {
         setError(signUpError.message)
         setIsLoading(false)
         return
       }
-      setSuccess("Registro exitoso. Revisa tu email para verificar la cuenta.")
-      setTimeout(() => router.push("/login"), 3000)
-    } catch (err) {
-      setError("Error de conexión. Por favor intenta de nuevo.")
+
+      setSuccess("¡Registro exitoso! Por favor revisa tu correo para verificar tu cuenta.")
+      
+      // Redirect to login after 3 seconds
+      setTimeout(() => {
+        router.push('/login')
+      }, 3000)
+      
+    } catch (err: any) {
+      console.error('Registration error:', err)
+      setError(err.message || "Error al registrar la cuenta. Por favor intenta de nuevo.")
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   return (
@@ -65,52 +75,110 @@ export default function RegisterPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Crear Cuenta</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Regístrate para acceder a señales de trading exclusivas</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 py-8 px-6 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="tucorreo@ejemplo.com"
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Contraseña</label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Mínimo 8 caracteres"
-                required
-                disabled={isLoading}
-              />
-            </div>
-            {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">{error}</div>
-            )}
-            {success && (
-              <div className="p-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">{success}</div>
-            )}
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Registrando..." : "Registrarse"}
-            </Button>
-          </form>
-        </div>
-        <div className="text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            ¿Ya tienes cuenta?{' '}
-            <a href="/login" className="text-blue-600 hover:text-blue-500 dark:text-blue-400 font-medium">Inicia sesión aquí</a>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Regístrate para acceder a señales de trading exclusivas
           </p>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 py-8 px-6 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700">
+          {success ? (
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg
+                  className="h-6 w-6 text-green-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h2 className="mt-3 text-lg font-medium text-gray-900 dark:text-white">
+                ¡Registro exitoso!
+              </h2>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                {success}
+              </p>
+              <div className="mt-6">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Ir al inicio de sesión
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="tucorreo@ejemplo.com"
+                  required
+                  disabled={isLoading}
+                  className="mt-1 block w-full"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Contraseña
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  required
+                  minLength={8}
+                  disabled={isLoading}
+                  className="mt-1 block w-full"
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  {isLoading ? 'Registrando...' : 'Registrarse'}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              ¿Ya tienes una cuenta?{' '}
+              <Link
+                href="/login"
+                className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
+              >
+                Inicia sesión
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

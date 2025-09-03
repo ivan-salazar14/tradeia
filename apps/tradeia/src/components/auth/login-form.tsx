@@ -20,7 +20,7 @@ export function LoginForm() {
     setIsLoading(true)
     setError("")
 
-    // Validación de campos requeridos
+    // Validate required fields
     if (!email || !password) {
       setError("Email y contraseña son requeridos")
       setIsLoading(false)
@@ -37,22 +37,36 @@ export function LoginForm() {
 
     try {
       const supabase = getSupabaseClient()
+      if (!supabase) {
+        throw new Error('No se pudo inicializar el cliente de autenticación')
+      }
       
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      console.log('[LoginForm] Attempting to sign in with email:', email)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim(),
       })
 
       if (error) {
+        console.error('[LoginForm] Sign in error:', error)
         throw error
       }
 
-      // Force a page reload to ensure the session is properly set
-      window.location.href = redirectTo
+      console.log('[LoginForm] Sign in successful, session:', data.session ? 'valid' : 'invalid')
+      
+      if (data.session) {
+        // Small delay to ensure session is properly propagated
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Force a full page reload to ensure all auth state is properly set
+        console.log('[LoginForm] Redirecting to:', redirectTo)
+        window.location.href = redirectTo;
+      } else {
+        throw new Error('No se pudo iniciar sesión. Por favor, intente nuevamente.')
+      }
     } catch (error) {
-      console.error('Login error:', error)
+      console.error('[LoginForm] Login error:', error)
       setError(error instanceof Error ? error.message : 'Error al iniciar sesión')
-    } finally {
       setIsLoading(false)
     }
   }

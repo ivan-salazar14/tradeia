@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 
-// Rutas que requieren autenticación
+// Rutas que requieren autenticación (solo páginas, no APIs)
 const protectedRoutes = ['/dashboard', '/profile', '/signals', '/bot', '/performance']
 
 // Rutas públicas que no requieren autenticación
-const publicRoutes = ['/login', '/register', '/']
+const publicRoutes = [
+  '/login', 
+  '/register', 
+  '/', 
+  '/api/auth/callback', 
+  '/_next',
+  '/favicon.ico',
+  '/api/health'
+]
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -16,12 +24,22 @@ export async function middleware(request: NextRequest) {
     console.log('[Middleware] Pathname:', pathname)
   }
 
+  // Skip middleware entirely for API routes
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next()
+  }
+  
+  // Skip middleware for public routes
+  if (publicRoutes.some(route => pathname.startsWith(route))) {
+    return NextResponse.next()
+  }
+
   // Create response object
-  let response = NextResponse.next({
-    request: {
+  const response = NextResponse.next({
+    request:{
       headers: request.headers,
     },
-  })
+})
 
   // Create Supabase client with cookie handling
   const supabase = createServerClient(
@@ -32,58 +50,83 @@ export async function middleware(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value
         },
-        set(name: string, value: string, options: CookieOptions) {
+        set(name: string, value: string, options: any) {
           response.cookies.set({
             name,
             value,
             ...options,
-            sameSite: 'lax', // Important for cross-site requests
-            secure: process.env.NODE_ENV === 'production', // Secure in production
-            httpOnly: true, // Prevent XSS
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: true,
           })
         },
-        remove(name: string, options: CookieOptions) {
+        remove(name: string, options: any) {
           response.cookies.set({
             name,
             value: '',
             ...options,
-            maxAge: 0, // Immediately expire the cookie
+            maxAge: 0
           })
         },
       },
     }
   )
 
-  // Get the session
-  const { data: { session } } = await supabase.auth.getSession()
-  console.log('[Middleware] Session:', session ? 'Authenticated' : 'Not authenticated')
+  try {
+    // Check if the route is protected
+    const isProtectedRoute = protectedRoutes.some(route => {
+      // Check if the path matches the protected route exactly or starts with it
+      return pathname === route || pathname.startsWith(`${route}/`);
+    });
+    
+    if (isProtectedRoute) {
+      // Skip API routes from protected route checks as they handle their own auth
+      if (pathname.startsWith('/api/')) {
+        return response;
+      }
+      
+      // Get the session
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        console.error('[Middleware] Error getting session:', error)
+        // Instead of throwing, redirect to login with error
+        const url = new URL('/login', request.url)
+        url.searchParams.set('error', 'session_error')
+        return NextResponse.redirect(url)
+      }
+      
+      // If no session, redirect to login
+      if (!session) {
+        console.log('[Middleware] No session found, redirecting to login')
+        const url = new URL('/login', request.url)
+        // Only set redirectedFrom if it's not already a login redirect
+        if (!pathname.startsWith('/login')) {
+          url.searchParams.set('redirectedFrom', pathname)
+        }
+        return NextResponse.redirect(url)
+      }
+      
+      console.log('[Middleware] User is authenticated:', session.user?.email)
+      
+      // If user is authenticated but tries to access login, redirect to dashboard
+      if (pathname === '/login') {
+        console.log('[Middleware] User is already authenticated, redirecting to dashboard')
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+    }
 
-  // Handle protected routes
-  if (protectedRoutes.some(route => pathname.startsWith(route)) && !session) {
-    console.log('[Middleware] Redirecting to /login')
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirectedFrom', pathname)
-    return NextResponse.redirect(loginUrl)
+    return response
+  } catch (error) {
+    console.error('[Middleware] Error:', error)
+    // In case of error, allow the request to continue but log it
+    return response
   }
-
-  // Handle public routes for authenticated users
-  if (publicRoutes.includes(pathname) && session) {
-    console.log('[Middleware] Redirecting to /dashboard')
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  return response
 }
 
+// Skip all static files and webpack hot updates
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|css|js|json)$).*)',
   ],
 }

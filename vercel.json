@@ -24,11 +24,11 @@
     },
     {
       "src": "/app(?:/(.*))?",
-      "dest": "/apps/tradeia/app/$1"
+      "dest": "/apps/tradeia/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/apps/landing/$1"
+      "dest": "/apps/tradeia/$1"
     }
   ]
 }
