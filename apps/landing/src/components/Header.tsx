@@ -68,20 +68,20 @@ const Header = () => {
             ))}
             
             <div className="flex items-center ml-2 space-x-2">
-              <Link
-                to="/login"
+              <button
+                onClick={() => window.location.href = '/login'}
                 className="flex items-center px-4 py-2 text-sm font-medium text-primary-600 bg-white border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
               >
                 <LogIn size={16} className="mr-2" />
                 Iniciar Sesión
-              </Link>
-              <Link
-                to="/register"
+              </button>
+              <button
+                onClick={() => window.location.href = '/register'}
                 className="flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
               >
                 <User size={16} className="mr-2" />
                 Regístrate
-              </Link>
+              </button>
             </div>
           </nav>
 
@@ -123,20 +123,20 @@ const Header = () => {
             </Link>
           ))}
           <div className="pt-2 space-y-2">
-            <Link
-              to="/login"
+            <button
+              onClick={() => window.location.href = '/login'}
               className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-primary-600 bg-white border border-primary-200 rounded-lg hover:bg-primary-50"
             >
               <LogIn size={16} className="mr-2" />
               Iniciar Sesión
-            </Link>
-            <Link
-              to="/register"
+            </button>
+            <button
+              onClick={() => window.location.href = '/register'}
               className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
             >
               <User size={16} className="mr-2" />
               Regístrate
-            </Link>
+            </button>
           </div>
         </div>
       </div>
