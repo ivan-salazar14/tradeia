@@ -1,0 +1,27 @@
+{
+  "name": "Tradeia - Plataforma de Trading Cuantitativo",
+  "short_name": "Tradeia",
+  "description": "Automatiza tus estrategias de trading con Tradeia. Plataforma cuantitativa avanzada con estrategias probadas, backtesting y señales en tiempo real.",
+  "start_url": "https://tradeia.online.com",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1f2937",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "es-ES",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "/assets/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
