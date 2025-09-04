@@ -31,16 +31,16 @@ const About = () => {
 
   const teamMembers = [
     {
-      name: 'Carlos Rodríguez',
+      name: 'Ana Martínez',
       position: 'CEO & Fundador',
       bio: 'Más de 15 años de experiencia en mercados financieros y tecnología.',
       image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
     },
     {
-      name: 'Ana Martínez',
+      name: 'Ivan Salazar',
       position: 'Directora de Tecnología',
       bio: 'Experta en desarrollo de software y arquitectura de sistemas financieros.',
-      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
+      image: '../assets/1646873495552.jpg'
     },
     {
       name: 'David López',
@@ -59,7 +59,7 @@ const About = () => {
             Nuestra Historia
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Impulsando el futuro del trading cuantitativo
+            Impulsando el futuro del trading técnico usando estrategias cuantitativas avanzadas y tecnología de vanguardia.
           </p>
         </div>
 

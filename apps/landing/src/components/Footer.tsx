@@ -43,7 +43,7 @@ const Footer = () => {
   ];
 
   const socialLinks = [
-    { name: 'GitHub', icon: <Github size={20} />, url: 'https://github.com' },
+    { name: 'Youtube', icon: <Youtube size={20} />, url: 'https://youtube.com/tradeia.online' },
     { name: 'Twitter', icon: <Twitter size={20} />, url: 'https://twitter.com' },
     { name: 'LinkedIn', icon: <Linkedin size={20} />, url: 'https://linkedin.com' },
     { name: 'Email', icon: <Mail size={20} />, url: 'mailto:contact@tradingpro.com' }

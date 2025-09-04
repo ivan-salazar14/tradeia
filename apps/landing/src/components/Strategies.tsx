@@ -104,7 +104,7 @@ const Strategies = () => {
               </li>
             </ul>
 
-            <button className="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 rounded-lg font-semibold transition-colors">
+            <button  onClick={() => window.location.href = '/login'} className="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 rounded-lg font-semibold transition-colors">
               Comenzar Ahora
             </button>
           </div>
@@ -148,8 +148,8 @@ const Strategies = () => {
               </li>
             </ul>
 
-            <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold transition-colors">
-              Ver Detalles
+            <button  onClick={() => window.location.href = '/login'} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold transition-colors">
+              Comenzar Ahora
             </button>
           </div>
         </div>
@@ -197,7 +197,7 @@ const Strategies = () => {
                 </div>
               </div>
 
-              <button className="bg-white text-teal-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+              <button  onClick={() => window.location.href = '/login'} className="bg-white text-teal-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
                 Aprender Más
               </button>
             </div>

@@ -74,7 +74,7 @@ const Services = () => {
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
             Únete a nuestra plataforma y lleva tu trading al siguiente nivel con estrategias probadas y tecnología de vanguardia.
           </p>
-          <button className="bg-white text-teal-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors transform hover:scale-105">
+          <button onClick={() => window.location.href = '/register'}  className="bg-white text-teal-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors transform hover:scale-105">
             Abrir Cuenta
           </button>
         </div>

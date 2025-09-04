@@ -47,10 +47,10 @@ const About: React.FC = () => {
                 image: 'https://randomuser.me/api/portraits/women/44.jpg'
               },
               {
-                name: 'Carlos Rodríguez',
+                name: 'Ivan Salazar',
                 role: 'Director de Tecnología',
                 bio: 'Ingeniero de software especializado en algoritmos de trading y análisis de datos.',
-                image: 'https://randomuser.me/api/portraits/men/32.jpg'
+                image: '../assets/1646873495552.jpg'
               },
               {
                 name: 'Ana Martínez',

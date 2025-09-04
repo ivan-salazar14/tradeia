@@ -28,19 +28,19 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Correo Electrónico',
-      details: ['soporte@tradingplatform.com', 'ventas@tradingplatform.com'],
+      details: ['tradeia.online@gmail.com', 'strategytradeia.gmail.com'],
       color: 'bg-blue-500'
     },
     {
       icon: Phone,
       title: 'Teléfono',
-      details: ['+1 (555) 123-4567', 'Lunes a Viernes: 9:00 AM - 6:00 PM (EST)'],
+      details: ['+57 (555) 123-4567', 'Lunes a Viernes: 9:00 AM - 6:00 PM (Bogotá)'],
       color: 'bg-green-500'
     },
     {
       icon: MapPin,
-      title: 'Oficinas',
-      details: ['123 Calle Principal', 'Ciudad de México, 11520', 'México'],
+      title: 'Edificio torre 1 oficina 203',
+      details: ['avenida 5 Principal', 'Cali , 11520', 'Colombia'],
       color: 'bg-purple-500'
     }
   ];

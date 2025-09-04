@@ -30,12 +30,12 @@ const Hero = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-12">
-            <button className="group bg-teal-500 hover:bg-teal-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 transform hover:scale-105 flex items-center space-x-3">
+            <button  onClick={() => window.location.href = '/register'}  className="group bg-teal-500 hover:bg-teal-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 transform hover:scale-105 flex items-center space-x-3">
               <span>Comenzar Ahora</span>
               <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
             </button>
             
-            <button className="group border-2 border-white text-white hover:bg-white hover:text-gray-900 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 flex items-center space-x-3">
+            <button onClick={() => window.location.href = '/login'}  className="group border-2 border-white text-white hover:bg-white hover:text-gray-900 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 flex items-center space-x-3">
               <Play size={20} className="group-hover:scale-110 transition-transform" />
               <span>Ver Demo</span>
             </button>
