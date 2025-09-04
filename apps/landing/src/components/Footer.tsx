@@ -1,4 +1,4 @@
-import { Github, Twitter, Linkedin, Mail, MessageCircle, Code, Zap, Shield, BarChart2, Users, LifeBuoy } from 'lucide-react';
+import { Github, Twitter,Youtube, Linkedin, Mail, MessageCircle, Code, Zap, Shield, BarChart2, Users, LifeBuoy, Instagram } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -44,9 +44,8 @@ const Footer = () => {
 
   const socialLinks = [
     { name: 'Youtube', icon: <Youtube size={20} />, url: 'https://youtube.com/tradeia.online' },
-    { name: 'Twitter', icon: <Twitter size={20} />, url: 'https://twitter.com' },
-    { name: 'LinkedIn', icon: <Linkedin size={20} />, url: 'https://linkedin.com' },
-    { name: 'Email', icon: <Mail size={20} />, url: 'mailto:contact@tradingpro.com' }
+    { name: 'Instagram', icon: <Instagram size={20} />, url: 'https://instagram.com/tradeia.online' },
+    { name: 'Email', icon: <Mail size={20} />, url: 'mailto:tradeia.online@gmail.com' }
   ];
 
   return (
