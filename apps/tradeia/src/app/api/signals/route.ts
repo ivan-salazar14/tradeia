@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
   const symbol = (searchParams.get('symbol') || '').toUpperCase();
   const timeframe = (searchParams.get('timeframe') || '4h').toLowerCase();
   const strategyIdParam = searchParams.get('strategy_id')?.trim() || '';
+  const startDate = searchParams.get('start_date');
+  const endDate = searchParams.get('end_date');
   const limit = searchParams.get('limit');
   const offset = searchParams.get('offset');
 
@@ -44,6 +46,8 @@ export async function GET(req: NextRequest) {
   const qs = new URLSearchParams();
   if (symbol) qs.set('symbol', symbol);
   qs.set('timeframe', timeframe);
+  if (startDate) qs.set('start_date', startDate);
+  if (endDate) qs.set('end_date', endDate);
   if (limit) qs.set('limit', limit);
   if (offset) qs.set('offset', offset);
 
@@ -90,7 +94,14 @@ export async function GET(req: NextRequest) {
 
     const data = await resp.json();
 
-    const normalizeOne = (p: any): UnifiedSignal => normalizeExampleProvider(p);
+    const normalizeOne = (p: any): UnifiedSignal => {
+      const signal = normalizeExampleProvider(p);
+      // Ensure strategyId is included in the normalized signal
+      if (p.strategy_id) {
+        signal.strategyId = p.strategy_id;
+      }
+      return signal;
+    };
 
     // Unwrap common container shapes from upstream
     const pickArray = (d: any): any[] | null => {
