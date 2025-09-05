@@ -103,7 +103,8 @@ const Pricing: React.FC = () => {
             <div className="text-center">
               <h3 className="text-2xl font-semibold text-gray-800">Especialistas</h3>
               <div className="mt-4">
-                <span className="text-4xl font-bold">Soporte Personalizado 24/7</span>
+                <span className="text-4xl font-bold">$5</span>
+                 <span className="text-gray-600">/mes</span>
               </div>
               <p className="mt-2 text-gray-600">Acceso a herramientas y capacitaciones para crear estrategias Profesionales</p>
             </div>
@@ -140,7 +141,7 @@ const Pricing: React.FC = () => {
               </li>
             </ul>
             <div className="mt-auto">
-              <button  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition duration-300">
+              <button  className="w-full bg-yellow-200 hover:bg-yellow-300 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
                 Contáctanos
               </button>
             </div>
