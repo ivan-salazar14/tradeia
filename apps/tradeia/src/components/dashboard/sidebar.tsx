@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 const menu = [
   { label: "Panel de Control", path: "/dashboard", icon: "dashboard" },
   { label: "Señales", path: "/dashboard/signals", icon: "signals" },
+  { label: "Estrategias", path: "/dashboard/strategies", icon: "strategies" },
   { label: "Análisis", path: "/dashboard/analysis", icon: "analysis" },
   { label: "Backtesting", path: "/dashboard/backtest", icon: "backtest" },
   { label: "Cartera", path: "/dashboard/portfolio", icon: "portfolio" },
@@ -35,6 +36,11 @@ const icons: Record<string, React.ReactElement> = {
   backtest: (
     <svg xmlns="http://www.w3.org/2000/svg" className="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m6 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  strategies: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
     </svg>
   ),
 };

@@ -521,65 +521,74 @@ export default function BacktestPage({ params }: PageProps) {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-medium">Trades ({processedTrades.length})</h2>
-                    <div className="flex items-center space-x-4">
-                      <select 
-                        value={filters.direction || ''}
-                        onChange={(e) => setFilters({...filters, direction: e.target.value as 'BUY' | 'SELL' || undefined})}
-                        className="px-2 py-1 border rounded text-sm"
-                      >
-                        <option value="">All Directions</option>
-                        <option value="BUY">Buy</option>
-                        <option value="SELL">Sell</option>
-                      </select>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div>
+                        <select 
+                          value={filters.direction || ''}
+                          onChange={(e) => setFilters({...filters, direction: e.target.value as 'BUY' | 'SELL' || undefined})}
+                          className="w-full sm:w-auto px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        >
+                          <option value="">All Directions</option>
+                          <option value="BUY">Buy</option>
+                          <option value="SELL">Sell</option>
+                        </select>
+                      </div>
                       
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="number"
-                          placeholder="Min P/L %"
-                          value={filters.minProfit ?? ''}
-                          onChange={(e) => setFilters({...filters, minProfit: e.target.value ? Number(e.target.value) : undefined})}
-                          className="w-20 px-2 py-1 border rounded text-sm"
-                        />
-                        <span>to</span>
-                        <input
-                          type="number"
-                          placeholder="Max P/L %"
-                          value={filters.maxProfit ?? ''}
-                          onChange={(e) => setFilters({...filters, maxProfit: e.target.value ? Number(e.target.value) : undefined})}
-                          className="w-20 px-2 py-1 border rounded text-sm"
-                        />
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <input
+                            type="number"
+                            placeholder="Min %"
+                            value={filters.minProfit ?? ''}
+                            onChange={(e) => setFilters({...filters, minProfit: e.target.value ? Number(e.target.value) : undefined})}
+                            className="w-full sm:w-20 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                          />
+                          <span className="text-sm whitespace-nowrap">to</span>
+                        </div>
+                        <div className="w-full sm:w-auto">
+                          <input
+                            type="number"
+                            placeholder="Max %"
+                            value={filters.maxProfit ?? ''}
+                            onChange={(e) => setFilters({...filters, maxProfit: e.target.value ? Number(e.target.value) : undefined})}
+                            className="w-full sm:w-20 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                   
                   {processedTrades.length > tradesPerPage && (
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-1 border rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        Page {currentPage} of {Math.ceil(processedTrades.length / tradesPerPage)}
-                      </span>
-                      <button
-                        onClick={() => setCurrentPage(p => Math.min(p + 1, Math.ceil(processedTrades.length / tradesPerPage)))}
-                        disabled={currentPage >= Math.ceil(processedTrades.length / tradesPerPage)}
-                        className="px-3 py-1 border rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-2">
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        Showing {Math.min((currentPage - 1) * tradesPerPage + 1, processedTrades.length)} to {Math.min(currentPage * tradesPerPage, processedTrades.length)} of {processedTrades.length} results
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                          Previous
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(p + 1, Math.ceil(processedTrades.length / tradesPerPage)))}
+                          disabled={currentPage >= Math.ceil(processedTrades.length / tradesPerPage)}
+                          className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                          Next
+                        </button>
+                      </div>
+                  </div>
+                  {processedTrades.length > 0 && (
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                      <div className="inline-block min-w-full align-middle">
+                        <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr className="cursor-pointer">
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Entry Time
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+{{ ... }}
                         </th>
                         <th 
                           scope="col" 
@@ -637,7 +646,7 @@ export default function BacktestPage({ params }: PageProps) {
                             )}
                           </div>
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
                           Balance
                         </th>
                       </tr>
@@ -650,10 +659,10 @@ export default function BacktestPage({ params }: PageProps) {
                         )
                         .map((trade, index) => (
                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 break-words max-w-[150px] sm:max-w-none">
                             {new Date(trade.entry_time).toLocaleString()}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-3 whitespace-nowrap">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                               trade.direction === 'BUY' 
                                 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
@@ -668,7 +677,7 @@ export default function BacktestPage({ params }: PageProps) {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             {trade.exit_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                           </td>
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                          <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${
                             trade.profit_pct >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                           }`}>
                             {trade.profit_pct >= 0 ? '+' : ''}{trade.profit_pct.toFixed(2)}%
@@ -679,11 +688,15 @@ export default function BacktestPage({ params }: PageProps) {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
