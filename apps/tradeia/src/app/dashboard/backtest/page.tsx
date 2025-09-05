@@ -48,7 +48,7 @@ export default function BacktestPage({ params }: PageProps) {
   }, [params]);
 
   const [formData, setFormData] = useState({
-    symbol: 'BTC/USDT',
+    symbol: '',
     timeframe: '4h',
     start_date: format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
     end_date: format(new Date(), 'yyyy-MM-dd'),
@@ -262,15 +262,19 @@ export default function BacktestPage({ params }: PageProps) {
       const formatDate = (date: Date) => date.toISOString().split('.')[0] + 'Z';
       
       // Construct the URL with query parameters as per Postman collection
-      const params = new URLSearchParams({
-        symbol: formData.symbol,
+      const params: Record<string, string> = {
         timeframe: formData.timeframe,
         start_date: formatDate(startDate),
         end_date: formatDate(endDate),
         strategy: formData.strategy,
         initial_balance: formData.initial_balance,
         risk_per_trade: formData.risk_per_trade
-      });
+      };
+      
+      // Only include symbol if provided
+      if (formData.symbol) {
+        params.symbol = formData.symbol;
+      }
 
       // Use our proxy endpoint to avoid CORS issues
       const response = await fetch('/api/backtest/proxy', {
@@ -334,8 +338,8 @@ export default function BacktestPage({ params }: PageProps) {
                   name="symbol"
                   value={formData.symbol}
                   onChange={handleChange}
+                  placeholder="Leave empty for all symbols"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  required
                 />
               </div>
 
