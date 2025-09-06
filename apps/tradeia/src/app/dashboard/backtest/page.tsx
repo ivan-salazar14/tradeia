@@ -276,6 +276,11 @@ export default function BacktestPage({ params }: PageProps) {
         params.symbol = formData.symbol;
       }
 
+      const requestBody: Omit<typeof formData, 'symbol'> & { symbol?: string } = { ...formData };
+      if (!requestBody.symbol) {
+        delete requestBody.symbol;
+      }
+
       // Use our proxy endpoint to avoid CORS issues
       const response = await fetch('/api/backtest/proxy', {
         method: 'POST',
@@ -284,9 +289,9 @@ export default function BacktestPage({ params }: PageProps) {
         },
         body: JSON.stringify({
           token,
-          ...formData,
+          ...requestBody,
           start_date: formatDate(startDate),
-          end_date: formatDate(endDate)
+          end_date: formatDate(endDate),
         })
       });
 
@@ -321,7 +326,6 @@ export default function BacktestPage({ params }: PageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Backtesting</h1>
-      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Backtest Form */}
         <div className="lg:col-span-1">
@@ -521,165 +525,189 @@ export default function BacktestPage({ params }: PageProps) {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-medium">Trades ({processedTrades.length})</h2>
-                    <div className="flex items-center space-x-4">
-                      <select 
-                        value={filters.direction || ''}
-                        onChange={(e) => setFilters({...filters, direction: e.target.value as 'BUY' | 'SELL' || undefined})}
-                        className="px-2 py-1 border rounded text-sm"
-                      >
-                        <option value="">All Directions</option>
-                        <option value="BUY">Buy</option>
-                        <option value="SELL">Sell</option>
-                      </select>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div>
+                        <select 
+                          value={filters.direction || ''}
+                          onChange={(e) => setFilters({...filters, direction: e.target.value as 'BUY' | 'SELL' || undefined})}
+                          className="w-full sm:w-auto px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        >
+                          <option value="">All Directions</option>
+                          <option value="BUY">Buy</option>
+                          <option value="SELL">Sell</option>
+                        </select>
+                      </div>
                       
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="number"
-                          placeholder="Min P/L %"
-                          value={filters.minProfit ?? ''}
-                          onChange={(e) => setFilters({...filters, minProfit: e.target.value ? Number(e.target.value) : undefined})}
-                          className="w-20 px-2 py-1 border rounded text-sm"
-                        />
-                        <span>to</span>
-                        <input
-                          type="number"
-                          placeholder="Max P/L %"
-                          value={filters.maxProfit ?? ''}
-                          onChange={(e) => setFilters({...filters, maxProfit: e.target.value ? Number(e.target.value) : undefined})}
-                          className="w-20 px-2 py-1 border rounded text-sm"
-                        />
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <input
+                            type="number"
+                            placeholder="Min %"
+                            value={filters.minProfit ?? ''}
+                            onChange={(e) => setFilters({...filters, minProfit: e.target.value ? Number(e.target.value) : undefined})}
+                            className="w-full sm:w-20 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                          />
+                          <span className="text-sm whitespace-nowrap">to</span>
+                        </div>
+                        <div className="w-full sm:w-auto">
+                          <input
+                            type="number"
+                            placeholder="Max %"
+                            value={filters.maxProfit ?? ''}
+                            onChange={(e) => setFilters({...filters, maxProfit: e.target.value ? Number(e.target.value) : undefined})}
+                            className="w-full sm:w-20 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                  
                   {processedTrades.length > tradesPerPage && (
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-1 border rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        Page {currentPage} of {Math.ceil(processedTrades.length / tradesPerPage)}
-                      </span>
-                      <button
-                        onClick={() => setCurrentPage(p => Math.min(p + 1, Math.ceil(processedTrades.length / tradesPerPage)))}
-                        disabled={currentPage >= Math.ceil(processedTrades.length / tradesPerPage)}
-                        className="px-3 py-1 border rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-2">
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        Showing {Math.min((currentPage - 1) * tradesPerPage + 1, processedTrades.length)} to {Math.min(currentPage * tradesPerPage, processedTrades.length)} of {processedTrades.length} results
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                          Previous
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(p + 1, Math.ceil(processedTrades.length / tradesPerPage)))}
+                          disabled={currentPage >= Math.ceil(processedTrades.length / tradesPerPage)}
+                          className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                          Next
+                        </button>
+                      </div>
                     </div>
                   )}
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr className="cursor-pointer">
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Entry Time
-                        </th>
-                        <th 
-                          scope="col" 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                          onClick={() => handleSort('direction')}
-                        >
-                          <div className="flex items-center">
-                            Direction
-                            {sortConfig.key === 'direction' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
-                        </th>
-                        <th 
-                          scope="col" 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                          onClick={() => handleSort('entry_price')}
-                        >
-                          <div className="flex items-center">
-                            Entry Price
-                            {sortConfig.key === 'entry_price' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
-                        </th>
-                        <th 
-                          scope="col" 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                          onClick={() => handleSort('exit_price')}
-                        >
-                          <div className="flex items-center">
-                            Exit Price
-                            {sortConfig.key === 'exit_price' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
-                        </th>
-                        <th 
-                          scope="col" 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                          onClick={() => handleSort('profit_pct')}
-                        >
-                          <div className="flex items-center">
-                            P/L (%)
-                            {sortConfig.key === 'profit_pct' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Balance
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {processedTrades
-                        .slice(
-                          (currentPage - 1) * tradesPerPage,
-                          currentPage * tradesPerPage
-                        )
-                        .map((trade, index) => (
-                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                            {new Date(trade.entry_time).toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              trade.direction === 'BUY' 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            }`}>
-                              {trade.direction}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                            {trade.entry_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                            {trade.exit_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                          </td>
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                            trade.profit_pct >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                          }`}>
-                            {trade.profit_pct >= 0 ? '+' : ''}{trade.profit_pct.toFixed(2)}%
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                            ${trade.balance_after.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {processedTrades.length > 0 && (
+                    <div className="overflow-x-auto -mx-4 sm:mx-0 mt-4">
+                      <div className="inline-block min-w-full align-middle">
+                        <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-gray-50 dark:bg-gray-700">
+                              <tr className="cursor-pointer">
+                                <th 
+                                  scope="col" 
+                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap"
+                                  onClick={() => handleSort('entry_time')}
+                                >
+                                  <div className="flex items-center">
+                                    Entry Time
+                                    {sortConfig.key === 'entry_time' && (
+                                      <span className="ml-1">
+                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </th>
+                                <th 
+                                  scope="col" 
+                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  onClick={() => handleSort('direction')}
+                                >
+                                  <div className="flex items-center">
+                                    Direction
+                                    {sortConfig.key === 'direction' && (
+                                      <span className="ml-1">
+                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </th>
+                                <th 
+                                  scope="col" 
+                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  onClick={() => handleSort('entry_price')}
+                                >
+                                  <div className="flex items-center">
+                                    Entry Price
+                                    {sortConfig.key === 'entry_price' && (
+                                      <span className="ml-1">
+                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </th>
+                                <th 
+                                  scope="col" 
+                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  onClick={() => handleSort('exit_price')}
+                                >
+                                  <div className="flex items-center">
+                                    Exit Price
+                                    {sortConfig.key === 'exit_price' && (
+                                      <span className="ml-1">
+                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </th>
+                                <th 
+                                  scope="col" 
+                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  onClick={() => handleSort('profit_pct')}
+                                >
+                                  <div className="flex items-center">
+                                    P/L (%)
+                                    {sortConfig.key === 'profit_pct' && (
+                                      <span className="ml-1">
+                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </th>
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                                Balance After
+                                </th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                  {processedTrades
+                                    .slice(
+                                      (currentPage - 1) * tradesPerPage,
+                                      currentPage * tradesPerPage
+                                    )
+                                    .map((trade, index) => (
+                                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 break-words max-w-[150px] sm:max-w-none">
+                                          {new Date(trade.entry_time).toLocaleString()}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                            trade.direction === 'BUY'
+                                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                          }`}>
+                                            {trade.direction}
+                                          </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                          {trade.entry_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                          {trade.exit_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        </td>
+                                        <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${
+                                          trade.profit_pct >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                                        }`}>
+                                          {trade.profit_pct >= 0 ? '+' : ''}{trade.profit_pct.toFixed(2)}%
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                          ${trade.balance_after.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -687,5 +715,5 @@ export default function BacktestPage({ params }: PageProps) {
         </div>
       </div>
     </div>
-  );
-}
+  )
+} 

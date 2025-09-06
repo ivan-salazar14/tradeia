@@ -106,5 +106,14 @@
     "created": "2026-06-23",
     "updated": "2026-06-23",
     "notes": "Conectar la UI a los endpoints y mostrar datos reales en cada vista."
+  },
+  {
+    "id": "US-021",
+    "title": "Gestión de Estrategias de Trading",
+    "file": ".planr/stories/US-021.md",
+    "status": "done",
+    "created": "2025-01-27",
+    "updated": "2025-01-27",
+    "notes": "✅ COMPLETADO: Sistema completo de gestión de estrategias con vistas para crear, editar, ver detalles, activar/desactivar estrategias. APIs implementadas para CRUD completo. Integración con Supabase y autenticación. UI moderna con preview en tiempo real y métricas de performance."
   }
 ]
