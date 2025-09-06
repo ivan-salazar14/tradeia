@@ -276,6 +276,11 @@ export default function BacktestPage({ params }: PageProps) {
         params.symbol = formData.symbol;
       }
 
+      const requestBody: Omit<typeof formData, 'symbol'> & { symbol?: string } = { ...formData };
+      if (!requestBody.symbol) {
+        delete requestBody.symbol;
+      }
+
       // Use our proxy endpoint to avoid CORS issues
       const response = await fetch('/api/backtest/proxy', {
         method: 'POST',
@@ -284,9 +289,9 @@ export default function BacktestPage({ params }: PageProps) {
         },
         body: JSON.stringify({
           token,
-          ...formData,
+          ...requestBody,
           start_date: formatDate(startDate),
-          end_date: formatDate(endDate)
+          end_date: formatDate(endDate),
         })
       });
 
@@ -558,6 +563,7 @@ export default function BacktestPage({ params }: PageProps) {
                     </div>
                   </div>
                   
+                  </div>
                   {processedTrades.length > tradesPerPage && (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-2">
                       <div className="text-sm text-gray-600 dark:text-gray-300">
@@ -579,79 +585,91 @@ export default function BacktestPage({ params }: PageProps) {
                           Next
                         </button>
                       </div>
-                  </div>
+                    </div>
+                  )}
                   {processedTrades.length > 0 && (
-                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="overflow-x-auto -mx-4 sm:mx-0 mt-4">
                       <div className="inline-block min-w-full align-middle">
                         <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
                           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr className="cursor-pointer">
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-{{ ... }}
-                        </th>
-                        <th 
-                          scope="col" 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                          onClick={() => handleSort('direction')}
-                        >
-                          <div className="flex items-center">
-                            Direction
-                            {sortConfig.key === 'direction' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
-                        </th>
-                        <th 
-                          scope="col" 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                          onClick={() => handleSort('entry_price')}
-                        >
-                          <div className="flex items-center">
-                            Entry Price
-                            {sortConfig.key === 'entry_price' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
-                        </th>
-                        <th 
-                          scope="col" 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                          onClick={() => handleSort('exit_price')}
-                        >
-                          <div className="flex items-center">
-                            Exit Price
-                            {sortConfig.key === 'exit_price' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
-                        </th>
-                        <th 
-                          scope="col" 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                          onClick={() => handleSort('profit_pct')}
-                        >
-                          <div className="flex items-center">
-                            P/L (%)
-                            {sortConfig.key === 'profit_pct' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                          Balance
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-gray-50 dark:bg-gray-700">
+                              <tr className="cursor-pointer">
+                                <th 
+                                  scope="col" 
+                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap"
+                                  onClick={() => handleSort('entry_time')}
+                                >
+                                  <div className="flex items-center">
+                                    Entry Time
+                                    {sortConfig.key === 'entry_time' && (
+                                      <span className="ml-1">
+                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </th>
+                                <th 
+                                  scope="col" 
+                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  onClick={() => handleSort('direction')}
+                                >
+                                  <div className="flex items-center">
+                                    Direction
+                                    {sortConfig.key === 'direction' && (
+                                      <span className="ml-1">
+                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </th>
+                                <th 
+                                  scope="col" 
+                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  onClick={() => handleSort('entry_price')}
+                                >
+                                  <div className="flex items-center">
+                                    Entry Price
+                                    {sortConfig.key === 'entry_price' && (
+                                      <span className="ml-1">
+                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </th>
+                                <th 
+                                  scope="col" 
+                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  onClick={() => handleSort('exit_price')}
+                                >
+                                  <div className="flex items-center">
+                                    Exit Price
+                                    {sortConfig.key === 'exit_price' && (
+                                      <span className="ml-1">
+                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </th>
+                                <th 
+                                  scope="col" 
+                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  onClick={() => handleSort('profit_pct')}
+                                >
+                                  <div className="flex items-center">
+                                    P/L (%)
+                                    {sortConfig.key === 'profit_pct' && (
+                                      <span className="ml-1">
+                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </th>
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                                  Balance
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {processedTrades
                         .slice(
                           (currentPage - 1) * tradesPerPage,
@@ -688,7 +706,7 @@ export default function BacktestPage({ params }: PageProps) {
                         </tr>
                       ))}
                     </tbody>
-                          </table>
+                    </table>
                         </div>
                       </div>
                     </div>
@@ -699,6 +717,5 @@ export default function BacktestPage({ params }: PageProps) {
           </div>
         </div>
       </div>
-    </div>
   );
 }
