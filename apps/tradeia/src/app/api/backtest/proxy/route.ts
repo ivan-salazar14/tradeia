@@ -18,6 +18,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate required parameters
+    const requiredParams = ['symbol', 'timeframe', 'start_date', 'end_date', 'strategy'];
+    const missingParams = requiredParams.filter(param => !params[param] || params[param] === '');
+
+    if (missingParams.length > 0) {
+      return NextResponse.json(
+        { error: `Missing or empty required parameters: ${missingParams.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
     const apiBase = process.env.SIGNALS_API_BASE || 'http://localhost:3001';
     const url = new URL(`${apiBase}/backtest/run`);
 
