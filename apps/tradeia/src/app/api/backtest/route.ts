@@ -9,7 +9,7 @@ type BacktestParams = {
   timeframe: string;
   start_date: string;
   end_date: string;
-  strategy: string;
+  strategy_id: string;
   initial_balance: string;
   risk_per_trade: string;
 };
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     console.log('[BACKTEST] Request params:', params);
 
     // Validate required parameters
-    const requiredParams = ['symbol', 'timeframe', 'start_date', 'end_date', 'strategy'];
+    const requiredParams = ['symbol', 'timeframe', 'start_date', 'end_date', 'strategy_id'];
     const missingParams = requiredParams.filter(param => !params[param as keyof BacktestParams]);
 
     if (missingParams.length > 0) {

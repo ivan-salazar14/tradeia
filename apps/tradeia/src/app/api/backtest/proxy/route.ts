@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     // Validate required parameters
-    const requiredParams = ['symbol', 'timeframe', 'start_date', 'end_date', 'strategy'];
+    const requiredParams = ['symbol', 'timeframe', 'start_date', 'end_date', 'strategy_id'];
     const missingParams = requiredParams.filter(param => !params[param] || params[param] === '');
 
     if (missingParams.length > 0) {
