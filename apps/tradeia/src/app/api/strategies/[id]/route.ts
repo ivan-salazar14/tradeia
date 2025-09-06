@@ -4,11 +4,12 @@ import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
-    const strategyId = context.params.id;
+    const params = await context.params;
+    const strategyId = params.id;
     
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -115,11 +116,12 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
-    const strategyId = context.params.id;
+    const params = await context.params;
+    const strategyId = params.id;
     
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -212,11 +214,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
-    const strategyId = context.params.id;
+    const params = await context.params;
+    const strategyId = params.id;
     
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
