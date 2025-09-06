@@ -326,7 +326,6 @@ export default function BacktestPage({ params }: PageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Backtesting</h1>
-      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Backtest Form */}
         <div className="lg:col-span-1">
@@ -562,8 +561,6 @@ export default function BacktestPage({ params }: PageProps) {
                       </div>
                     </div>
                   </div>
-                  
-                  </div>
                   {processedTrades.length > tradesPerPage && (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-2">
                       <div className="text-sm text-gray-600 dark:text-gray-300">
@@ -665,57 +662,58 @@ export default function BacktestPage({ params }: PageProps) {
                                   </div>
                                 </th>
                                 <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                                  Balance
+                                Balance After
                                 </th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {processedTrades
-                        .slice(
-                          (currentPage - 1) * tradesPerPage,
-                          currentPage * tradesPerPage
-                        )
-                        .map((trade, index) => (
-                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 break-words max-w-[150px] sm:max-w-none">
-                            {new Date(trade.entry_time).toLocaleString()}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              trade.direction === 'BUY' 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            }`}>
-                              {trade.direction}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                            {trade.entry_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                            {trade.exit_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                          </td>
-                          <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${
-                            trade.profit_pct >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                          }`}>
-                            {trade.profit_pct >= 0 ? '+' : ''}{trade.profit_pct.toFixed(2)}%
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                            ${trade.balance_after.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    </table>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                  {processedTrades
+                                    .slice(
+                                      (currentPage - 1) * tradesPerPage,
+                                      currentPage * tradesPerPage
+                                    )
+                                    .map((trade, index) => (
+                                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 break-words max-w-[150px] sm:max-w-none">
+                                          {new Date(trade.entry_time).toLocaleString()}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                            trade.direction === 'BUY'
+                                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                          }`}>
+                                            {trade.direction}
+                                          </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                          {trade.entry_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                          {trade.exit_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        </td>
+                                        <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${
+                                          trade.profit_pct >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                                        }`}>
+                                          {trade.profit_pct >= 0 ? '+' : ''}{trade.profit_pct.toFixed(2)}%
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                          ${trade.balance_after.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
-  );
-}
+    </div>
+  )
+} 
