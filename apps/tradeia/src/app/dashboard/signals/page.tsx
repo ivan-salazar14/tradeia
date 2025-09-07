@@ -33,6 +33,11 @@ export default function SignalsPage() {
     end: format(new Date(), 'yyyy-MM-dd')
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [signalsPerPage, setSignalsPerPage] = useState(25);
+  const signalsPerPageOptions = [10, 25, 50, 100];
+
   const fetchSignals = useMemo(() => async () => {
     try {
       setLoading(true);
@@ -123,6 +128,27 @@ export default function SignalsPage() {
     return new Map(strategyOptions.map(s => [s.id, s.name]));
   }, [strategyOptions]);
 
+  // Pagination calculations
+  const totalPages = Math.ceil(signals.length / signalsPerPage);
+  const startIndex = (currentPage - 1) * signalsPerPage;
+  const endIndex = startIndex + signalsPerPage;
+  const currentSignals = signals.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [timeframe, symbol, selectedStrategies, dateRange]);
+
+  // Handle page changes
+  const handlePageChange = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const handleSignalsPerPageChange = (newPerPage: number) => {
+    setSignalsPerPage(newPerPage);
+    setCurrentPage(1); // Reset to first page
+  };
+
   return (
     <div className="p-6">
       <p className="text-gray-600 mb-6">
@@ -209,23 +235,85 @@ export default function SignalsPage() {
         {error && <div className="text-red-600">{error}</div>}
 
         {!loading && !error && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timeframe</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estrategia</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dirección</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entrada</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TP1</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TP2</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SL</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
-                </tr>
-              </thead>
+          <div className="space-y-4">
+            {/* Table Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600">
+                  Mostrando {signals.length > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, signals.length)} de {signals.length} señales
+                </span>
+                <select
+                  value={signalsPerPage}
+                  onChange={(e) => handleSignalsPerPageChange(Number(e.target.value))}
+                  className="border rounded px-2 py-1 text-sm"
+                >
+                  {signalsPerPageOptions.map(option => (
+                    <option key={option} value={option}>{option} por página</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Anterior
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                      if (pageNum > totalPages) return null;
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3 py-1 border rounded text-sm ${
+                            currentPage === pageNum
+                              ? 'bg-indigo-600 text-white border-indigo-600'
+                              : 'border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Signals Table with Scrolling */}
+            <div className="overflow-x-auto overflow-y-auto max-h-96 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+              <table className="min-w-full divide-y divide-gray-200 text-xs md:text-sm">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timeframe</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estrategia</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dirección</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entrada</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TP1</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TP2</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SL</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                  </tr>
+                </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {signals.length === 0 && (
                   <tr>
@@ -234,52 +322,53 @@ export default function SignalsPage() {
                     </td>
                   </tr>
                 )}
-                {signals.map((s) => {
+                {currentSignals.map((s) => {
                   const strategyName = s.strategyId ? strategyMap.get(s.strategyId) || s.strategyId : '-';
                   return (
-                    <tr key={s.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {s.timestamp ? new Date(s.timestamp).toLocaleString() : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap font-medium">{s.symbol}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{s.timeframe}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {strategyName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          s.type?.toLowerCase() === 'buy' 
-                            ? 'bg-green-100 text-green-700' 
-                            : s.type?.toLowerCase() === 'sell' 
-                              ? 'bg-red-100 text-red-700' 
-                              : 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        {s.type ? s.type.toUpperCase() : '-'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{s.direction}</td>
-                    <td className="px-6 py-4 whitespace-nowrap font-mono">
-                      {s.entry ? s.entry.toLocaleString(undefined, { maximumFractionDigits: 8 }) : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap font-mono">
-                      {s.tp1 ? s.tp1.toLocaleString(undefined, { maximumFractionDigits: 8 }) : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap font-mono">
-                      {s.tp2 ? s.tp2.toLocaleString(undefined, { maximumFractionDigits: 8 }) : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap font-mono">
-                      {s.stopLoss ? s.stopLoss.toLocaleString(undefined, { maximumFractionDigits: 8 }) : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {s.source?.provider || '-'}
-                    </td>
-                    </tr>
+                      <tr key={s.id} className="hover:bg-gray-50">
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm">
+                          {s.timestamp ? new Date(s.timestamp).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-medium text-sm">{s.symbol}</td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm">{s.timeframe}</td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm text-gray-500">
+                          {strategyName}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                          <span
+                            className={`px-1 md:px-2 py-0.5 rounded-full text-xs font-semibold ${
+                              s.type?.toLowerCase() === 'buy'
+                                ? 'bg-green-100 text-green-700'
+                                : s.type?.toLowerCase() === 'sell'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {s.type ? s.type.toUpperCase() : '-'}
+                          </span>
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm">{s.direction}</td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-mono text-sm">
+                          {s.entry ? s.entry.toLocaleString(undefined, { maximumFractionDigits: 8 }) : '-'}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-mono text-sm">
+                          {s.tp1 ? s.tp1.toLocaleString(undefined, { maximumFractionDigits: 8 }) : '-'}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-mono text-sm">
+                          {s.tp2 ? s.tp2.toLocaleString(undefined, { maximumFractionDigits: 8 }) : '-'}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-mono text-sm">
+                          {s.stopLoss ? s.stopLoss.toLocaleString(undefined, { maximumFractionDigits: 8 }) : '-'}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm text-gray-500">
+                          {s.source?.provider || '-'}
+                        </td>
+                      </tr>
                   );
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
