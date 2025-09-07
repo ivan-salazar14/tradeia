@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
     const authHeader = request.headers.get('authorization');
-
+      
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
       strategies: mockStrategies,
       current_strategy: null
     });
-
+  }
   } catch (error) {
     console.error('Error in strategies API:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
