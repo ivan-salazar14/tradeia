@@ -374,13 +374,13 @@ export default function BacktestPage({ params }: PageProps) {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Backtesting</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="container mx-auto px-4 py-4 md:py-8 max-w-full overflow-x-hidden">
+      <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Backtesting</h1>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8">
         {/* Backtest Form */}
-        <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Backtest Parameters</h2>
+        <div className="xl:col-span-1 order-2 xl:order-1">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-semibold mb-4">Backtest Parameters</h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -417,7 +417,7 @@ export default function BacktestPage({ params }: PageProps) {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Start Date
@@ -427,7 +427,7 @@ export default function BacktestPage({ params }: PageProps) {
                     name="start_date"
                     value={formData.start_date}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
                     required
                   />
                 </div>
@@ -440,7 +440,7 @@ export default function BacktestPage({ params }: PageProps) {
                     name="end_date"
                     value={formData.end_date}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
                     required
                   />
                 </div>
@@ -526,29 +526,29 @@ export default function BacktestPage({ params }: PageProps) {
         </div>
 
         {/* Results */}
-        <div className="lg:col-span-2">
+        <div className="xl:col-span-2 order-1 xl:order-2">
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 mb-6">
+            <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-3 md:p-4 mb-4 md:mb-6">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-4 w-4 md:h-5 md:w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+                  <p className="text-xs md:text-sm text-red-700 dark:text-red-300">{error}</p>
                 </div>
               </div>
             </div>
           )}
 
           {loading && (
-            <div className="flex flex-col justify-center items-center py-12 space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              <div className="text-center">
-                <p className="text-lg font-medium text-gray-700 dark:text-gray-300">{loadingMessage}</p>
+            <div className="flex flex-col justify-center items-center py-8 md:py-12 space-y-4">
+              <div className="animate-spin rounded-full h-10 w-10 md:h-12 md:w-12 border-t-2 border-b-2 border-blue-500"></div>
+              <div className="text-center px-4">
+                <p className="text-base md:text-lg font-medium text-gray-700 dark:text-gray-300">{loadingMessage}</p>
                 {isLongRunning && (
-                  <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
+                  <p className="text-xs md:text-sm text-amber-600 dark:text-amber-400 mt-2 max-w-md">
                     This is taking longer than expected. The backtest service may be processing a large dataset...
                   </p>
                 )}
@@ -574,15 +574,15 @@ export default function BacktestPage({ params }: PageProps) {
               </div>
               {/* Fallback Warning */}
               {result._fallback && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4">
+                <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-3 md:p-4">
                   <div className="flex">
                     <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="h-4 w-4 md:h-5 md:w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <p className="text-sm text-amber-700 dark:text-amber-300">
+                      <p className="text-xs md:text-sm text-amber-700 dark:text-amber-300">
                         <strong>Sample Data:</strong> {result._message || 'The backtest service is currently unavailable. Showing sample results for demonstration purposes.'}
                       </p>
                     </div>
@@ -591,26 +591,26 @@ export default function BacktestPage({ params }: PageProps) {
               )}
 
               {/* Summary Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold mb-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-6">
+                <h2 className="text-lg md:text-xl font-semibold mb-4">
                   Backtest Results {result._fallback && '(Sample Data)'}
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Initial Balance</p>
-                    <p className="text-2xl font-semibold">${(result.initial_balance || 0).toLocaleString()}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 md:p-4 rounded-lg">
+                    <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Initial Balance</p>
+                    <p className="text-xl md:text-2xl font-semibold">${(result.initial_balance || 0).toLocaleString()}</p>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Final Balance</p>
-                    <p className={`text-2xl font-semibold ${
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 md:p-4 rounded-lg">
+                    <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Final Balance</p>
+                    <p className={`text-xl md:text-2xl font-semibold ${
                       (result.final_balance || 0) >= (result.initial_balance || 0) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                     }`}>
                       ${(result.final_balance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                     </p>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Return</p>
-                    <p className={`text-2xl font-semibold ${
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 md:p-4 rounded-lg sm:col-span-2 lg:col-span-1">
+                    <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">Total Return</p>
+                    <p className={`text-xl md:text-2xl font-semibold ${
                       (result.total_return_pct || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                     }`}>
                       {(result.total_return_pct || 0) >= 0 ? '+' : ''}{(result.total_return_pct || 0).toFixed(2)}%
@@ -621,23 +621,23 @@ export default function BacktestPage({ params }: PageProps) {
 
               {/* Trades Table */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex justify-between items-center mb-4">
+                <div className="px-4 md:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 gap-4">
                     <h2 className="text-lg font-medium">Trades ({processedTrades.length})</h2>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <div>
-                        <select 
+                    <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                      <div className="w-full sm:w-auto">
+                        <select
                           value={filters.direction || ''}
                           onChange={(e) => setFilters({...filters, direction: e.target.value as 'BUY' | 'SELL' || undefined})}
-                          className="w-full sm:w-auto px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                          className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                         >
                           <option value="">All Directions</option>
                           <option value="BUY">Buy</option>
                           <option value="SELL">Sell</option>
                         </select>
                       </div>
-                      
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                           <input
                             type="number"
@@ -646,7 +646,8 @@ export default function BacktestPage({ params }: PageProps) {
                             onChange={(e) => setFilters({...filters, minProfit: e.target.value ? Number(e.target.value) : undefined})}
                             className="w-full sm:w-20 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                           />
-                          <span className="text-sm whitespace-nowrap">to</span>
+                          <span className="text-sm whitespace-nowrap hidden sm:inline">to</span>
+                          <span className="text-sm whitespace-nowrap sm:hidden">→</span>
                         </div>
                         <div className="w-full sm:w-auto">
                           <input
@@ -662,21 +663,21 @@ export default function BacktestPage({ params }: PageProps) {
                   </div>
                   {processedTrades.length > tradesPerPage && (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-2">
-                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                      <div className="text-xs md:text-sm text-gray-600 dark:text-gray-300 text-center sm:text-left">
                         Showing {Math.min((currentPage - 1) * tradesPerPage + 1, processedTrades.length)} to {Math.min(currentPage * tradesPerPage, processedTrades.length)} of {processedTrades.length} results
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                           disabled={currentPage === 1}
-                          className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                          className="px-2 md:px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           Previous
                         </button>
                         <button
                           onClick={() => setCurrentPage(p => Math.min(p + 1, Math.ceil(processedTrades.length / tradesPerPage)))}
                           disabled={currentPage >= Math.ceil(processedTrades.length / tradesPerPage)}
-                          className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                          className="px-2 md:px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           Next
                         </button>
@@ -684,19 +685,20 @@ export default function BacktestPage({ params }: PageProps) {
                     </div>
                   )}
                   {processedTrades.length > 0 && (
-                    <div className="overflow-x-auto -mx-4 sm:mx-0 mt-4">
+                    <div className="overflow-x-auto -mx-2 md:-mx-4 sm:mx-0 mt-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                       <div className="inline-block min-w-full align-middle">
                         <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs md:text-sm">
                             <thead className="bg-gray-50 dark:bg-gray-700">
                               <tr className="cursor-pointer">
                                 <th
                                   scope="col"
-                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap"
+                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap"
                                   onClick={() => handleSort('symbol')}
                                 >
                                   <div className="flex items-center">
-                                    Symbol
+                                    <span className="hidden sm:inline">Symbol</span>
+                                    <span className="sm:hidden">Sym</span>
                                     {sortConfig.key === 'symbol' && (
                                       <span className="ml-1">
                                         {sortConfig.direction === 'asc' ? '↑' : '↓'}
@@ -706,11 +708,12 @@ export default function BacktestPage({ params }: PageProps) {
                                 </th>
                                 <th
                                   scope="col"
-                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap"
+                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap"
                                   onClick={() => handleSort('entry_time')}
                                 >
                                   <div className="flex items-center">
-                                    Entry Time
+                                    <span className="hidden sm:inline">Entry Time</span>
+                                    <span className="sm:hidden">Entry</span>
                                     {sortConfig.key === 'entry_time' && (
                                       <span className="ml-1">
                                         {sortConfig.direction === 'asc' ? '↑' : '↓'}
@@ -720,11 +723,12 @@ export default function BacktestPage({ params }: PageProps) {
                                 </th>
                                 <th
                                   scope="col"
-                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
                                   onClick={() => handleSort('direction')}
                                 >
                                   <div className="flex items-center">
-                                    Direction
+                                    <span className="hidden sm:inline">Direction</span>
+                                    <span className="sm:hidden">Dir</span>
                                     {sortConfig.key === 'direction' && (
                                       <span className="ml-1">
                                         {sortConfig.direction === 'asc' ? '↑' : '↓'}
@@ -734,11 +738,12 @@ export default function BacktestPage({ params }: PageProps) {
                                 </th>
                                 <th
                                   scope="col"
-                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
                                   onClick={() => handleSort('entry_price')}
                                 >
                                   <div className="flex items-center">
-                                    Entry Price
+                                    <span className="hidden sm:inline">Entry Price</span>
+                                    <span className="sm:hidden">Entry $</span>
                                     {sortConfig.key === 'entry_price' && (
                                       <span className="ml-1">
                                         {sortConfig.direction === 'asc' ? '↑' : '↓'}
@@ -748,11 +753,12 @@ export default function BacktestPage({ params }: PageProps) {
                                 </th>
                                 <th
                                   scope="col"
-                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
                                   onClick={() => handleSort('exit_price')}
                                 >
                                   <div className="flex items-center">
-                                    Exit Price
+                                    <span className="hidden sm:inline">Exit Price</span>
+                                    <span className="sm:hidden">Exit $</span>
                                     {sortConfig.key === 'exit_price' && (
                                       <span className="ml-1">
                                         {sortConfig.direction === 'asc' ? '↑' : '↓'}
@@ -762,11 +768,12 @@ export default function BacktestPage({ params }: PageProps) {
                                 </th>
                                 <th
                                   scope="col"
-                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
                                   onClick={() => handleSort('profit_pct')}
                                 >
                                   <div className="flex items-center">
-                                    P/L (%)
+                                    <span className="hidden sm:inline">P/L (%)</span>
+                                    <span className="sm:hidden">P/L</span>
                                     {sortConfig.key === 'profit_pct' && (
                                       <span className="ml-1">
                                         {sortConfig.direction === 'asc' ? '↑' : '↓'}
@@ -774,11 +781,12 @@ export default function BacktestPage({ params }: PageProps) {
                                     )}
                                   </div>
                                 </th>
-                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                                Balance After
+                                <th scope="col" className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                                  <span className="hidden sm:inline">Balance After</span>
+                                  <span className="sm:hidden">Balance</span>
                                 </th>
-                                </tr>
-                                </thead>
+                              </tr>
+                            </thead>
                                 <tbody>
                                   {processedTrades
                                     .slice(
@@ -787,14 +795,14 @@ export default function BacktestPage({ params }: PageProps) {
                                     )
                                     .map((trade, index) => (
                                       <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900 dark:text-gray-100">
                                           {trade.symbol || 'N/A'}
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 break-words max-w-[150px] sm:max-w-none">
-                                          {trade.entry_time ? new Date(trade.entry_time).toLocaleString() : 'N/A'}
+                                        <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 dark:text-gray-100 break-words max-w-[100px] md:max-w-[150px] sm:max-w-none">
+                                          {trade.entry_time ? new Date(trade.entry_time).toLocaleDateString() : 'N/A'}
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                        <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                                          <span className={`px-1 md:px-2 inline-flex text-xs leading-4 md:leading-5 font-semibold rounded-full ${
                                             trade.direction === 'BUY'
                                               ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                               : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
@@ -802,18 +810,18 @@ export default function BacktestPage({ params }: PageProps) {
                                             {trade.direction || 'N/A'}
                                           </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                          {(trade.entry_price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
+                                          ${(trade.entry_price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                          {(trade.exit_price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
+                                          ${(trade.exit_price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                         </td>
-                                        <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${
+                                        <td className={`px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm font-medium ${
                                           (trade.profit_pct || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                                         }`}>
                                           {(trade.profit_pct || 0) >= 0 ? '+' : ''}{(trade.profit_pct || 0).toFixed(2)}%
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
                                           ${(trade.balance_after || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                         </td>
                                       </tr>
