@@ -263,9 +263,12 @@ export default function BacktestPage({ params }: PageProps) {
       
       // Construct the request body with correct parameter names
       const requestBody = {
+      // Construct the request body with correct parameter names
+      const requestBody = {
         timeframe: formData.timeframe,
         start_date: formatDate(startDate),
         end_date: formatDate(endDate),
+        strategy_id: formData.strategy,
         strategy_id: formData.strategy,
         initial_balance: formData.initial_balance,
         risk_per_trade: formData.risk_per_trade,
