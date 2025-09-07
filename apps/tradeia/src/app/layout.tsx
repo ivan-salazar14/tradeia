@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
-
+import { SpeedInsights } from "@vercel/speed-insights/next"
 console.log('📜 Iniciando layout principal')
 
 export const metadata: Metadata = {
@@ -21,6 +21,7 @@ export default function RootLayout({
       <body className="bg-secondary text-textdark font-inter">
         <AuthProvider>
           {children}
+           <SpeedInsights />
         </AuthProvider>
       </body>
     </html>

@@ -261,25 +261,17 @@ export default function BacktestPage({ params }: PageProps) {
       // Convert dates to ISO string and remove milliseconds
       const formatDate = (date: Date) => date.toISOString().split('.')[0] + 'Z';
       
-      // Construct the URL with query parameters as per Postman collection
-      const params: Record<string, string> = {
+      // Construct the request body with correct parameter names
+      const requestBody = {
         timeframe: formData.timeframe,
         start_date: formatDate(startDate),
         end_date: formatDate(endDate),
-        strategy: formData.strategy,
+        strategy_id: formData.strategy,
         initial_balance: formData.initial_balance,
-        risk_per_trade: formData.risk_per_trade
+        risk_per_trade: formData.risk_per_trade,
+        symbol: formData.symbol || '' // Include symbol even if empty
       };
       
-      // Only include symbol if provided
-      if (formData.symbol) {
-        params.symbol = formData.symbol;
-      }
-
-      const requestBody: Omit<typeof formData, 'symbol'> & { symbol?: string } = { ...formData };
-      if (!requestBody.symbol) {
-        delete requestBody.symbol;
-      }
 
       // Use our proxy endpoint to avoid CORS issues
       const response = await fetch('/api/backtest/proxy', {
