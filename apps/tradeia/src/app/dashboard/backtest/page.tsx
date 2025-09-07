@@ -12,6 +12,7 @@ interface Strategy {
 }
 
 interface Trade {
+  symbol?: string;
   entry_time: string;
   entry_price: number;
   stop_loss: number;
@@ -66,7 +67,7 @@ export default function BacktestPage({ params }: PageProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [tradesPerPage] = useState(10); // Number of trades per page
   const [sortConfig, setSortConfig] = useState<{ key: keyof Trade; direction: 'asc' | 'desc' }>({
-    key: 'entry_time',
+    key: 'entry_time' as keyof Trade,
     direction: 'desc'
   });
   const [filters, setFilters] = useState<{
@@ -99,7 +100,7 @@ export default function BacktestPage({ params }: PageProps) {
   // Handle sorting
   const handleSort = (key: keyof Trade) => {
     setSortConfig(prev => ({
-      key,
+      key: key as keyof Trade,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
   };
@@ -125,10 +126,18 @@ export default function BacktestPage({ params }: PageProps) {
     
     // Apply sorting
     return processedTrades.sort((a, b) => {
-      if (a[sortConfig.key] < b[sortConfig.key]) {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      // Handle undefined/null values
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (bValue == null) return sortConfig.direction === 'asc' ? 1 : -1;
+
+      if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1;
       }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
+      if (aValue > bValue) {
         return sortConfig.direction === 'asc' ? 1 : -1;
       }
       return 0;
@@ -338,6 +347,8 @@ export default function BacktestPage({ params }: PageProps) {
 
       const data = await response.json();
       console.log('[BACKTEST-PAGE] API success response received');
+      console.log('[BACKTEST-PAGE] Response data structure:', Object.keys(data));
+      console.log('[BACKTEST-PAGE] Response data:', JSON.stringify(data, null, 2));
 
       // Check if this is fallback data
       if (data._fallback) {
@@ -345,7 +356,13 @@ export default function BacktestPage({ params }: PageProps) {
         setError(`Warning: ${data._message || 'Using sample data due to service unavailability'}`);
       }
 
+      console.log('[BACKTEST-PAGE] Setting result data...');
+      console.log('[BACKTEST-PAGE] initial_balance:', data.initial_balance);
+      console.log('[BACKTEST-PAGE] final_balance:', data.final_balance);
+      console.log('[BACKTEST-PAGE] trades:', data.trades ? data.trades.length : 'undefined');
+
       setResult(data);
+      console.log('[BACKTEST-PAGE] Result state set successfully');
     } catch (err) {
       console.error('Backtest error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred while running the backtest');
@@ -539,8 +556,22 @@ export default function BacktestPage({ params }: PageProps) {
             </div>
           )}
 
-          {result && result.initial_balance !== undefined && (
+          {(() => {
+            console.log('[BACKTEST-PAGE] Render check - result exists:', !!result);
+            console.log('[BACKTEST-PAGE] Render check - result.initial_balance:', result?.initial_balance);
+            console.log('[BACKTEST-PAGE] Render check - result has trades:', result?.trades ? result.trades.length : 'no trades');
+            const hasValidData = result && (result.initial_balance !== undefined || (result.trades && result.trades.length > 0));
+            console.log('[BACKTEST-PAGE] Render check - condition met:', hasValidData);
+            return hasValidData;
+          })() && result && (
             <div className="space-y-6">
+              {/* Debug Info - Remove this after debugging */}
+              <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Debug Info (Remove after fixing)</h3>
+                <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-auto max-h-32">
+                  {JSON.stringify(result, null, 2)}
+                </pre>
+              </div>
               {/* Fallback Warning */}
               {result._fallback && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4">
@@ -662,6 +693,20 @@ export default function BacktestPage({ params }: PageProps) {
                                 <th
                                   scope="col"
                                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap"
+                                  onClick={() => handleSort('symbol')}
+                                >
+                                  <div className="flex items-center">
+                                    Symbol
+                                    {sortConfig.key === 'symbol' && (
+                                      <span className="ml-1">
+                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </th>
+                                <th
+                                  scope="col"
+                                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap"
                                   onClick={() => handleSort('entry_time')}
                                 >
                                   <div className="flex items-center">
@@ -742,6 +787,9 @@ export default function BacktestPage({ params }: PageProps) {
                                     )
                                     .map((trade, index) => (
                                       <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                                          {trade.symbol || 'N/A'}
+                                        </td>
                                         <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 break-words max-w-[150px] sm:max-w-none">
                                           {trade.entry_time ? new Date(trade.entry_time).toLocaleString() : 'N/A'}
                                         </td>

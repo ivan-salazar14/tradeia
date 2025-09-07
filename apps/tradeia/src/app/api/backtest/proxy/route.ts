@@ -82,6 +82,10 @@ export async function POST(request: Request) {
       if (response.ok) {
         console.log('[BACKTEST-PROXY] External API call successful');
         const data = await response.json();
+        console.log('[BACKTEST-PROXY] External API response data:', JSON.stringify(data, null, 2));
+        console.log('[BACKTEST-PROXY] External API response keys:', Object.keys(data));
+        console.log('[BACKTEST-PROXY] External API response has initial_balance:', data.hasOwnProperty('initial_balance'));
+        console.log('[BACKTEST-PROXY] External API response has trades:', data.hasOwnProperty('trades'));
         return NextResponse.json(data);
       } else {
         const errorText = await response.text();
@@ -114,6 +118,7 @@ export async function POST(request: Request) {
     const mockResult = {
       trades: [
         {
+          symbol: 'BTC/USDT',
           entry_time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
           entry_price: 50000,
           stop_loss: 49000,
@@ -128,6 +133,7 @@ export async function POST(request: Request) {
           balance_after: 101500
         },
         {
+          symbol: 'ETH/USDT',
           entry_time: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
           entry_price: 51500,
           stop_loss: 50500,
