@@ -5,35 +5,79 @@ import { cookies } from 'next/headers';
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-        },
-      }
-    );
+    const authHeader = request.headers.get('authorization');
 
-    // Verificar la sesión
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    let supabase;
+    let session;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Header-based authentication
+      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+      supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll();
+            },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+                );
+              } catch {
+                // The `setAll` method was called from a Server Component.
+                // This can be ignored if you have middleware refreshing
+                // user sessions.
+              }
+            },
+          },
+        }
+      );
+
+      // Set the session manually with the token
+      const { data, error } = await supabase.auth.getUser(token);
+      if (error || !data.user) {
+        return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+      }
+
+      // Create a mock session object
+      session = { user: data.user, access_token: token };
+    } else {
+      // Cookie-based authentication (original method)
+      supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll();
+            },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+                );
+              } catch {
+                // The `setAll` method was called from a Server Component.
+                // This can be ignored if you have middleware refreshing
+                // user sessions.
+              }
+            },
+          },
+        }
+      );
+
+      // Verificar la sesión
+      const { data: { session: cookieSession }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !cookieSession) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      }
+
+      session = cookieSession;
     }
 
     // Obtener todas las estrategias disponibles
@@ -73,35 +117,79 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-        },
-      }
-    );
+    const authHeader = request.headers.get('authorization');
 
-    // Verificar la sesión
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    let supabase;
+    let session;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Header-based authentication
+      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+      supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll();
+            },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+                );
+              } catch {
+                // The `setAll` method was called from a Server Component.
+                // This can be ignored if you have middleware refreshing
+                // user sessions.
+              }
+            },
+          },
+        }
+      );
+
+      // Set the session manually with the token
+      const { data, error } = await supabase.auth.getUser(token);
+      if (error || !data.user) {
+        return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+      }
+
+      // Create a mock session object
+      session = { user: data.user, access_token: token };
+    } else {
+      // Cookie-based authentication (original method)
+      supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll();
+            },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+                );
+              } catch {
+                // The `setAll` method was called from a Server Component.
+                // This can be ignored if you have middleware refreshing
+                // user sessions.
+              }
+            },
+          },
+        }
+      );
+
+      // Verificar la sesión
+      const { data: { session: cookieSession }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !cookieSession) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      }
+
+      session = cookieSession;
     }
 
     const body = await request.json();

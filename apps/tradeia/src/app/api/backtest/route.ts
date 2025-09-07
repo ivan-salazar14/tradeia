@@ -80,8 +80,8 @@ export async function POST(request: Request) {
     const params: BacktestParams = await request.json();
     console.log('[BACKTEST] Request params:', params);
 
-    // Validate required parameters
-    const requiredParams = ['symbol', 'timeframe', 'start_date', 'end_date', 'strategy_id'];
+    // Validate required parameters (symbol can be empty for all symbols)
+    const requiredParams = ['timeframe', 'start_date', 'end_date', 'strategy_id'];
     const missingParams = requiredParams.filter(param => !params[param as keyof BacktestParams]);
 
     if (missingParams.length > 0) {
