@@ -9,6 +9,8 @@ import { format } from 'date-fns';
 interface Strategy {
   id: string;
   name: string;
+  description?: string;
+  created_at?: string;
 }
 
 interface Trade {
@@ -517,26 +519,135 @@ export default function BacktestPage({ params }: PageProps) {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Strategy
                 </label>
-                <select
-                  name="strategy"
-                  value={formData.strategy}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  required
-                  disabled={loading || strategies.length === 0}
-                >
-                  {loading ? (
-                    <option value="">Loading strategies...</option>
-                  ) : strategies.length > 0 ? (
-                    strategies.map((strategy) => (
-                      <option key={strategy.id} value={strategy.id}>
-                        {strategy.name}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="">No strategies available</option>
+                <div className="relative">
+                  <select
+                    name="strategy"
+                    value={formData.strategy}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white appearance-none bg-no-repeat bg-right bg-[length:1rem] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzM4NSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+')] dark:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzlDQTNBRiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+')]"
+                    required
+                    disabled={loading || strategies.length === 0}
+                  >
+                    {loading ? (
+                      <option value="">Loading strategies...</option>
+                    ) : strategies.length > 0 ? (
+                      strategies.map((strategy) => (
+                        <option key={strategy.id} value={strategy.id}>
+                          {strategy.name}
+                          {strategy.description && ` - ${strategy.description.slice(0, 50)}${strategy.description.length > 50 ? '...' : ''}`}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">No strategies available</option>
+                    )}
+                  </select>
+
+                  {/* Strategy count indicator */}
+                  {strategies.length > 0 && (
+                    <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                      {strategies.length}
+                    </div>
                   )}
-                </select>
+
+                  {/* Mobile-friendly info */}
+                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 md:hidden">
+                    {formData.strategy && strategies.find(s => s.id === formData.strategy) && (
+                      <div className="flex items-center justify-between">
+                        <span>
+                          Selected: {strategies.find(s => s.id === formData.strategy)?.name}
+                        </span>
+                        <span className="text-blue-500">
+                          {strategies.length} available
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mobile strategies preview */}
+                  {strategies.length > 0 && (
+                    <div className="mt-2 md:hidden">
+                      <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Quick Select ({strategies.length} strategies)
+                      </div>
+                      <div className="max-h-24 overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                        {strategies.slice(0, 5).map((strategy) => (
+                          <button
+                            key={strategy.id}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, strategy: strategy.id }))}
+                            className={`w-full text-left p-2 rounded text-xs transition-colors ${
+                              formData.strategy === strategy.id
+                                ? 'bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-600'
+                                : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            <div className="font-medium truncate">{strategy.name}</div>
+                            {strategy.description && (
+                              <div className="text-gray-600 dark:text-gray-400 truncate text-xs">
+                                {strategy.description}
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                        {strategies.length > 5 && (
+                          <div className="text-center text-xs text-gray-500 dark:text-gray-400 py-1">
+                            +{strategies.length - 5} more strategies available
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Strategy preview for larger screens */}
+                {formData.strategy && strategies.find(s => s.id === formData.strategy) && (
+                  <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md hidden md:block">
+                    <div className="text-xs text-gray-600 dark:text-gray-300">
+                      <strong>{strategies.find(s => s.id === formData.strategy)?.name}</strong>
+                      {strategies.find(s => s.id === formData.strategy)?.description && (
+                        <div className="mt-1 text-gray-500 dark:text-gray-400">
+                          {strategies.find(s => s.id === formData.strategy)?.description}
+                        </div>
+                      )}
+                      {strategies.find(s => s.id === formData.strategy)?.created_at && (
+                        <div className="mt-1 text-gray-400 dark:text-gray-500">
+                          Created: {new Date(strategies.find(s => s.id === formData.strategy)?.created_at || '').toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Strategies Overview - Responsive Grid */}
+                {strategies.length > 0 && (
+                  <div className="mt-3 hidden lg:block">
+                    <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Available Strategies ({strategies.length})
+                    </div>
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                      {strategies.map((strategy) => (
+                        <div
+                          key={strategy.id}
+                          onClick={() => setFormData(prev => ({ ...prev, strategy: strategy.id }))}
+                          className={`p-2 rounded-md cursor-pointer transition-colors text-xs ${
+                            formData.strategy === strategy.id
+                              ? 'bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-600'
+                              : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          <div className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {strategy.name}
+                          </div>
+                          {strategy.description && (
+                            <div className="text-gray-600 dark:text-gray-400 truncate text-xs mt-1">
+                              {strategy.description}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>

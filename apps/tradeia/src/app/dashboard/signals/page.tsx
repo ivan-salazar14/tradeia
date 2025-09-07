@@ -327,7 +327,7 @@ export default function SignalsPage() {
                   return (
                       <tr key={s.id} className="hover:bg-gray-50">
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm">
-                          {s.timestamp ? new Date(s.timestamp).toLocaleDateString() : '-'}
+                          {s.timestamp ? new Date(s.timestamp).toLocaleString() : '-'}
                         </td>
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-medium text-sm">{s.symbol}</td>
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm">{s.timeframe}</td>
