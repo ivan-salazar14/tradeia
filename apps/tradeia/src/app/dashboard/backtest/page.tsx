@@ -32,6 +32,8 @@ interface BacktestResult {
   final_balance: number;
   total_return: number;
   total_return_pct: number;
+  _fallback?: boolean;
+  _message?: string;
 }
 
 interface PageProps {
@@ -63,9 +65,9 @@ export default function BacktestPage({ params }: PageProps) {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [tradesPerPage] = useState(10); // Number of trades per page
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Trade; direction: 'asc' | 'desc' }>({ 
-    key: 'entry_time', 
-    direction: 'desc' 
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Trade; direction: 'asc' | 'desc' }>({
+    key: 'entry_time',
+    direction: 'desc'
   });
   const [filters, setFilters] = useState<{
     direction?: 'BUY' | 'SELL';
@@ -73,6 +75,26 @@ export default function BacktestPage({ params }: PageProps) {
     maxProfit?: number;
   }>({});
   const [result, setResult] = useState<BacktestResult | null>(null);
+  const [loadingMessage, setLoadingMessage] = useState<string>('Initializing...');
+  const [isLongRunning, setIsLongRunning] = useState(false);
+
+  // Show warning for long-running requests
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (loading) {
+      timeoutId = setTimeout(() => {
+        setIsLongRunning(true);
+      }, 10000); // Show warning after 10 seconds
+    } else {
+      setIsLongRunning(false);
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [loading]);
   
   // Handle sorting
   const handleSort = (key: keyof Trade) => {
@@ -221,14 +243,16 @@ export default function BacktestPage({ params }: PageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!supabaseReady) {
       setError('Supabase is not ready. Please try again later.');
       return;
     }
-    
+
     setLoading(true);
     setError(null);
+    setLoadingMessage('Preparing backtest request...');
+    setIsLongRunning(false);
     
     try {
       // Get Supabase client from singleton
@@ -257,10 +281,15 @@ export default function BacktestPage({ params }: PageProps) {
       // Format dates for the external API
       const startDate = new Date(formData.start_date);
       const endDate = new Date(formData.end_date);
-      
-      // Convert dates to ISO string and remove milliseconds
-      const formatDate = (date: Date) => date.toISOString().split('.')[0] + 'Z';
-      
+
+      // Convert dates to format matching curl example: "2024-01-01T00:00:00"
+      const formatDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}T00:00:00`;
+      };
+
       // Construct the request body with correct parameter names
       const requestBody = {
         timeframe: formData.timeframe,
@@ -271,7 +300,8 @@ export default function BacktestPage({ params }: PageProps) {
         risk_per_trade: formData.risk_per_trade,
         symbol: formData.symbol || '' // Include symbol even if empty
       };
-      
+
+      setLoadingMessage('Sending request to backtest service...');
 
       // Use our proxy endpoint to avoid CORS issues
       const response = await fetch('/api/backtest/proxy', {
@@ -304,14 +334,25 @@ export default function BacktestPage({ params }: PageProps) {
         throw new Error(errorData.error || 'Failed to run backtest');
       }
 
+      setLoadingMessage('Processing backtest results...');
+
       const data = await response.json();
       console.log('[BACKTEST-PAGE] API success response received');
+
+      // Check if this is fallback data
+      if (data._fallback) {
+        console.warn('[BACKTEST-PAGE] Received fallback data:', data._message);
+        setError(`Warning: ${data._message || 'Using sample data due to service unavailability'}`);
+      }
+
       setResult(data);
     } catch (err) {
       console.error('Backtest error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred while running the backtest');
     } finally {
       setLoading(false);
+      setLoadingMessage('Initializing...');
+      setIsLongRunning(false);
     }
   };
 
@@ -454,7 +495,14 @@ export default function BacktestPage({ params }: PageProps) {
                   loading ? 'opacity-70 cursor-not-allowed' : ''
                 }`}
               >
-                {loading ? 'Running Backtest...' : 'Run Backtest'}
+                {loading ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                    <span>Running Backtest...</span>
+                  </div>
+                ) : (
+                  'Run Backtest'
+                )}
               </button>
             </form>
           </div>
@@ -478,16 +526,44 @@ export default function BacktestPage({ params }: PageProps) {
           )}
 
           {loading && (
-            <div className="flex justify-center items-center py-12">
+            <div className="flex flex-col justify-center items-center py-12 space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              <div className="text-center">
+                <p className="text-lg font-medium text-gray-700 dark:text-gray-300">{loadingMessage}</p>
+                {isLongRunning && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
+                    This is taking longer than expected. The backtest service may be processing a large dataset...
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
           {result && result.initial_balance !== undefined && (
             <div className="space-y-6">
+              {/* Fallback Warning */}
+              {result._fallback && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-amber-700 dark:text-amber-300">
+                        <strong>Sample Data:</strong> {result._message || 'The backtest service is currently unavailable. Showing sample results for demonstration purposes.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Summary Card */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold mb-4">Backtest Results</h2>
+                <h2 className="text-xl font-semibold mb-4">
+                  Backtest Results {result._fallback && '(Sample Data)'}
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Initial Balance</p>

@@ -29,52 +29,88 @@ export async function POST(request: Request) {
       );
     }
 
-    const apiBase = process.env.SIGNALS_API_BASE || 'http://localhost:3001';
+    const apiBase = process.env.SIGNALS_API_BASE || 'http://localhost:8000';
     const url = `${apiBase}/backtest/run`;
 
     console.log('[BACKTEST-PROXY] External API URL:', apiBase);
     console.log('[BACKTEST-PROXY] Full URL:', url);
     
-    // Try to run backtest via external API
+    // Try to run backtest via external API with timeout and better error handling
     try {
-      // Convert params to form data for external API
-      const formData = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        formData.append(key, String(value));
-      });
+      // Prepare request body for external API (JSON format as per curl example)
+      const requestBody = {
+        ...params,
+        debug: true // Add debug field as shown in curl example
+      };
 
       console.log('[BACKTEST-PROXY] About to call external API:');
       console.log('[BACKTEST-PROXY] - Method: POST');
       console.log('[BACKTEST-PROXY] - URL:', url);
       console.log('[BACKTEST-PROXY] - Headers:', {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token.substring(0, 20)}...` // Log partial token for security
       });
-      console.log('[BACKTEST-PROXY] - Form data:', formData.toString());
-      console.log('[BACKTEST-PROXY] - Form data keys:', Object.keys(params));
-      console.log('[BACKTEST-PROXY] - Form data values:', Object.values(params));
-      console.log('[BACKTEST-PROXY] - Sending FORM DATA to external API (fixed)');
+      console.log('[BACKTEST-PROXY] - Request body:', JSON.stringify(requestBody, null, 2));
+      console.log('[BACKTEST-PROXY] - Sending JSON to external API (corrected)');
+
+      // Create AbortController for timeout handling (5 minutes = 300000ms)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.warn('[BACKTEST-PROXY] External API call timed out after 5 minutes');
+      }, 300000);
+
+      const startTime = Date.now();
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: formData.toString()
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+      const endTime = Date.now();
+      const duration = (endTime - startTime) / 1000;
+
+      console.log(`[BACKTEST-PROXY] External API response received in ${duration.toFixed(2)} seconds`);
+      console.log(`[BACKTEST-PROXY] Response status: ${response.status} ${response.statusText}`);
+
       if (response.ok) {
+        console.log('[BACKTEST-PROXY] External API call successful');
         const data = await response.json();
         return NextResponse.json(data);
       } else {
-        console.warn('External API not available for backtest, using fallback');
+        const errorText = await response.text();
+        console.error('[BACKTEST-PROXY] External API returned error:');
+        console.error(`[BACKTEST-PROXY] - Status: ${response.status} ${response.statusText}`);
+        console.error(`[BACKTEST-PROXY] - Response: ${errorText}`);
+        console.warn('[BACKTEST-PROXY] External API not available for backtest, using fallback');
       }
     } catch (fetchError) {
-      console.warn('External API fetch failed for backtest:', fetchError);
+      if (fetchError instanceof Error) {
+        if (fetchError.name === 'AbortError') {
+          console.error('[BACKTEST-PROXY] External API call was aborted due to timeout');
+        } else {
+          console.error('[BACKTEST-PROXY] External API fetch failed:', fetchError.message);
+          console.error('[BACKTEST-PROXY] Error details:', {
+            name: fetchError.name,
+            message: fetchError.message,
+            stack: fetchError.stack
+          });
+        }
+      } else {
+        console.error('[BACKTEST-PROXY] External API fetch failed with unknown error:', fetchError);
+      }
+      console.warn('[BACKTEST-PROXY] Using fallback due to external API failure');
     }
 
     // Fallback: Return mock backtest results when external API is not available
+    console.log('[BACKTEST-PROXY] Returning fallback mock results');
+
     const mockResult = {
       trades: [
         {
@@ -109,7 +145,9 @@ export async function POST(request: Request) {
       initial_balance: 100000,
       final_balance: 102200,
       total_return: 2200,
-      total_return_pct: 2.2
+      total_return_pct: 2.2,
+      _fallback: true,
+      _message: 'External API unavailable - showing sample results'
     };
 
     return NextResponse.json(mockResult);
