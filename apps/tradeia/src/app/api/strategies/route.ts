@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         created_at: new Date().toISOString()
       },
       {
-        id: 'adx_sqzmom',
+        id: 'sqzmom_adx',
         name: 'ADX Squeeze Momentum',
         description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation',
         risk_level: 'Medium',

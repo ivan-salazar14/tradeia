@@ -1,111 +1,117 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
     const params = await context.params;
     const strategyId = params.id;
-    
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+
+    // Mock strategies data (same as main strategies API)
+    const mockStrategies = [
       {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-        },
+        id: 'conservative',
+        name: 'Conservative Strategy',
+        description: 'Low-risk strategy with basic technical indicators',
+        risk_level: 'Low',
+        timeframe: '4h',
+        indicators: ['SMA', 'RSI'],
+        created_at: new Date().toISOString(),
+        stop_loss: 2,
+        take_profit: 4,
+        max_positions: 3
+      },
+      {
+        id: 'moderate',
+        name: 'Moderate Strategy',
+        description: 'Balanced risk strategy with multiple indicators',
+        risk_level: 'Medium',
+        timeframe: '1h',
+        indicators: ['SMA', 'RSI', 'MACD'],
+        created_at: new Date().toISOString(),
+        stop_loss: 2.5,
+        take_profit: 5,
+        max_positions: 4
+      },
+      {
+        id: 'sqzmom_adx',
+        name: 'ADX Squeeze Momentum',
+        description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation',
+        risk_level: 'Medium',
+        timeframe: '4h',
+        indicators: ['ADX', 'Squeeze Momentum'],
+        created_at: new Date().toISOString(),
+        stop_loss: 3,
+        take_profit: 6,
+        max_positions: 3
+      },
+      {
+        id: 'aggressive',
+        name: 'Aggressive Strategy',
+        description: 'High-risk strategy for experienced traders',
+        risk_level: 'High',
+        timeframe: '15m',
+        indicators: ['RSI', 'MACD', 'Bollinger Bands'],
+        created_at: new Date().toISOString(),
+        stop_loss: 1.5,
+        take_profit: 3,
+        max_positions: 5
       }
-    );
+    ];
 
-    // Verificar la sesión
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    // Find the strategy by ID
+    const strategy = mockStrategies.find(s => s.id === strategyId);
+
+    if (!strategy) {
+      return NextResponse.json({ error: 'Estrategia no encontrada' }, { status: 404 });
     }
 
-    // Obtener la estrategia específica
-    const { data: strategy, error: strategyError } = await supabase
-      .from('strategies')
-      .select('*')
-      .eq('id', strategyId)
-      .single();
+    // Mock performance data
+    const mockPerformance = {
+      win_rate: strategy.id === 'sqzmom_adx' ? 68 : strategy.id === 'conservative' ? 65 : strategy.id === 'moderate' ? 62 : 58,
+      total_trades: strategy.id === 'sqzmom_adx' ? 145 : strategy.id === 'conservative' ? 120 : strategy.id === 'moderate' ? 98 : 87,
+      profit_loss: strategy.id === 'sqzmom_adx' ? 12.3 : strategy.id === 'conservative' ? 8.5 : strategy.id === 'moderate' ? 6.2 : 4.1,
+      sharpe_ratio: strategy.id === 'sqzmom_adx' ? 1.4 : strategy.id === 'conservative' ? 1.2 : strategy.id === 'moderate' ? 1.1 : 0.9,
+      max_drawdown: strategy.id === 'sqzmom_adx' ? -4.2 : strategy.id === 'conservative' ? -3.2 : strategy.id === 'moderate' ? -4.8 : -5.5,
+      avg_trade_duration: strategy.id === 'sqzmom_adx' ? 22.5 : strategy.id === 'conservative' ? 18.5 : strategy.id === 'moderate' ? 14.2 : 12.8
+    };
 
-    if (strategyError) {
-      if (strategyError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Estrategia no encontrada' }, { status: 404 });
+    // Mock recent signals
+    const mockSignals = [
+      {
+        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        signal_type: 'BUY',
+        price: 45000 + Math.random() * 5000,
+        confidence: 0.75 + Math.random() * 0.2,
+        status: 'CLOSED',
+        pnl: (Math.random() - 0.3) * 5
+      },
+      {
+        created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+        signal_type: 'SELL',
+        price: 48000 + Math.random() * 5000,
+        confidence: 0.7 + Math.random() * 0.25,
+        status: 'CLOSED',
+        pnl: (Math.random() - 0.4) * 4
+      },
+      {
+        created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        signal_type: 'BUY',
+        price: 46000 + Math.random() * 5000,
+        confidence: 0.8 + Math.random() * 0.15,
+        status: 'OPEN',
+        pnl: null
       }
-      console.error('Error fetching strategy:', strategyError);
-      return NextResponse.json({ error: 'Error al obtener estrategia' }, { status: 500 });
-    }
-
-    // Obtener señales recientes para esta estrategia
-    const { data: signals, error: signalsError } = await supabase
-      .from('signals')
-      .select('*')
-      .eq('strategy_id', strategyId)
-      .order('created_at', { ascending: false })
-      .limit(10);
-
-    if (signalsError) {
-      console.error('Error fetching signals:', signalsError);
-    }
-
-    // Obtener métricas de performance
-    const { data: performance, error: performanceError } = await supabase
-      .from('strategy_performance')
-      .select('*')
-      .eq('strategy_id', strategyId)
-      .single();
-
-    if (performanceError && performanceError.code !== 'PGRST116') {
-      console.error('Error fetching performance:', performanceError);
-    }
-
-    // Verificar si el usuario tiene esta estrategia activa
-    const { data: userStrategy, error: userStrategyError } = await supabase
-      .from('user_strategies')
-      .select('is_active')
-      .eq('user_id', session.user.id)
-      .eq('strategy_id', strategyId)
-      .single();
-
-    const isActive = userStrategy?.is_active || false;
+    ];
 
     return NextResponse.json({
       strategy: {
         ...strategy,
-        indicators: typeof strategy.indicators === 'string' 
-          ? JSON.parse(strategy.indicators) 
-          : strategy.indicators,
-        is_active: isActive
+        is_active: strategy.id === 'conservative' // Make conservative active by default
       },
-      recent_signals: signals || [],
-      performance: performance || {
-        win_rate: 0,
-        total_trades: 0,
-        profit_loss: 0,
-        sharpe_ratio: 0,
-        max_drawdown: 0,
-        avg_trade_duration: 0
-      }
+      recent_signals: mockSignals,
+      performance: mockPerformance
     });
 
   } catch (error) {
@@ -119,91 +125,29 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
     const params = await context.params;
     const strategyId = params.id;
-    
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-        },
-      }
-    );
-
-    // Verificar la sesión
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
 
     const body = await request.json();
     const { name, description, risk_level, timeframe, indicators, stop_loss, take_profit, max_positions } = body;
 
-    // Verificar que la estrategia existe y pertenece al usuario
-    const { data: existingStrategy, error: fetchError } = await supabase
-      .from('strategies')
-      .select('*')
-      .eq('id', strategyId)
-      .eq('created_by', session.user.id)
-      .single();
-
-    if (fetchError) {
-      if (fetchError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Estrategia no encontrada o no tienes permisos para editarla' }, { status: 404 });
-      }
-      console.error('Error fetching strategy for update:', fetchError);
-      return NextResponse.json({ error: 'Error al obtener estrategia' }, { status: 500 });
-    }
-
-    // Actualizar la estrategia
-    const updateData: any = {};
-    if (name !== undefined) updateData.name = name;
-    if (description !== undefined) updateData.description = description;
-    if (risk_level !== undefined) updateData.risk_level = risk_level;
-    if (timeframe !== undefined) updateData.timeframe = timeframe;
-    if (indicators !== undefined) updateData.indicators = JSON.stringify(indicators);
-    if (stop_loss !== undefined) updateData.stop_loss = stop_loss;
-    if (take_profit !== undefined) updateData.take_profit = take_profit;
-    if (max_positions !== undefined) updateData.max_positions = max_positions;
-
-    const { data: updatedStrategy, error: updateError } = await supabase
-      .from('strategies')
-      .update(updateData)
-      .eq('id', strategyId)
-      .eq('created_by', session.user.id)
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error('Error updating strategy:', updateError);
-      return NextResponse.json({ error: 'Error al actualizar estrategia' }, { status: 500 });
-    }
+    // Mock update - just return success
+    const mockUpdatedStrategy = {
+      id: strategyId,
+      name: name || 'Updated Strategy',
+      description: description || 'Updated description',
+      risk_level: risk_level || 'Medium',
+      timeframe: timeframe || '4h',
+      indicators: indicators || ['SMA', 'RSI'],
+      stop_loss: stop_loss || 2,
+      take_profit: take_profit || 4,
+      max_positions: max_positions || 3,
+      created_at: new Date().toISOString()
+    };
 
     return NextResponse.json({
       message: 'Estrategia actualizada exitosamente',
-      strategy: {
-        ...updatedStrategy,
-        indicators: typeof updatedStrategy.indicators === 'string' 
-          ? JSON.parse(updatedStrategy.indicators) 
-          : updatedStrategy.indicators
-      }
+      strategy: mockUpdatedStrategy
     });
 
   } catch (error) {
@@ -217,68 +161,10 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
     const params = await context.params;
     const strategyId = params.id;
-    
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-        },
-      }
-    );
 
-    // Verificar la sesión
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    // Verificar que la estrategia existe y pertenece al usuario
-    const { data: existingStrategy, error: fetchError } = await supabase
-      .from('strategies')
-      .select('id')
-      .eq('id', strategyId)
-      .eq('created_by', session.user.id)
-      .single();
-
-    if (fetchError) {
-      if (fetchError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Estrategia no encontrada o no tienes permisos para eliminarla' }, { status: 404 });
-      }
-      console.error('Error fetching strategy for deletion:', fetchError);
-      return NextResponse.json({ error: 'Error al obtener estrategia' }, { status: 500 });
-    }
-
-    // Eliminar la estrategia
-    const { error: deleteError } = await supabase
-      .from('strategies')
-      .delete()
-      .eq('id', strategyId)
-      .eq('created_by', session.user.id);
-
-    if (deleteError) {
-      console.error('Error deleting strategy:', deleteError);
-      return NextResponse.json({ error: 'Error al eliminar estrategia' }, { status: 500 });
-    }
-
+    // Mock delete - just return success
     return NextResponse.json({
       message: 'Estrategia eliminada exitosamente'
     });
