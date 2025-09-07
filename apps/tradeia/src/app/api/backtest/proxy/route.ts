@@ -30,26 +30,29 @@ export async function POST(request: Request) {
     }
 
     const apiBase = process.env.SIGNALS_API_BASE || 'http://localhost:3001';
-    const url = new URL(`${apiBase}/backtest/run`);
+    const url = `${apiBase}/backtest/run`;
 
     console.log('[BACKTEST-PROXY] External API URL:', apiBase);
-    console.log('[BACKTEST-PROXY] Full URL:', url.toString());
-    
-    // Add query parameters
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        url.searchParams.append(key, String(value));
-      }
-    });
+    console.log('[BACKTEST-PROXY] Full URL:', url);
     
     // Try to run backtest via external API
     try {
-      const response = await fetch(url.toString(), {
+      console.log('[BACKTEST-PROXY] About to call external API:');
+      console.log('[BACKTEST-PROXY] - Method: POST');
+      console.log('[BACKTEST-PROXY] - URL:', url);
+      console.log('[BACKTEST-PROXY] - Headers:', {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token.substring(0, 20)}...` // Log partial token for security
+      });
+      console.log('[BACKTEST-PROXY] - Body:', JSON.stringify(params, null, 2));
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify(params)
       });
 
       if (response.ok) {
