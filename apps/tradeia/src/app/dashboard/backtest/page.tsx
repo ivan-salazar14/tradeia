@@ -65,7 +65,8 @@ export default function BacktestPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [tradesPerPage] = useState(10); // Number of trades per page
+  const [tradesPerPage, setTradesPerPage] = useState(25);
+  const tradesPerPageOptions = [10, 25, 50, 100];
   const [sortConfig, setSortConfig] = useState<{ key: keyof Trade; direction: 'asc' | 'desc' }>({
     key: 'entry_time' as keyof Trade,
     direction: 'desc'
@@ -147,6 +148,27 @@ export default function BacktestPage({ params }: PageProps) {
   const processedTrades = getProcessedTrades();
   const router = useRouter();
   const [supabaseReady, setSupabaseReady] = useState(false);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(processedTrades.length / tradesPerPage);
+  const startIndex = (currentPage - 1) * tradesPerPage;
+  const endIndex = startIndex + tradesPerPage;
+  const currentTrades = processedTrades.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [result]); // Reset when new results come in
+
+  // Handle page changes
+  const handlePageChange = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const handleTradesPerPageChange = (newPerPage: number) => {
+    setTradesPerPage(newPerPage);
+    setCurrentPage(1); // Reset to first page
+  };
 
   // Fetch available strategies when component mounts
   useEffect(() => {
@@ -692,177 +714,212 @@ export default function BacktestPage({ params }: PageProps) {
                       </div>
                     </div>
                   </div>
-                  {processedTrades.length > tradesPerPage && (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-2">
-                      <div className="text-xs md:text-sm text-gray-600 dark:text-gray-300 text-center sm:text-left">
-                        Showing {Math.min((currentPage - 1) * tradesPerPage + 1, processedTrades.length)} to {Math.min(currentPage * tradesPerPage, processedTrades.length)} of {processedTrades.length} results
-                      </div>
+
+                  {/* Table Controls */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-gray-600">
+                        Mostrando {currentTrades.length > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, processedTrades.length)} de {processedTrades.length} operaciones
+                      </span>
+                      <select
+                        value={tradesPerPage}
+                        onChange={(e) => handleTradesPerPageChange(Number(e.target.value))}
+                        className="border rounded px-2 py-1 text-sm"
+                      >
+                        {tradesPerPageOptions.map(option => (
+                          <option key={option} value={option}>{option} por página</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          onClick={() => handlePageChange(currentPage - 1)}
                           disabled={currentPage === 1}
-                          className="px-2 md:px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                          className="px-3 py-1.5 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                         >
-                          Previous
+                          Anterior
                         </button>
-                        <button
-                          onClick={() => setCurrentPage(p => Math.min(p + 1, Math.ceil(processedTrades.length / tradesPerPage)))}
-                          disabled={currentPage >= Math.ceil(processedTrades.length / tradesPerPage)}
-                          className="px-2 md:px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                        >
-                          Next
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {processedTrades.length > 0 && (
-                    <div className="overflow-x-auto -mx-2 md:-mx-4 sm:mx-0 mt-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-                      <div className="inline-block min-w-full align-middle">
-                        <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs md:text-sm">
-                            <thead className="bg-gray-50 dark:bg-gray-700">
-                              <tr className="cursor-pointer">
-                                <th
-                                  scope="col"
-                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap"
-                                  onClick={() => handleSort('symbol')}
-                                >
-                                  <div className="flex items-center">
-                                    <span className="hidden sm:inline">Symbol</span>
-                                    <span className="sm:hidden">Sym</span>
-                                    {sortConfig.key === 'symbol' && (
-                                      <span className="ml-1">
-                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                                      </span>
-                                    )}
-                                  </div>
-                                </th>
-                                <th
-                                  scope="col"
-                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap"
-                                  onClick={() => handleSort('entry_time')}
-                                >
-                                  <div className="flex items-center">
-                                    <span className="hidden sm:inline">Entry Time</span>
-                                    <span className="sm:hidden">Entry</span>
-                                    {sortConfig.key === 'entry_time' && (
-                                      <span className="ml-1">
-                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                                      </span>
-                                    )}
-                                  </div>
-                                </th>
-                                <th
-                                  scope="col"
-                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                                  onClick={() => handleSort('direction')}
-                                >
-                                  <div className="flex items-center">
-                                    <span className="hidden sm:inline">Direction</span>
-                                    <span className="sm:hidden">Dir</span>
-                                    {sortConfig.key === 'direction' && (
-                                      <span className="ml-1">
-                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                                      </span>
-                                    )}
-                                  </div>
-                                </th>
-                                <th
-                                  scope="col"
-                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                                  onClick={() => handleSort('entry_price')}
-                                >
-                                  <div className="flex items-center">
-                                    <span className="hidden sm:inline">Entry Price</span>
-                                    <span className="sm:hidden">Entry $</span>
-                                    {sortConfig.key === 'entry_price' && (
-                                      <span className="ml-1">
-                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                                      </span>
-                                    )}
-                                  </div>
-                                </th>
-                                <th
-                                  scope="col"
-                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                                  onClick={() => handleSort('exit_price')}
-                                >
-                                  <div className="flex items-center">
-                                    <span className="hidden sm:inline">Exit Price</span>
-                                    <span className="sm:hidden">Exit $</span>
-                                    {sortConfig.key === 'exit_price' && (
-                                      <span className="ml-1">
-                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                                      </span>
-                                    )}
-                                  </div>
-                                </th>
-                                <th
-                                  scope="col"
-                                  className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
-                                  onClick={() => handleSort('profit_pct')}
-                                >
-                                  <div className="flex items-center">
-                                    <span className="hidden sm:inline">P/L (%)</span>
-                                    <span className="sm:hidden">P/L</span>
-                                    {sortConfig.key === 'profit_pct' && (
-                                      <span className="ml-1">
-                                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                                      </span>
-                                    )}
-                                  </div>
-                                </th>
-                                <th scope="col" className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                                  <span className="hidden sm:inline">Balance After</span>
-                                  <span className="sm:hidden">Balance</span>
-                                </th>
-                              </tr>
-                            </thead>
-                                <tbody>
-                                  {processedTrades
-                                    .slice(
-                                      (currentPage - 1) * tradesPerPage,
-                                      currentPage * tradesPerPage
-                                    )
-                                    .map((trade, index) => (
-                                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                        <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900 dark:text-gray-100">
-                                          {trade.symbol || 'N/A'}
-                                        </td>
-                                        <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 dark:text-gray-100 break-words max-w-[100px] md:max-w-[150px] sm:max-w-none">
-                                          {trade.entry_time ? new Date(trade.entry_time).toLocaleDateString() : 'N/A'}
-                                        </td>
-                                        <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
-                                          <span className={`px-1 md:px-2 inline-flex text-xs leading-4 md:leading-5 font-semibold rounded-full ${
-                                            trade.direction === 'BUY'
-                                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                          }`}>
-                                            {trade.direction || 'N/A'}
-                                          </span>
-                                        </td>
-                                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
-                                          ${(trade.entry_price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                        </td>
-                                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
-                                          ${(trade.exit_price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                        </td>
-                                        <td className={`px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm font-medium ${
-                                          (trade.profit_pct || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                                        }`}>
-                                          {(trade.profit_pct || 0) >= 0 ? '+' : ''}{(trade.profit_pct || 0).toFixed(2)}%
-                                        </td>
-                                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
-                                          ${(trade.balance_after || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                            if (pageNum > totalPages) return null;
+
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => handlePageChange(pageNum)}
+                                className={`px-3 py-1.5 border rounded text-sm ${
+                                  currentPage === pageNum
+                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                    : 'border-gray-300 hover:bg-gray-50'
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          })}
                         </div>
+
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className="px-3 py-1.5 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                        >
+                          Siguiente
+                        </button>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+
+                  {/* Trades Table with Scrolling */}
+                  <div className="overflow-x-auto overflow-y-auto max-h-96 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                    <table className="min-w-full divide-y divide-gray-200 text-xs md:text-sm">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr className="cursor-pointer">
+                          <th
+                            scope="col"
+                            className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                            onClick={() => handleSort('symbol')}
+                          >
+                            <div className="flex items-center">
+                              <span className="hidden sm:inline">Symbol</span>
+                              <span className="sm:hidden">Sym</span>
+                              {sortConfig.key === 'symbol' && (
+                                <span className="ml-1">
+                                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                            onClick={() => handleSort('entry_time')}
+                          >
+                            <div className="flex items-center">
+                              <span className="hidden sm:inline">Entry Time</span>
+                              <span className="sm:hidden">Entry</span>
+                              {sortConfig.key === 'entry_time' && (
+                                <span className="ml-1">
+                                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                            onClick={() => handleSort('direction')}
+                          >
+                            <div className="flex items-center">
+                              <span className="hidden sm:inline">Direction</span>
+                              <span className="sm:hidden">Dir</span>
+                              {sortConfig.key === 'direction' && (
+                                <span className="ml-1">
+                                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                            onClick={() => handleSort('entry_price')}
+                          >
+                            <div className="flex items-center">
+                              <span className="hidden sm:inline">Entry Price</span>
+                              <span className="sm:hidden">Entry $</span>
+                              {sortConfig.key === 'entry_price' && (
+                                <span className="ml-1">
+                                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                            onClick={() => handleSort('exit_price')}
+                          >
+                            <div className="flex items-center">
+                              <span className="hidden sm:inline">Exit Price</span>
+                              <span className="sm:hidden">Exit $</span>
+                              {sortConfig.key === 'exit_price' && (
+                                <span className="ml-1">
+                                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
+                            onClick={() => handleSort('profit_pct')}
+                          >
+                            <div className="flex items-center">
+                              <span className="hidden sm:inline">P/L (%)</span>
+                              <span className="sm:hidden">P/L</span>
+                              {sortConfig.key === 'profit_pct' && (
+                                <span className="ml-1">
+                                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                          <th scope="col" className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <span className="hidden sm:inline">Balance After</span>
+                            <span className="sm:hidden">Balance</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentTrades.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                              No hay operaciones disponibles para mostrar.
+                            </td>
+                          </tr>
+                        )}
+                        {currentTrades.map((trade, index) => (
+                          <tr key={`${currentPage}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {trade.symbol || 'N/A'}
+                            </td>
+                            <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 dark:text-gray-100 break-words max-w-[100px] md:max-w-[150px] sm:max-w-none">
+                              {trade.entry_time ? new Date(trade.entry_time).toLocaleDateString() : 'N/A'}
+                            </td>
+                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                              <span className={`px-1 md:px-2 inline-flex text-xs leading-4 md:leading-5 font-semibold rounded-full ${
+                                trade.direction === 'BUY'
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              }`}>
+                                {trade.direction || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
+                              ${(trade.entry_price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
+                              ${(trade.exit_price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            </td>
+                            <td className={`px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm font-medium ${
+                              (trade.profit_pct || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {(trade.profit_pct || 0) >= 0 ? '+' : ''}{(trade.profit_pct || 0).toFixed(2)}%
+                            </td>
+                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
+                              ${(trade.balance_after || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
