@@ -37,22 +37,31 @@ export async function POST(request: Request) {
     
     // Try to run backtest via external API
     try {
+      // Convert params to form data for external API
+      const formData = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
+
       console.log('[BACKTEST-PROXY] About to call external API:');
       console.log('[BACKTEST-PROXY] - Method: POST');
       console.log('[BACKTEST-PROXY] - URL:', url);
       console.log('[BACKTEST-PROXY] - Headers:', {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Bearer ${token.substring(0, 20)}...` // Log partial token for security
       });
-      console.log('[BACKTEST-PROXY] - Body:', JSON.stringify(params, null, 2));
+      console.log('[BACKTEST-PROXY] - Form data:', formData.toString());
+      console.log('[BACKTEST-PROXY] - Form data keys:', Object.keys(params));
+      console.log('[BACKTEST-PROXY] - Form data values:', Object.values(params));
+      console.log('[BACKTEST-PROXY] - Sending FORM DATA to external API (fixed)');
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(params)
+        body: formData.toString()
       });
 
       if (response.ok) {
