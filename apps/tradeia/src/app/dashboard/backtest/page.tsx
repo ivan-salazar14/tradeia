@@ -312,22 +312,47 @@ export default function BacktestPage({ params }: PageProps) {
 
       setLoadingMessage('Sending request to backtest service...');
 
-      // Use our proxy endpoint to avoid CORS issues
-      const response = await fetch('/api/backtest/proxy', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          ...requestBody,
-          start_date: formatDate(startDate),
-          end_date: formatDate(endDate),
-        })
-      });
+      // Create AbortController for frontend timeout (10 minutes to match proxy timeout)
+      const controller = new AbortController();
+      const frontendTimeoutId = setTimeout(() => {
+        controller.abort();
+        console.warn('[BACKTEST-PAGE] Frontend request timed out after 10 minutes');
+      }, 600000); // 10 minutes
 
-      console.log('[BACKTEST-PAGE] API response status:', response.status);
-      console.log('[BACKTEST-PAGE] API response headers:', Object.fromEntries(response.headers.entries()));
+      let response;
+      try {
+        // Use our proxy endpoint to avoid CORS issues
+        response = await fetch('/api/backtest/proxy', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token,
+            ...requestBody,
+            start_date: formatDate(startDate),
+            end_date: formatDate(endDate),
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(frontendTimeoutId);
+
+        console.log('[BACKTEST-PAGE] API response status:', response.status);
+        console.log('[BACKTEST-PAGE] API response headers:', Object.fromEntries(response.headers.entries()));
+      } catch (fetchError) {
+        clearTimeout(frontendTimeoutId);
+
+        if (fetchError instanceof Error) {
+          if (fetchError.name === 'AbortError') {
+            throw new Error('Request timed out after 10 minutes. The backtest service may be processing a large dataset.');
+          } else {
+            throw new Error(`Network error: ${fetchError.message}`);
+          }
+        } else {
+          throw new Error('An unknown network error occurred');
+        }
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -350,10 +375,18 @@ export default function BacktestPage({ params }: PageProps) {
       console.log('[BACKTEST-PAGE] Response data structure:', Object.keys(data));
       console.log('[BACKTEST-PAGE] Response data:', JSON.stringify(data, null, 2));
 
+      // Validate response data structure
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response format from backtest service');
+      }
+
       // Check if this is fallback data
       if (data._fallback) {
         console.warn('[BACKTEST-PAGE] Received fallback data:', data._message);
         setError(`Warning: ${data._message || 'Using sample data due to service unavailability'}`);
+      } else {
+        // Clear any previous error for successful responses
+        setError(null);
       }
 
       console.log('[BACKTEST-PAGE] Setting result data...');
@@ -361,8 +394,20 @@ export default function BacktestPage({ params }: PageProps) {
       console.log('[BACKTEST-PAGE] final_balance:', data.final_balance);
       console.log('[BACKTEST-PAGE] trades:', data.trades ? data.trades.length : 'undefined');
 
+      // Ensure trades is an array
+      if (data.trades && !Array.isArray(data.trades)) {
+        console.warn('[BACKTEST-PAGE] Converting trades to array');
+        data.trades = [data.trades];
+      }
+
       setResult(data);
       console.log('[BACKTEST-PAGE] Result state set successfully');
+
+      // Show success message for slow requests
+      if (isLongRunning) {
+        setError(null); // Clear any timeout warnings
+        console.log('[BACKTEST-PAGE] Backtest completed successfully after long processing time');
+      }
     } catch (err) {
       console.error('Backtest error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred while running the backtest');
@@ -556,22 +601,8 @@ export default function BacktestPage({ params }: PageProps) {
             </div>
           )}
 
-          {(() => {
-            console.log('[BACKTEST-PAGE] Render check - result exists:', !!result);
-            console.log('[BACKTEST-PAGE] Render check - result.initial_balance:', result?.initial_balance);
-            console.log('[BACKTEST-PAGE] Render check - result has trades:', result?.trades ? result.trades.length : 'no trades');
-            const hasValidData = result && (result.initial_balance !== undefined || (result.trades && result.trades.length > 0));
-            console.log('[BACKTEST-PAGE] Render check - condition met:', hasValidData);
-            return hasValidData;
-          })() && result && (
+          {result && (result.initial_balance !== undefined || (result.trades && result.trades.length > 0)) && (
             <div className="space-y-6">
-              {/* Debug Info - Remove this after debugging */}
-              <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Debug Info (Remove after fixing)</h3>
-                <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-auto max-h-32">
-                  {JSON.stringify(result, null, 2)}
-                </pre>
-              </div>
               {/* Fallback Warning */}
               {result._fallback && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-3 md:p-4">
