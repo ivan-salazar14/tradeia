@@ -340,204 +340,109 @@ export default function BacktestPage({ params }: PageProps) {
       console.log('[BACKTEST-PAGE] Symbols to test:', symbolsToTest);
       console.log('[BACKTEST-PAGE] Symbol param for API:', symbolParam);
 
-      // If multiple symbols selected, make separate requests and combine results
-      if (symbolsToTest.length > 1) {
-        setLoadingMessage(`Running backtests for ${symbolsToTest.length} symbols...`);
+      // Single request for all cases (single symbol, multiple symbols, or all symbols)
+      const requestBody = {
+        timeframe: formData.timeframe,
+        start_date: formatDate(startDate),
+        end_date: formatDate(endDate),
+        strategy_id: formData.strategy,
+        initial_balance: formData.initial_balance,
+        risk_per_trade: formData.risk_per_trade,
+        symbol: symbolParam // Array for selected symbols, null for all
+      };
 
-        const allResults = [];
-        let combinedTrades: any[] = [];
-        let totalInitialBalance = 0;
-        let totalFinalBalance = 0;
+      setLoadingMessage('Sending request to backtest service...');
 
-        for (let i = 0; i < symbolsToTest.length; i++) {
-          const symbol = symbolsToTest[i];
-          setLoadingMessage(`Running backtest for ${symbol || 'all symbols'} (${i + 1}/${symbolsToTest.length})...`);
+      // Create AbortController for frontend timeout (10 minutes to match proxy timeout)
+      const controller = new AbortController();
+      const frontendTimeoutId = setTimeout(() => {
+        controller.abort();
+        console.warn('[BACKTEST-PAGE] Frontend request timed out after 10 minutes');
+      }, 600000); // 10 minutes
 
-          const requestBody = {
-            timeframe: formData.timeframe,
+      let response;
+      try {
+        // Use our proxy endpoint to avoid CORS issues
+        response = await fetch('/api/backtest/proxy', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token,
+            ...requestBody,
             start_date: formatDate(startDate),
             end_date: formatDate(endDate),
-            strategy_id: formData.strategy,
-            initial_balance: formData.initial_balance,
-            risk_per_trade: formData.risk_per_trade,
-            symbol: symbol // Single symbol or empty for all
-          };
+          }),
+          signal: controller.signal
+        });
 
-          // Create AbortController for each request
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => {
-            controller.abort();
-            console.warn(`[BACKTEST-PAGE] Request for ${symbol || 'all'} timed out`);
-          }, 600000); // 10 minutes
+        clearTimeout(frontendTimeoutId);
 
-          try {
-            const response = await fetch('/api/backtest/proxy', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                token,
-                ...requestBody,
-                start_date: formatDate(startDate),
-                end_date: formatDate(endDate),
-              }),
-              signal: controller.signal
-            });
+        console.log('[BACKTEST-PAGE] API response status:', response.status);
+        console.log('[BACKTEST-PAGE] API response headers:', Object.fromEntries(response.headers.entries()));
+      } catch (fetchError) {
+        clearTimeout(frontendTimeoutId);
 
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error(`[BACKTEST-PAGE] API error for ${symbol}:`, errorText);
-              continue; // Skip this symbol and continue with others
-            }
-
-            const data = await response.json();
-            console.log(`[BACKTEST-PAGE] Success response for ${symbol}:`, data);
-
-            // Accumulate results
-            if (data.trades && Array.isArray(data.trades)) {
-              combinedTrades = combinedTrades.concat(data.trades);
-            } else if (data.trades) {
-              combinedTrades.push(data.trades);
-            }
-
-            totalInitialBalance += data.initial_balance || 0;
-            totalFinalBalance += data.final_balance || 0;
-
-            allResults.push(data);
-
-          } catch (fetchError) {
-            clearTimeout(timeoutId);
-            console.error(`[BACKTEST-PAGE] Error for ${symbol}:`, fetchError);
-            continue; // Skip this symbol and continue with others
-          }
-        }
-
-        // Combine results
-        if (combinedTrades.length > 0) {
-          const combinedResult = {
-            trades: combinedTrades,
-            initial_balance: totalInitialBalance,
-            final_balance: totalFinalBalance,
-            total_return: totalFinalBalance - totalInitialBalance,
-            total_return_pct: totalInitialBalance > 0 ? ((totalFinalBalance - totalInitialBalance) / totalInitialBalance) * 100 : 0,
-            _fallback: false,
-            _message: `Combined results from ${symbolsToTest.length} symbols`
-          };
-
-          setResult(combinedResult);
-          console.log('[BACKTEST-PAGE] Combined results set successfully');
-        } else {
-          throw new Error('No successful backtest results received from any symbol');
-        }
-
-      } else {
-        // Single symbol or all symbols case
-        const requestBody = {
-          timeframe: formData.timeframe,
-          start_date: formatDate(startDate),
-          end_date: formatDate(endDate),
-          strategy_id: formData.strategy,
-          initial_balance: formData.initial_balance,
-          risk_per_trade: formData.risk_per_trade,
-          symbol: symbolParam // Array for selected symbols, null for all
-        };
-
-        setLoadingMessage('Sending request to backtest service...');
-
-        // Create AbortController for frontend timeout (10 minutes to match proxy timeout)
-        const controller = new AbortController();
-        const frontendTimeoutId = setTimeout(() => {
-          controller.abort();
-          console.warn('[BACKTEST-PAGE] Frontend request timed out after 10 minutes');
-        }, 600000); // 10 minutes
-
-        let response;
-        try {
-          // Use our proxy endpoint to avoid CORS issues
-          response = await fetch('/api/backtest/proxy', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              token,
-              ...requestBody,
-              start_date: formatDate(startDate),
-              end_date: formatDate(endDate),
-            }),
-            signal: controller.signal
-          });
-
-          clearTimeout(frontendTimeoutId);
-
-          console.log('[BACKTEST-PAGE] API response status:', response.status);
-          console.log('[BACKTEST-PAGE] API response headers:', Object.fromEntries(response.headers.entries()));
-        } catch (fetchError) {
-          clearTimeout(frontendTimeoutId);
-
-          if (fetchError instanceof Error) {
-            if (fetchError.name === 'AbortError') {
-              throw new Error('Request timed out after 10 minutes. The backtest service may be processing a large dataset.');
-            } else {
-              throw new Error(`Network error: ${fetchError.message}`);
-            }
+        if (fetchError instanceof Error) {
+          if (fetchError.name === 'AbortError') {
+            throw new Error('Request timed out after 10 minutes. The backtest service may be processing a large dataset.');
           } else {
-            throw new Error('An unknown network error occurred');
+            throw new Error(`Network error: ${fetchError.message}`);
           }
-        }
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[BACKTEST-PAGE] API error response:', errorText);
-
-          let errorData;
-          try {
-            errorData = JSON.parse(errorText);
-          } catch (e) {
-            errorData = { error: errorText };
-          }
-
-          throw new Error(errorData.error || 'Failed to run backtest');
-        }
-
-        setLoadingMessage('Processing backtest results...');
-
-        const data = await response.json();
-        console.log('[BACKTEST-PAGE] API success response received');
-        console.log('[BACKTEST-PAGE] Response data structure:', Object.keys(data));
-        console.log('[BACKTEST-PAGE] Response data:', JSON.stringify(data, null, 2));
-
-        // Validate response data structure
-        if (!data || typeof data !== 'object') {
-          throw new Error('Invalid response format from backtest service');
-        }
-
-        // Check if this is fallback data
-        if (data._fallback) {
-          console.warn('[BACKTEST-PAGE] Received fallback data:', data._message);
-          setError(`Warning: ${data._message || 'Using sample data due to service unavailability'}`);
         } else {
-          // Clear any previous error for successful responses
-          setError(null);
+          throw new Error('An unknown network error occurred');
         }
-
-        console.log('[BACKTEST-PAGE] Setting result data...');
-        console.log('[BACKTEST-PAGE] initial_balance:', data.initial_balance);
-        console.log('[BACKTEST-PAGE] final_balance:', data.final_balance);
-        console.log('[BACKTEST-PAGE] trades:', data.trades ? data.trades.length : 'undefined');
-
-        // Ensure trades is an array
-        if (data.trades && !Array.isArray(data.trades)) {
-          console.warn('[BACKTEST-PAGE] Converting trades to array');
-          data.trades = [data.trades];
-        }
-
-        setResult(data);
-        console.log('[BACKTEST-PAGE] Result state set successfully');
       }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[BACKTEST-PAGE] API error response:', errorText);
+
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { error: errorText };
+        }
+
+        throw new Error(errorData.error || 'Failed to run backtest');
+      }
+
+      setLoadingMessage('Processing backtest results...');
+
+      const data = await response.json();
+      console.log('[BACKTEST-PAGE] API success response received');
+      console.log('[BACKTEST-PAGE] Response data structure:', Object.keys(data));
+      console.log('[BACKTEST-PAGE] Response data:', JSON.stringify(data, null, 2));
+
+      // Validate response data structure
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response format from backtest service');
+      }
+
+      // Check if this is fallback data
+      if (data._fallback) {
+        console.warn('[BACKTEST-PAGE] Received fallback data:', data._message);
+        setError(`Warning: ${data._message || 'Using sample data due to service unavailability'}`);
+      } else {
+        // Clear any previous error for successful responses
+        setError(null);
+      }
+
+      console.log('[BACKTEST-PAGE] Setting result data...');
+      console.log('[BACKTEST-PAGE] initial_balance:', data.initial_balance);
+      console.log('[BACKTEST-PAGE] final_balance:', data.final_balance);
+      console.log('[BACKTEST-PAGE] trades:', data.trades ? data.trades.length : 'undefined');
+
+      // Ensure trades is an array
+      if (data.trades && !Array.isArray(data.trades)) {
+        console.warn('[BACKTEST-PAGE] Converting trades to array');
+        data.trades = [data.trades];
+      }
+
+      setResult(data);
+      console.log('[BACKTEST-PAGE] Result state set successfully');
 
       // Show success message for slow requests
       if (isLongRunning) {
