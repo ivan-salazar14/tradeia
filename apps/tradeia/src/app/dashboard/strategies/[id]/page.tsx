@@ -52,6 +52,7 @@ export default function StrategyDetailsPage() {
   const fetchStrategyDetails = async () => {
     try {
       setLoading(true);
+      console.log(`[STRATEGY-DETAILS] Fetching strategy details for ID: ${strategyId}`);
 
       const response = await fetch(`/api/strategies/${strategyId}`, {
         credentials: 'include',
@@ -60,11 +61,16 @@ export default function StrategyDetailsPage() {
         }
       });
 
+      console.log(`[STRATEGY-DETAILS] API response status: ${response.status}`);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error(`[STRATEGY-DETAILS] API error: ${response.status} - ${errorText}`);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log(`[STRATEGY-DETAILS] Successfully received data for strategy: ${data.strategy?.name || 'Unknown'}`);
       
       // Mapear los datos de la API al formato esperado
       const mappedStrategy: Strategy = {
@@ -93,26 +99,93 @@ export default function StrategyDetailsPage() {
       setStrategy(mappedStrategy);
     } catch (error) {
       console.error("Error fetching strategy details:", error);
+      console.log(`[STRATEGY-DETAILS] Using fallback data for strategy ID: ${strategyId}`);
       // Fallback a datos de ejemplo si hay error
-      const mockStrategy: Strategy = {
+      // Create a more dynamic fallback based on the requested strategy ID
+      const fallbackStrategies: Record<string, Strategy> = {
+        'aggressive': {
+          id: 'aggressive',
+          name: "Estrategia Agresiva",
+          description: "Estrategia de alto riesgo para traders experimentados, utilizando múltiples indicadores técnicos para maximizar ganancias.",
+          risk_level: "Alto",
+          timeframe: "15m",
+          indicators: ["RSI", "MACD", "Bollinger Bands"],
+          is_active: true,
+          created_at: "2024-01-15T10:30:00Z",
+          stop_loss: 1.5,
+          take_profit: 3,
+          max_positions: 5,
+          performance: {
+            win_rate: 58,
+            total_trades: 87,
+            profit_loss: 4.1,
+            sharpe_ratio: 0.9,
+            max_drawdown: -5.5,
+            avg_trade_duration: 12.8
+          },
+          recent_signals: [
+            {
+              timestamp: "2024-01-25T14:30:00Z",
+              type: "BUY",
+              price: 45000,
+              confidence: 0.85,
+              status: "CLOSED",
+              pnl: 2.1
+            }
+          ]
+        },
+        'sqzmom_adx': {
+          id: 'sqzmom_adx',
+          name: "ADX Squeeze Momentum",
+          description: "Estrategia que utiliza indicadores ADX y Squeeze Momentum para confirmar tendencias y generar señales precisas.",
+          risk_level: "Medio",
+          timeframe: "4h",
+          indicators: ["ADX", "Squeeze Momentum"],
+          is_active: true,
+          created_at: "2024-01-15T10:30:00Z",
+          stop_loss: 3,
+          take_profit: 6,
+          max_positions: 3,
+          performance: {
+            win_rate: 68,
+            total_trades: 145,
+            profit_loss: 12.3,
+            sharpe_ratio: 1.4,
+            max_drawdown: -4.2,
+            avg_trade_duration: 22.5
+          },
+          recent_signals: [
+            {
+              timestamp: "2024-01-25T14:30:00Z",
+              type: "BUY",
+              price: 45000,
+              confidence: 0.85,
+              status: "CLOSED",
+              pnl: 2.1
+            }
+          ]
+        }
+      };
+
+      const mockStrategy = fallbackStrategies[strategyId] || {
         id: strategyId,
-        name: "Estrategia Conservadora",
-        description: "Estrategia de bajo riesgo con indicadores técnicos básicos, diseñada para traders principiantes que buscan estabilidad en sus inversiones.",
-        risk_level: "Bajo",
+        name: `Estrategia ${strategyId.charAt(0).toUpperCase() + strategyId.slice(1)}`,
+        description: `Estrategia personalizada con ID: ${strategyId}`,
+        risk_level: "Medio",
         timeframe: "4h",
-        indicators: ["SMA", "RSI", "Bollinger Bands"],
-        is_active: true,
+        indicators: ["SMA", "RSI"],
+        is_active: false,
         created_at: "2024-01-15T10:30:00Z",
         stop_loss: 2,
         take_profit: 4,
         max_positions: 3,
         performance: {
-          win_rate: 65,
-          total_trades: 120,
-          profit_loss: 8.5,
-          sharpe_ratio: 1.2,
-          max_drawdown: -3.2,
-          avg_trade_duration: 18.5
+          win_rate: 60,
+          total_trades: 100,
+          profit_loss: 5.0,
+          sharpe_ratio: 1.0,
+          max_drawdown: -4.0,
+          avg_trade_duration: 16.0
         },
         recent_signals: [
           {
