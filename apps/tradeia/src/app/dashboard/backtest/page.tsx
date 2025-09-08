@@ -456,14 +456,24 @@ export default function BacktestPage({ params }: PageProps) {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Symbol
                 </label>
-                <input
-                  type="text"
+                <select
                   name="symbol"
                   value={formData.symbol}
                   onChange={handleChange}
-                  placeholder="Leave empty for all symbols"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
+                >
+                  <option value="">All Symbols</option>
+                  <option value="BTC/USDT">BTC/USDT</option>
+                  <option value="ETH/USDT">ETH/USDT</option>
+                  <option value="BNB/USDT">BNB/USDT</option>
+                  <option value="ADA/USDT">ADA/USDT</option>
+                  <option value="SOL/USDT">SOL/USDT</option>
+                  <option value="DOT/USDT">DOT/USDT</option>
+                  <option value="LINK/USDT">LINK/USDT</option>
+                  <option value="LTC/USDT">LTC/USDT</option>
+                  <option value="XRP/USDT">XRP/USDT</option>
+                  <option value="DOGE/USDT">DOGE/USDT</option>
+                </select>
               </div>
 
               <div>
