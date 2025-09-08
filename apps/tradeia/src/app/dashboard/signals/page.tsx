@@ -17,10 +17,33 @@ type Signal = {
   tp2?: number;
   stopLoss?: number;
   source: { provider: string };
+  position_size?: number;
+  risk_amount?: number;
+  reward_to_risk?: number;
+};
+
+type PortfolioMetrics = {
+  total_position_size: number;
+  total_risk_amount: number;
+  remaining_balance: number;
+  avg_reward_to_risk: number;
+};
+
+type RiskParameters = {
+  initial_balance: number;
+  risk_per_trade_pct: number;
+};
+
+type SignalsResponse = {
+  signals: Signal[];
+  portfolio_metrics?: PortfolioMetrics;
+  risk_parameters?: RiskParameters;
 };
 
 export default function SignalsPage() {
   const [signals, setSignals] = useState<Signal[]>([]);
+  const [portfolioMetrics, setPortfolioMetrics] = useState<PortfolioMetrics | null>(null);
+  const [riskParameters, setRiskParameters] = useState<RiskParameters | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<string>('4h');
@@ -32,6 +55,10 @@ export default function SignalsPage() {
     start: format(subDays(new Date(), 7), 'yyyy-MM-dd'),
     end: format(new Date(), 'yyyy-MM-dd')
   });
+
+  // Risk analysis parameters
+  const [initialBalance, setInitialBalance] = useState<string>('10000');
+  const [riskPerTrade, setRiskPerTrade] = useState<string>('1.0');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,10 +90,12 @@ export default function SignalsPage() {
         return;
       }
 
-      const params = new URLSearchParams({ 
+      const params = new URLSearchParams({
         timeframe,
         start_date: dateRange.start,
-        end_date: dateRange.end
+        end_date: dateRange.end,
+        initial_balance: initialBalance,
+        risk_per_trade: riskPerTrade
       });
       if (symbol.trim()) params.set('symbol', symbol.trim().toUpperCase());
       // If exactly one strategy is active, pass as strategy_id param
@@ -84,8 +113,10 @@ export default function SignalsPage() {
         const text = await res.text();
         throw new Error(text || `HTTP ${res.status}`);
       }
-      const json = await res.json();
-      setSignals(json.items || []);
+      const json: SignalsResponse = await res.json();
+      setSignals(json.signals || []);
+      setPortfolioMetrics(json.portfolio_metrics || null);
+      setRiskParameters(json.risk_parameters || null);
     } catch (e: any) {
       setError(e?.message ?? "Error al cargar señales");
     } finally {
@@ -137,7 +168,7 @@ export default function SignalsPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [timeframe, symbol, selectedStrategies, dateRange]);
+  }, [timeframe, symbol, selectedStrategies, dateRange, initialBalance, riskPerTrade]);
 
   // Handle page changes
   const handlePageChange = (page: number) => {
@@ -166,7 +197,7 @@ export default function SignalsPage() {
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">Rango de Fechas</label>
               <div className="flex space-x-2">
@@ -211,6 +242,33 @@ export default function SignalsPage() {
             </div>
 
             <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Balance Inicial</label>
+              <input
+                type="number"
+                className="border rounded px-2 py-1 text-sm w-full"
+                placeholder="10000"
+                value={initialBalance}
+                onChange={(e) => setInitialBalance(e.target.value)}
+                min="1"
+                step="0.01"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Riesgo por Trade (%)</label>
+              <input
+                type="number"
+                className="border rounded px-2 py-1 text-sm w-full"
+                placeholder="1.0"
+                value={riskPerTrade}
+                onChange={(e) => setRiskPerTrade(e.target.value)}
+                min="0.01"
+                max="100"
+                step="0.01"
+              />
+            </div>
+
+            <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">Estrategias</label>
               <select
                 multiple
@@ -236,6 +294,46 @@ export default function SignalsPage() {
 
         {!loading && !error && (
           <div className="space-y-4">
+            {/* Portfolio Metrics */}
+            {portfolioMetrics && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">Análisis de Riesgo del Portafolio</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Posición Total</p>
+                    <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                      ${portfolioMetrics.total_position_size.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Riesgo Total</p>
+                    <p className="text-lg font-semibold text-red-600 dark:text-red-400">
+                      ${portfolioMetrics.total_risk_amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Balance Restante</p>
+                    <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                      ${portfolioMetrics.remaining_balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Ratio Promedio R/R</p>
+                    <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                      {portfolioMetrics.avg_reward_to_risk.toFixed(2)}:1
+                    </p>
+                  </div>
+                </div>
+                {riskParameters && (
+                  <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                    <div className="text-sm text-blue-700 dark:text-blue-300">
+                      <span className="font-medium">Parámetros de Riesgo:</span> Balance inicial ${riskParameters.initial_balance.toLocaleString()}, Riesgo por trade {riskParameters.risk_per_trade_pct}%
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Table Controls */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex items-center gap-4">
@@ -311,13 +409,16 @@ export default function SignalsPage() {
                     <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TP1</th>
                     <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TP2</th>
                     <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SL</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Posición</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Riesgo</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">R/R</th>
                     <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
                   </tr>
                 </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {signals.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={14} className="px-6 py-4 text-center text-gray-500">
                       No hay señales disponibles. Seleccione una estrategia activa en &quot;Gestión de Bots&quot; o intente refrescar.
                     </td>
                   </tr>
@@ -359,6 +460,15 @@ export default function SignalsPage() {
                         </td>
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-mono text-sm">
                           {s.stopLoss ? s.stopLoss.toLocaleString(undefined, { maximumFractionDigits: 8 }) : '-'}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-mono text-sm">
+                          {s.position_size ? `$${s.position_size.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '-'}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-mono text-sm">
+                          {s.risk_amount ? `$${s.risk_amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '-'}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-mono text-sm">
+                          {s.reward_to_risk ? `${s.reward_to_risk.toFixed(2)}:1` : '-'}
                         </td>
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm text-gray-500">
                           {s.source?.provider || '-'}
