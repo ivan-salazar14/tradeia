@@ -333,10 +333,12 @@ export default function BacktestPage({ params }: PageProps) {
         return `${year}-${month}-${day}T00:00:00`;
       };
 
-      // Determine symbols to test
+      // Determine symbols to test and API parameter format
       const symbolsToTest = formData.symbol.length > 0 ? formData.symbol : ['']; // Empty string means all symbols
+      const symbolParam = formData.symbol.length > 0 ? formData.symbol : null; // Array for selected symbols, null for all
 
       console.log('[BACKTEST-PAGE] Symbols to test:', symbolsToTest);
+      console.log('[BACKTEST-PAGE] Symbol param for API:', symbolParam);
 
       // If multiple symbols selected, make separate requests and combine results
       if (symbolsToTest.length > 1) {
@@ -440,7 +442,7 @@ export default function BacktestPage({ params }: PageProps) {
           strategy_id: formData.strategy,
           initial_balance: formData.initial_balance,
           risk_per_trade: formData.risk_per_trade,
-          symbol: symbolsToTest[0] || '' // Single symbol or empty for all
+          symbol: symbolParam // Array for selected symbols, null for all
         };
 
         setLoadingMessage('Sending request to backtest service...');
