@@ -53,7 +53,7 @@ export default function BacktestPage({ params }: PageProps) {
   }, [params]);
 
   const [formData, setFormData] = useState({
-    symbol: '',
+    symbol: [] as string[],
     timeframe: '4h',
     start_date: format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
     end_date: format(new Date(), 'yyyy-MM-dd'),
@@ -261,10 +261,20 @@ export default function BacktestPage({ params }: PageProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+
+    if (name === 'symbol') {
+      const selectElement = e.target as HTMLSelectElement;
+      const selectedValues = Array.from(selectElement.selectedOptions, option => option.value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: selectedValues
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   // Ensure we have a clean URL without undefined segments
@@ -331,7 +341,7 @@ export default function BacktestPage({ params }: PageProps) {
         strategy_id: formData.strategy,
         initial_balance: formData.initial_balance,
         risk_per_trade: formData.risk_per_trade,
-        symbol: formData.symbol || '' // Include symbol even if empty
+        symbol: formData.symbol.length > 0 ? formData.symbol.join(',') : '' // Join selected symbols with comma or empty for all
       };
 
       setLoadingMessage('Sending request to backtest service...');
@@ -454,15 +464,15 @@ export default function BacktestPage({ params }: PageProps) {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Symbol
+                  Symbol (Hold Ctrl/Cmd to select multiple)
                 </label>
                 <select
                   name="symbol"
+                  multiple
                   value={formData.symbol}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white min-h-[120px]"
                 >
-                  <option value="">All Symbols</option>
                   <option value="BTC/USDT">BTC/USDT</option>
                   <option value="ETH/USDT">ETH/USDT</option>
                   <option value="BNB/USDT">BNB/USDT</option>
@@ -474,6 +484,16 @@ export default function BacktestPage({ params }: PageProps) {
                   <option value="XRP/USDT">XRP/USDT</option>
                   <option value="DOGE/USDT">DOGE/USDT</option>
                 </select>
+                {formData.symbol.length > 0 && (
+                  <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                    Selected: {formData.symbol.join(', ')}
+                  </div>
+                )}
+                {formData.symbol.length === 0 && (
+                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    No symbols selected (will test all symbols)
+                  </div>
+                )}
               </div>
 
               <div>
