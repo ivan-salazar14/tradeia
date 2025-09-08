@@ -27,6 +27,11 @@ interface Trade {
   profit_pct: number;
   profit: number;
   balance_after: number;
+  position_notional?: number;
+  risk_fraction?: number;
+  opened_at_candle_index?: number;
+  exit_type?: string;
+  duration_hours?: number;
 }
 
 interface BacktestResult {
@@ -960,6 +965,21 @@ export default function BacktestPage({ params }: PageProps) {
                           </th>
                           <th
                             scope="col"
+                            className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                            onClick={() => handleSort('exit_time')}
+                          >
+                            <div className="flex items-center">
+                              <span className="hidden sm:inline">Exit Time</span>
+                              <span className="sm:hidden">Exit</span>
+                              {sortConfig.key === 'exit_time' && (
+                                <span className="ml-1">
+                                  {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                          <th
+                            scope="col"
                             className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-gray-600"
                             onClick={() => handleSort('direction')}
                           >
@@ -1019,6 +1039,18 @@ export default function BacktestPage({ params }: PageProps) {
                             </div>
                           </th>
                           <th scope="col" className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <span className="hidden sm:inline">Position Size</span>
+                            <span className="sm:hidden">Size</span>
+                          </th>
+                          <th scope="col" className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <span className="hidden sm:inline">Risk %</span>
+                            <span className="sm:hidden">Risk</span>
+                          </th>
+                          <th scope="col" className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <span className="hidden sm:inline">Duration (h)</span>
+                            <span className="sm:hidden">Hours</span>
+                          </th>
+                          <th scope="col" className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                             <span className="hidden sm:inline">Balance After</span>
                             <span className="sm:hidden">Balance</span>
                           </th>
@@ -1027,7 +1059,7 @@ export default function BacktestPage({ params }: PageProps) {
                       <tbody>
                         {currentTrades.length === 0 && (
                           <tr>
-                            <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                            <td colSpan={11} className="px-6 py-4 text-center text-gray-500">
                               No hay operaciones disponibles para mostrar.
                             </td>
                           </tr>
@@ -1038,7 +1070,10 @@ export default function BacktestPage({ params }: PageProps) {
                               {trade.symbol || 'N/A'}
                             </td>
                             <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 dark:text-gray-100 break-words max-w-[100px] md:max-w-[150px] sm:max-w-none">
-                              {trade.entry_time ? new Date(trade.entry_time).toLocaleDateString() : 'N/A'}
+                              {trade.entry_time ? new Date(trade.entry_time).toLocaleString() : 'N/A'}
+                            </td>
+                            <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 dark:text-gray-100 break-words max-w-[100px] md:max-w-[150px] sm:max-w-none">
+                              {trade.exit_time ? new Date(trade.exit_time).toLocaleString() : 'N/A'}
                             </td>
                             <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
                               <span className={`px-1 md:px-2 inline-flex text-xs leading-4 md:leading-5 font-semibold rounded-full ${
@@ -1059,6 +1094,15 @@ export default function BacktestPage({ params }: PageProps) {
                               (trade.profit_pct || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                             }`}>
                               {(trade.profit_pct || 0) >= 0 ? '+' : ''}{(trade.profit_pct || 0).toFixed(2)}%
+                            </td>
+                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
+                              {trade.position_notional ? `$${trade.position_notional.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : 'N/A'}
+                            </td>
+                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
+                              {trade.risk_fraction ? `${(trade.risk_fraction * 100).toFixed(2)}%` : 'N/A'}
+                            </td>
+                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
+                              {trade.duration_hours ? `${trade.duration_hours.toFixed(1)}h` : 'N/A'}
                             </td>
                             <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
                               ${(trade.balance_after || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
