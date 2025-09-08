@@ -1,5 +1,75 @@
 import { NextResponse } from 'next/server';
 
+// Transform external API response to match frontend expectations
+function transformBacktestResponse(data: any, params: any) {
+  console.log('[BACKTEST-PROXY] Transforming response data...');
+
+  // Flatten all trades from symbol_results into a single array
+  const allTrades: any[] = [];
+
+  if (data.symbol_results) {
+    Object.keys(data.symbol_results).forEach(symbol => {
+      const symbolData = data.symbol_results[symbol];
+      if (symbolData.trades && Array.isArray(symbolData.trades)) {
+        // Add symbol to each trade if not present
+        const tradesWithSymbol = symbolData.trades.map((trade: any) => ({
+          ...trade,
+          symbol: trade.symbol || symbol
+        }));
+        allTrades.push(...tradesWithSymbol);
+      }
+    });
+  }
+
+  console.log('[BACKTEST-PROXY] Flattened trades count:', allTrades.length);
+
+  // Calculate summary statistics
+  const initialBalance = parseFloat(params.initial_balance) || 10000;
+  let finalBalance = initialBalance;
+
+  if (allTrades.length > 0) {
+    // Sort trades by exit_time to get the final balance
+    const sortedTrades = allTrades.sort((a, b) =>
+      new Date(a.exit_time || a.entry_time).getTime() - new Date(b.exit_time || b.entry_time).getTime()
+    );
+
+    // Use the last trade's balance_after if available, otherwise calculate
+    const lastTrade = sortedTrades[sortedTrades.length - 1];
+    if (lastTrade.balance_after !== undefined) {
+      finalBalance = lastTrade.balance_after;
+    } else {
+      // Calculate final balance by accumulating profits
+      finalBalance = sortedTrades.reduce((balance, trade) => {
+        return balance + (trade.profit || 0);
+      }, initialBalance);
+    }
+  }
+
+  const totalReturn = finalBalance - initialBalance;
+  const totalReturnPct = initialBalance > 0 ? (totalReturn / initialBalance) * 100 : 0;
+
+  const transformedData = {
+    trades: allTrades,
+    initial_balance: initialBalance,
+    final_balance: finalBalance,
+    total_return: totalReturn,
+    total_return_pct: totalReturnPct,
+    symbols_tested: data.symbols_tested || [],
+    // Keep original data for debugging
+    _original_response: data
+  };
+
+  console.log('[BACKTEST-PROXY] Summary stats:', {
+    initial_balance: initialBalance,
+    final_balance: finalBalance,
+    total_return: totalReturn,
+    total_return_pct: totalReturnPct,
+    trades_count: allTrades.length
+  });
+
+  return transformedData;
+}
+
 export async function POST(request: Request) {
   console.log('[BACKTEST-PROXY] ===== STARTING BACKTEST PROXY =====');
 
@@ -84,9 +154,12 @@ export async function POST(request: Request) {
         const data = await response.json();
         console.log('[BACKTEST-PROXY] External API response data:', JSON.stringify(data, null, 2));
         console.log('[BACKTEST-PROXY] External API response keys:', Object.keys(data));
-        console.log('[BACKTEST-PROXY] External API response has initial_balance:', data.hasOwnProperty('initial_balance'));
-        console.log('[BACKTEST-PROXY] External API response has trades:', data.hasOwnProperty('trades'));
-        return NextResponse.json(data);
+
+        // Transform the external API response to match frontend expectations
+        const transformedData = transformBacktestResponse(data, params);
+        console.log('[BACKTEST-PROXY] Transformed response data:', JSON.stringify(transformedData, null, 2));
+
+        return NextResponse.json(transformedData);
       } else {
         const errorText = await response.text();
         console.error('[BACKTEST-PROXY] External API returned error:');
