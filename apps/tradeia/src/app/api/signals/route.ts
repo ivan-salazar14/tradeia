@@ -2,6 +2,59 @@ import { NextRequest, NextResponse } from 'next/server';
 import { normalizeExampleProvider } from '@/lib/signals/normalize';
 import { UnifiedSignal } from '@/lib/signals/types';
 
+interface PortfolioMetrics {
+  total_position_size: number;
+  total_risk_amount: number;
+  remaining_balance: number;
+  avg_reward_to_risk: number;
+}
+
+interface RiskParameters {
+  initial_balance: number;
+  risk_per_trade_pct: number;
+}
+
+function calculatePortfolioMetrics(signals: UnifiedSignal[], initialBalance: number, riskPerTrade: number): PortfolioMetrics {
+  let totalPositionSize = 0;
+  let totalRiskAmount = 0;
+  let remainingBalance = initialBalance;
+  let totalRewardToRisk = 0;
+  let validSignalsCount = 0;
+
+  for (const signal of signals) {
+    // Skip signals without entry price or stop loss
+    if (!signal.entry || !signal.stopLoss) continue;
+
+    // Calculate position size based on risk
+    const riskAmount = (remainingBalance * riskPerTrade) / 100;
+    const riskPerUnit = Math.abs(signal.entry - signal.stopLoss);
+    const positionSize = riskAmount / riskPerUnit;
+
+    totalPositionSize += positionSize * signal.entry;
+    totalRiskAmount += riskAmount;
+
+    // Calculate reward to risk ratio
+    if (signal.tp1) {
+      const reward = Math.abs(signal.tp1 - signal.entry);
+      const rewardToRisk = reward / riskPerUnit;
+      totalRewardToRisk += rewardToRisk;
+      validSignalsCount++;
+    }
+
+    // Update remaining balance
+    remainingBalance -= riskAmount;
+  }
+
+  const avgRewardToRisk = validSignalsCount > 0 ? totalRewardToRisk / validSignalsCount : 0;
+
+  return {
+    total_position_size: totalPositionSize,
+    total_risk_amount: totalRiskAmount,
+    remaining_balance: Math.max(0, remainingBalance),
+    avg_reward_to_risk: avgRewardToRisk
+  };
+}
+
 const API_BASE = process.env.SIGNALS_API_BASE; // e.g., https://provider.example.com
 
 // Simple in-memory circuit breaker (per server instance)
@@ -23,6 +76,8 @@ export async function GET(req: NextRequest) {
   const endDate = searchParams.get('end_date');
   const limit = searchParams.get('limit');
   const offset = searchParams.get('offset');
+  const initialBalance = parseFloat(searchParams.get('initial_balance') || '10000');
+  const riskPerTrade = parseFloat(searchParams.get('risk_per_trade') || '1.0');
 
   const auth = req.headers.get('authorization');
   if (!auth) {
@@ -120,12 +175,16 @@ export async function GET(req: NextRequest) {
       : [normalizeOne(data)];
 
     // basic quality checks: remove items missing required fields or invalid numbers
+    // Also filter out signals with "No signal generated" reason
     const quality = signals.filter((s) => {
       if (!s.id || !s.symbol || !s.timeframe || !s.timestamp || !s.direction) return false;
       if (s.entry !== undefined && typeof s.entry !== 'number') return false;
       if (s.tp1 !== undefined && typeof s.tp1 !== 'number') return false;
       if (s.tp2 !== undefined && typeof s.tp2 !== 'number') return false;
       if (s.stopLoss !== undefined && typeof s.stopLoss !== 'number') return false;
+      // Filter out signals that are not actual trading signals
+      if (s.reason === 'No signal generated' || s.reason === 'no signal generated') return false;
+      if (s.marketScenario === null && !s.entry) return false; // Signals without market scenario and entry are likely informational
       return true;
     });
 
@@ -146,7 +205,39 @@ export async function GET(req: NextRequest) {
     failCount = 0;
     openUntil = 0;
 
-    return NextResponse.json({ items: filtered, count: filtered.length });
+    // Calculate portfolio metrics
+    const portfolioMetrics = calculatePortfolioMetrics(filtered, initialBalance, riskPerTrade);
+
+    // Prepare risk parameters
+    const riskParameters: RiskParameters = {
+      initial_balance: initialBalance,
+      risk_per_trade_pct: riskPerTrade
+    };
+
+    // Transform signals to match frontend expectations
+    const transformedSignals = filtered.map(signal => ({
+      id: signal.id,
+      symbol: signal.symbol,
+      timeframe: signal.timeframe,
+      timestamp: signal.timestamp,
+      type: signal.type,
+      direction: signal.direction,
+      strategyId: signal.strategyId,
+      entry: signal.entry,
+      tp1: signal.tp1,
+      tp2: signal.tp2,
+      stopLoss: signal.stopLoss,
+      source: signal.source,
+      position_size: signal.entry ? (initialBalance * riskPerTrade / 100) / Math.abs(signal.entry - (signal.stopLoss || signal.entry)) * signal.entry : undefined,
+      risk_amount: signal.entry ? (initialBalance * riskPerTrade / 100) : undefined,
+      reward_to_risk: signal.entry && signal.tp1 && signal.stopLoss ? Math.abs(signal.tp1 - signal.entry) / Math.abs(signal.entry - signal.stopLoss) : undefined
+    }));
+
+    return NextResponse.json({
+      signals: transformedSignals,
+      portfolio_metrics: portfolioMetrics,
+      risk_parameters: riskParameters
+    });
   } catch (err: any) {
     failCount += 1;
     if (failCount >= OPEN_THRESHOLD) {
