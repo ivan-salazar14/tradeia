@@ -1,16 +1,19 @@
 import React from 'react';
 import { TrendingUp, Shield, Zap, Target, BarChart3, Activity } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const Strategies = () => {
+  const { t } = useLanguage();
+
   return (
     <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Nuestras Estrategias de Trading
+            {t('strategies.title')}
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Estrategias cuantitativas avanzadas diseñadas para diferentes perfiles de riesgo
+            {t('strategies.description')}
           </p>
         </div>
 
@@ -18,39 +21,45 @@ const Strategies = () => {
           {/* Conservative Strategy */}
           <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">Estrategia Conservadora</h3>
+              <h3 className="text-2xl font-bold text-gray-900">{t('strategies.conservative.title')}</h3>
               <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
-                Bajo Riesgo
+                Low Risk
               </span>
             </div>
-            
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-4">
+                {t('strategies.conservative.description')}
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-teal-600">2-3%</div>
-                <div className="text-sm text-gray-600">Rentabilidad Mensual</div>
+                <div className="text-2xl font-bold text-teal-600">{t('strategies.conservative.winRate')}</div>
+                <div className="text-sm text-gray-600">Win Rate</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-teal-600">5%</div>
-                <div className="text-sm text-gray-600">Drawdown Máx.</div>
+                <div className="text-2xl font-bold text-teal-600">{t('strategies.conservative.riskReward')}</div>
+                <div className="text-sm text-gray-600">Risk/Reward</div>
               </div>
             </div>
 
             <ul className="space-y-3 mb-8">
               <li className="flex items-center text-gray-700">
                 <Shield className="w-5 h-5 text-green-500 mr-3" />
-                Todas las condiciones deben cumplirse
+                All 5 conditions must be met
               </li>
               <li className="flex items-center text-gray-700">
                 <Target className="w-5 h-5 text-green-500 mr-3" />
-                Señales de alta precisión
+                High precision signals
               </li>
               <li className="flex items-center text-gray-700">
                 <BarChart3 className="w-5 h-5 text-green-500 mr-3" />
-                Baja frecuencia de operaciones
+                Low frequency of operations
               </li>
               <li className="flex items-center text-gray-700">
                 <TrendingUp className="w-5 h-5 text-green-500 mr-3" />
-                Ideal para cuentas grandes
+                Best for large accounts
               </li>
             </ul>
 
@@ -68,39 +77,46 @@ const Strategies = () => {
             </div>
             
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">Estrategia Moderada</h3>
+              <h3 className="text-2xl font-bold text-gray-900">Moderate (Default)</h3>
               <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
-                Riesgo Moderado
+                Balanced Risk
               </span>
             </div>
-            
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Criteria: 4/5 conditions (RSI {'<'}40/{'>'}60, ADX {'>'}15, SQZMOM ≠0, DMI diff {'>'}3, ATR {'>'}50).
+                Frequency: Balanced. Best For: Everyday traders on mid-priority pairs like XRP/USDT.
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-teal-600">5-8%</div>
-                <div className="text-sm text-gray-600">Rentabilidad Mensual</div>
+                <div className="text-2xl font-bold text-teal-600">Good</div>
+                <div className="text-sm text-gray-600">Risk/Reward</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-teal-600">10%</div>
-                <div className="text-sm text-gray-600">Drawdown Máx.</div>
+                <div className="text-2xl font-bold text-teal-600">1:1 min</div>
+                <div className="text-sm text-gray-600">Ratio</div>
               </div>
             </div>
 
             <ul className="space-y-3 mb-8">
               <li className="flex items-center text-gray-700">
                 <Activity className="w-5 h-5 text-teal-500 mr-3" />
-                3 de 5 condiciones requeridas
+                4 of 5 conditions required
               </li>
               <li className="flex items-center text-gray-700">
                 <Target className="w-5 h-5 text-teal-500 mr-3" />
-                Equilibrio entre riesgo y recompensa
+                Balance between risk and reward
               </li>
               <li className="flex items-center text-gray-700">
                 <BarChart3 className="w-5 h-5 text-teal-500 mr-3" />
-                Frecuencia moderada de operaciones
+                Moderate frequency of operations
               </li>
               <li className="flex items-center text-gray-700">
                 <TrendingUp className="w-5 h-5 text-teal-500 mr-3" />
-                Ideal para cuentas medianas
+                Ideal for medium accounts
               </li>
             </ul>
 
@@ -112,39 +128,46 @@ const Strategies = () => {
           {/* Aggressive Strategy */}
           <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">Estrategia Agresiva</h3>
+              <h3 className="text-2xl font-bold text-gray-900">Aggressive</h3>
               <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold">
-                Alto Riesgo
+                High Risk
               </span>
             </div>
-            
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Criteria: Relaxed (ADX {'>'}10, minimal DMI/ATR filters). Frequency: High.
+                Best For: High-volume traders on altcoins like SOL/USDT.
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-teal-600">10-15%</div>
-                <div className="text-sm text-gray-600">Rentabilidad Mensual</div>
+                <div className="text-2xl font-bold text-teal-600">More Trades</div>
+                <div className="text-sm text-gray-600">Higher Frequency</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-teal-600">15%</div>
-                <div className="text-sm text-gray-600">Drawdown Máx.</div>
+                <div className="text-2xl font-bold text-teal-600">Higher Risk</div>
+                <div className="text-sm text-gray-600">False Signals</div>
               </div>
             </div>
 
             <ul className="space-y-3 mb-8">
               <li className="flex items-center text-gray-700">
                 <Zap className="w-5 h-5 text-orange-500 mr-3" />
-                Mínimas confirmaciones requeridas
+                Minimal confirmations required
               </li>
               <li className="flex items-center text-gray-700">
                 <Activity className="w-5 h-5 text-orange-500 mr-3" />
-                Alta frecuencia de operaciones
+                High frequency of operations
               </li>
               <li className="flex items-center text-gray-700">
                 <BarChart3 className="w-5 h-5 text-orange-500 mr-3" />
-                Mayor exposición al mercado
+                Greater market exposure
               </li>
               <li className="flex items-center text-gray-700">
                 <TrendingUp className="w-5 h-5 text-orange-500 mr-3" />
-                Ideal para cuentas pequeñas
+                Best for small accounts
               </li>
             </ul>
 
@@ -154,14 +177,14 @@ const Strategies = () => {
           </div>
         </div>
 
-        {/* Squeeze+ADX Strategy Highlight */}
+        {/* SQZMOM_ADX Specialized Strategy */}
         <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-2xl p-8 lg:p-12 text-white">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <div>
-              <h3 className="text-3xl font-bold mb-4">Estrategia Avanzada: Squeeze+ADX Pro</h3>
+              <h3 className="text-3xl font-bold mb-4">SQZMOM_ADX Specialized</h3>
               <p className="text-xl mb-8 opacity-90">
-                Nuestra estrategia insignia que combina el poder del indicador Squeeze Momentum con ADX 
-                para identificar las mejores oportunidades de trading en mercados con tendencia.
+                Criteria: Focus on squeeze momentum with ADX for breakout detection.
+                Best For: Volatility plays in low-priority pairs like ADA/USDT.
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -184,22 +207,27 @@ const Strategies = () => {
 
               <div className="grid grid-cols-3 gap-4 mb-8">
                 <div className="text-center">
-                  <div className="text-2xl font-bold">65-70%</div>
-                  <div className="text-sm opacity-80">Tasa de Aciertos</div>
+                  <div className="text-2xl font-bold">Excellent</div>
+                  <div className="text-sm opacity-80">For Trends</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold">1:2</div>
-                  <div className="text-sm opacity-80">Ratio Riesgo/Beneficio</div>
+                  <div className="text-2xl font-bold">3x ATR</div>
+                  <div className="text-sm opacity-80">TP2 Target</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold">4H-1D</div>
-                  <div className="text-sm opacity-80">Timeframe Recomendado</div>
+                  <div className="text-2xl font-bold">Breakouts</div>
+                  <div className="text-sm opacity-80">Best For</div>
                 </div>
               </div>
 
-              <button  onClick={() => window.location.href = '/login'} className="bg-white text-teal-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-                Aprender Más
-              </button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button onClick={() => window.location.href = '/register'} className="bg-white text-teal-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                  {t('strategies.buttons.select')}
+                </button>
+                <button onClick={() => window.location.href = '/features'} className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-teal-600 transition-colors">
+                  {t('strategies.buttons.backtest')}
+                </button>
+              </div>
             </div>
             
             <div className="bg-white bg-opacity-10 rounded-xl p-6 backdrop-blur-sm">

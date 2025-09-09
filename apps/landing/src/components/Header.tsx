@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Menu, X, LogIn, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,11 +25,13 @@ const Header = () => {
   }, [location.pathname]);
 
   const navLinks = [
-    { name: 'Inicio', path: '/' },
-    { name: 'Características', path: '/features' },
-    { name: 'Precios', path: '/pricing' },
-    { name: 'Documentación', path: '/docs' },
-    { name: 'Nosotros', path: '/about' },
+    { name: t('nav.home'), path: '/' },
+    { name: t('nav.features'), path: '/features' },
+    { name: t('nav.strategies'), path: '/strategies' },
+    { name: t('nav.education'), path: '/education' },
+    { name: t('nav.docs'), path: '/docs' },
+    { name: t('nav.about'), path: '/about' },
+    { name: t('nav.contact'), path: '/contact' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -68,19 +73,20 @@ const Header = () => {
             ))}
             
             <div className="flex items-center ml-2 space-x-2">
+              <LanguageSwitcher />
               <button
                 onClick={() => window.location.href = '/login'}
                 className="flex items-center px-4 py-2 text-sm font-medium text-primary-600 bg-white border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
               >
                 <LogIn size={16} className="mr-2" />
-                Iniciar Sesión
+                {t('hero.buttons.login')}
               </button>
               <button
                 onClick={() => window.location.href = '/register'}
                 className="flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
               >
                 <User size={16} className="mr-2" />
-                Regístrate
+                {t('hero.buttons.signup')}
               </button>
             </div>
           </nav>
@@ -128,14 +134,14 @@ const Header = () => {
               className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-primary-600 bg-white border border-primary-200 rounded-lg hover:bg-primary-50"
             >
               <LogIn size={16} className="mr-2" />
-              Iniciar Sesión
+              {t('hero.buttons.login')}
             </button>
             <button
               onClick={() => window.location.href = '/register'}
               className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
             >
               <User size={16} className="mr-2" />
-              Regístrate
+              {t('hero.buttons.signup')}
             </button>
           </div>
         </div>

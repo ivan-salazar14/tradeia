@@ -1,42 +1,45 @@
 import React from 'react';
 import { BarChart3, Bot, Smartphone, Shield, TrendingUp, FileText } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const Services = () => {
+  const { t } = useLanguage();
+
   const services = [
     {
       icon: BarChart3,
-      title: 'Análisis Técnico Avanzado',
-      description: 'Utilizamos indicadores técnicos profesionales como EMA55, RSI, ADX y SQZMOM para identificar oportunidades de trading con alta probabilidad de éxito.',
+      title: t('services.items.marketData.title'),
+      description: t('services.items.marketData.description'),
       color: 'bg-blue-500'
     },
     {
       icon: Bot,
-      title: 'Ejecución Automática',
-      description: 'Opera sin intervención manual. Nuestro sistema ejecuta órdenes de compra/venta automáticamente según las señales generadas.',
+      title: t('services.items.signals.title'),
+      description: t('services.items.signals.description'),
       color: 'bg-green-500'
     },
     {
-      icon: Smartphone,
-      title: 'Multiplataforma',
-      description: 'Accede a tu cuenta y monitorea tus operaciones desde cualquier dispositivo con nuestra interfaz web responsive.',
-      color: 'bg-purple-500'
-    },
-    {
       icon: Shield,
-      title: 'Seguridad Garantizada',
-      description: 'Autenticación de dos factores (2FA) y cifrado de extremo a extremo para proteger tus fondos y datos personales.',
+      title: t('services.items.risk.title'),
+      description: t('services.items.risk.description'),
       color: 'bg-red-500'
     },
     {
       icon: TrendingUp,
-      title: 'Estrategias Personalizables',
-      description: 'Elige entre estrategias conservadoras, moderadas o agresivas según tu perfil de riesgo.',
+      title: t('services.items.backtesting.title'),
+      description: t('services.items.backtesting.description'),
       color: 'bg-yellow-500'
     },
     {
+      icon: Smartphone,
+      title: t('services.items.mobile.title'),
+      description: t('services.items.mobile.description'),
+      color: 'bg-purple-500'
+    },
+    {
       icon: FileText,
-      title: 'Reportes Detallados',
-      description: 'Accede a informes detallados de rendimiento, historial de operaciones y métricas clave para mejorar tu estrategia.',
+      title: t('services.items.api.title'),
+      description: t('services.items.api.description'),
       color: 'bg-indigo-500'
     }
   ];
@@ -46,10 +49,10 @@ const Services = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Nuestros Servicios de Trading
+            {t('services.title')}
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Potencia tus operaciones con nuestra plataforma de trading cuantitativo avanzado
+            {t('services.description')}
           </p>
         </div>
 
@@ -70,13 +73,18 @@ const Services = () => {
 
         {/* CTA Section */}
         <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-2xl p-8 lg:p-12 text-center text-white">
-          <h3 className="text-3xl font-bold mb-4">¿Listo para comenzar?</h3>
+          <h3 className="text-3xl font-bold mb-4">{t('services.cta.title')}</h3>
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-            Únete a nuestra plataforma y lleva tu trading al siguiente nivel con estrategias probadas y tecnología de vanguardia.
+            {t('services.cta.description')}
           </p>
-          <button onClick={() => window.location.href = '/register'}  className="bg-white text-teal-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors transform hover:scale-105">
-            Abrir Cuenta
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button onClick={() => window.location.href = '/register'} className="bg-white text-teal-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors transform hover:scale-105">
+              {t('services.cta.trial')}
+            </button>
+            <button onClick={() => window.location.href = '/features'} className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-teal-600 transition-colors">
+              {t('services.cta.demo')}
+            </button>
+          </div>
         </div>
       </div>
     </section>
