@@ -17,7 +17,7 @@ export const translations = {
     hero: {
       title: 'Welcome to TradeIA:',
       subtitle: 'AI-Powered Quantitative Trading',
-      description: 'TradeIA is a robust platform specializing in automated trading signals for cryptocurrencies. Using advanced technical analysis, we generate precise buy/sell signals based on real-time market data from Binance. Our system is built for reliability, with optimized cronjobs, a secure API, and customizable strategies.',
+      description: 'a platform specializing in automated trading signals for cryptocurrencies. Using advanced technical analysis, we generate precise buy/sell signals based on real-time market data. Our system is built for reliability, with optimized cronjobs, a secure API, and customizable strategies.',
       benefits: {
         signals: {
           title: 'Automated Signals',
@@ -29,7 +29,7 @@ export const translations = {
         },
         security: {
           title: 'Secure & Efficient',
-          description: 'PostgreSQL database, JWT authentication, and low-latency processing'
+          description: 'database, JWT authentication, and low-latency processing'
         }
       },
       buttons: {
