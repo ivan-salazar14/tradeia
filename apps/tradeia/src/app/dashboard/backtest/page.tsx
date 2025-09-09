@@ -329,13 +329,20 @@ export default function BacktestPage({ params }: PageProps) {
       // Format dates for the external API
       const startDate = new Date(formData.start_date);
       const endDate = new Date(formData.end_date);
-
+    
       // Convert dates to format matching curl example: "2024-01-01T00:00:00"
-      const formatDate = (date: Date) => {
+      const formatStartDate = (date: Date) => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}T00:00:00`;
+      };
+    
+      const formatEndDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}T23:59:59`;
       };
 
       // Determine symbols to test and API parameter format
@@ -348,8 +355,8 @@ export default function BacktestPage({ params }: PageProps) {
       // Single request for all cases (single symbol, multiple symbols, or all symbols)
       const requestBody = {
         timeframe: formData.timeframe,
-        start_date: formatDate(startDate),
-        end_date: formatDate(endDate),
+        start_date: formatStartDate(startDate),
+        end_date: formatEndDate(endDate),
         strategy_id: formData.strategy,
         initial_balance: formData.initial_balance,
         risk_per_trade: formData.risk_per_trade,
@@ -376,8 +383,8 @@ export default function BacktestPage({ params }: PageProps) {
           body: JSON.stringify({
             token,
             ...requestBody,
-            start_date: formatDate(startDate),
-            end_date: formatDate(endDate),
+            start_date: formatStartDate(startDate),
+            end_date: formatEndDate(endDate),
           }),
           signal: controller.signal
         });

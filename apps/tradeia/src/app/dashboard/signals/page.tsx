@@ -92,8 +92,8 @@ export default function SignalsPage() {
 
       const params = new URLSearchParams({
         timeframe,
-        start_date: dateRange.start,
-        end_date: dateRange.end,
+        start_date: `${dateRange.start}T00:00:00`,
+        end_date: `${dateRange.end}T23:59:59`,
         initial_balance: initialBalance,
         risk_per_trade: riskPerTrade
       });
