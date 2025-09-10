@@ -255,8 +255,8 @@ export const translations = {
 
     // Hero Section
     hero: {
-      title: 'Bienvenido a TradeIA:',
-      subtitle: 'Estrategias de Trading para Criptomonedas',
+      title: 'Bienvenido a TradeIA',
+      subtitle: 'Servicio de señales basado en estrategias de Trading',
       description: 'Una plataforma especializada en estrategias de trading para criptomonedas. Utilizando análisis técnico avanzado, generamos señales precisas de compra/venta basadas en datos de mercado en tiempo real. Con backtesting y cronjobs optimizados, una API segura y estrategias personalizables.',
       benefits: {
         signals: {
@@ -461,14 +461,14 @@ export const translations = {
         },
         signals: {
           title: 'Comienza a Recibir Señales',
-          description: 'Conecta tu API de exchange y comienza a recibir señales de trading automatizadas.',
-          action: 'Conectar Exchange'
+          description: 'Comienza a recibir señales de trading automatizadas. valida estrategias con el backtesting y comienza a tradear.',
+          action: 'Comenzar Ahora'
         }
       },
       resources: {
         title: '¿Listo para Tradear?',
         description: 'Comienza a recibir señales de trading automatizadas con nuestra plataforma comprehensiva.',
-        trial: 'Comenzar Prueba Gratuita',
+        trial: 'Comenzar Ahora',
         docs: 'Documentación API',
         education: 'Centro de Educación'
       },

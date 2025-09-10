@@ -138,11 +138,17 @@ export default function SignalsPage() {
     (async () => {
       try {
         const supabaseClient = getSupabaseClient();
-        if (!supabaseClient) return;
+        if (!supabaseClient) {
+          console.error('Failed to load trading strategies: Supabase client not available');
+          return;
+        }
 
         const { data } = await supabaseClient.auth.getSession();
         const token = data.session?.access_token;
-        if (!token) return;
+        if (!token) {
+          console.error('Failed to load trading strategies: No access token');
+          return;
+        }
 
         const res = await fetch('/api/strategies', {
           headers: {
@@ -151,11 +157,19 @@ export default function SignalsPage() {
           },
           cache: 'no-store',
         });
-        if (!res.ok) return;
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('Failed to load trading strategies:', res.status, errorText);
+          return;
+        }
+
         const json = await res.json();
         const strategies = Array.isArray(json?.strategies) ? json.strategies : [];
         setStrategyOptions(strategies);
-      } catch {}
+      } catch (error) {
+        console.error('Failed to load trading strategies:', error);
+      }
     })();
   }, []);
 
