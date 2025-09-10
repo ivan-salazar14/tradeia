@@ -149,8 +149,9 @@ export default function StrategiesPage() {
         />
       </div>
 
-      <div className="grid gap-6">
-        {filteredStrategies.map((strategy) => (
+      <div className="max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+        <div className="grid gap-6 pr-2 pb-4">
+          {filteredStrategies.map((strategy) => (
           <div key={strategy.id} className="bg-white rounded-lg shadow-md p-6">
             <div className="flex justify-between items-start mb-4">
               <div>
@@ -178,7 +179,7 @@ export default function StrategiesPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">{strategy.performance.win_rate}%</div>
                 <div className="text-sm text-gray-500">Tasa de Éxito</div>
@@ -195,7 +196,7 @@ export default function StrategiesPage() {
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3">
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
               <Button
                 variant="outline"
                 onClick={() => router.push(`/dashboard/strategies/${strategy.id}`)}
@@ -238,7 +239,8 @@ export default function StrategiesPage() {
               </Button>
             </div>
           </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {filteredStrategies.length === 0 && (
