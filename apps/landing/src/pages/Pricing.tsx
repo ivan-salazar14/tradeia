@@ -3,7 +3,7 @@ import React from 'react';
 const Pricing: React.FC = () => {
   return (
     <div className="py-16 container mx-auto px-4">
-      <h1 className="text-4xl font-bold text-center mb-12">Nuestros Planes de Precios</h1>
+      <h1 className="text-4xl font-bold text-center mb-12">Nuestros Planes de uso</h1>
       <div className="grid md:grid-cols-3 gap-8 items-stretch">
         {/* Plan Básico */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 flex flex-col">
@@ -13,14 +13,14 @@ const Pricing: React.FC = () => {
               <div className="mt-4">
                 <span className="text-4xl font-bold">Gratuito</span>
               </div>
-              <p className="mt-2 text-gray-600">Perfecto para comenzar usando estrategias de trading testeadas.</p>
+              <p className="mt-2 text-gray-600">Perfecto para comenzar aprender y usar estrategias de trading testeadas.</p>
             </div>
             <ul className="mt-8 space-y-3 mb-8">
               <li className="flex items-center">
                 <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="ml-2">Acceso a estrategias básicas</span>
+                <span className="ml-2">Acceso a estrategias pre-configuradas</span>
               </li>
               <li className="flex items-center">
                 <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

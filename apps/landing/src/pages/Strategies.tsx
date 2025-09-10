@@ -1,5 +1,4 @@
-import React from 'react';
-import { TrendingUp, Shield, Zap, Target, BarChart3, Activity } from 'lucide-react';
+import { Shield, Zap, Target, BarChart3, Activity } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const Strategies = () => {

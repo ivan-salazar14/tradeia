@@ -9,6 +9,9 @@ type Signal = {
   symbol: string;
   timeframe: string;
   timestamp: string;
+  execution_timestamp?: string;
+  signal_age_hours?: number;
+  signal_source?: string;
   type: string;
   direction: string;
   strategyId?: string;
@@ -55,6 +58,7 @@ export default function SignalsPage() {
     start: format(subDays(new Date(), 7), 'yyyy-MM-dd'),
     end: format(new Date(), 'yyyy-MM-dd')
   });
+  const [includeLiveSignals, setIncludeLiveSignals] = useState(false);
 
   // Risk analysis parameters
   const [initialBalance, setInitialBalance] = useState<string>('10000');
@@ -98,6 +102,7 @@ export default function SignalsPage() {
         risk_per_trade: riskPerTrade
       });
       if (symbol.trim()) params.set('symbol', symbol.trim().toUpperCase());
+      if (includeLiveSignals) params.set('include_live_signals', 'true');
       // If exactly one strategy is active, pass as strategy_id param
       if (Array.isArray(activeStrategies) && activeStrategies.length === 1) {
         params.set('strategy_id', activeStrategies[0]);
@@ -122,7 +127,7 @@ export default function SignalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [timeframe, symbol, selectedStrategies, dateRange]);
+  }, [timeframe, symbol, selectedStrategies, dateRange, includeLiveSignals]);
 
   useEffect(() => {
     fetchSignals();
@@ -168,7 +173,7 @@ export default function SignalsPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [timeframe, symbol, selectedStrategies, dateRange, initialBalance, riskPerTrade]);
+  }, [timeframe, symbol, selectedStrategies, dateRange, initialBalance, riskPerTrade, includeLiveSignals]);
 
   // Handle page changes
   const handlePageChange = (page: number) => {
@@ -197,7 +202,7 @@ export default function SignalsPage() {
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">Rango de Fechas</label>
               <div className="flex flex-col space-y-2 md:flex-row md:space-x-2 md:space-y-0">
@@ -285,6 +290,20 @@ export default function SignalsPage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Incluir Señales Live</label>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="includeLiveSignals"
+                  checked={includeLiveSignals}
+                  onChange={(e) => setIncludeLiveSignals(e.target.checked)}
+                  className="mr-2"
+                />
+                <label htmlFor="includeLiveSignals" className="text-sm">Sí</label>
+              </div>
             </div>
           </div>
         </div>
@@ -399,7 +418,10 @@ export default function SignalsPage() {
               <table className="min-w-full divide-y divide-gray-200 text-xs md:text-sm">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
-                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Detección</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Ejecución</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edad (hrs)</th>
+                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fuente</th>
                     <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
                     <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timeframe</th>
                     <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estrategia</th>
@@ -418,7 +440,7 @@ export default function SignalsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {signals.length === 0 && (
                   <tr>
-                    <td colSpan={14} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={17} className="px-6 py-4 text-center text-gray-500">
                       No hay señales disponibles. Seleccione una estrategia activa en &quot;Gestión de Bots&quot; o intente refrescar.
                     </td>
                   </tr>
@@ -429,6 +451,15 @@ export default function SignalsPage() {
                       <tr key={s.id} className="hover:bg-gray-50">
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm">
                           {s.timestamp ? new Date(s.timestamp).toLocaleString() : '-'}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm">
+                          {s.execution_timestamp ? new Date(s.execution_timestamp).toLocaleString() : '-'}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm">
+                          {s.signal_age_hours ? s.signal_age_hours.toFixed(1) : '-'}
+                        </td>
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm">
+                          {s.signal_source || '-'}
                         </td>
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-medium text-sm">{s.symbol}</td>
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm">{s.timeframe}</td>
