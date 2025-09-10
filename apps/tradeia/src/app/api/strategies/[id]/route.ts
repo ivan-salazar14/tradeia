@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
@@ -8,76 +10,73 @@ export async function GET(
     const params = await context.params;
     const strategyId = params.id;
 
-    // Mock strategies data (same as main strategies API)
-    const mockStrategies = [
+    const cookieStore = await cookies();
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
-        id: 'conservative',
-        name: 'Conservative Strategy',
-        description: 'Low-risk strategy with basic technical indicators',
-        risk_level: 'Low',
-        timeframe: '4h',
-        indicators: ['SMA', 'RSI'],
-        created_at: new Date().toISOString(),
-        stop_loss: 2,
-        take_profit: 4,
-        max_positions: 3
-      },
-      {
-        id: 'moderate',
-        name: 'Moderate Strategy',
-        description: 'Balanced risk strategy with multiple indicators',
-        risk_level: 'Medium',
-        timeframe: '1h',
-        indicators: ['SMA', 'RSI', 'MACD'],
-        created_at: new Date().toISOString(),
-        stop_loss: 2.5,
-        take_profit: 5,
-        max_positions: 4
-      },
-      {
-        id: 'sqzmom_adx',
-        name: 'ADX Squeeze Momentum',
-        description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation',
-        risk_level: 'Medium',
-        timeframe: '4h',
-        indicators: ['ADX', 'Squeeze Momentum'],
-        created_at: new Date().toISOString(),
-        stop_loss: 3,
-        take_profit: 6,
-        max_positions: 3
-      },
-      {
-        id: 'aggressive',
-        name: 'Aggressive Strategy',
-        description: 'High-risk strategy for experienced traders',
-        risk_level: 'High',
-        timeframe: '15m',
-        indicators: ['RSI', 'MACD', 'Bollinger Bands'],
-        created_at: new Date().toISOString(),
-        stop_loss: 1.5,
-        take_profit: 3,
-        max_positions: 5
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
+            }
+          },
+        },
       }
-    ];
+    );
 
-    // Find the strategy by ID
-    const strategy = mockStrategies.find(s => s.id === strategyId);
+    // Verificar la sesión
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    if (!strategy) {
-      return NextResponse.json({ error: 'Estrategia no encontrada' }, { status: 404 });
+    if (sessionError || !session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    // Mock performance data
+    // Obtener la estrategia
+    const { data: strategy, error: strategyError } = await supabase
+      .from('strategies')
+      .select('*')
+      .eq('id', strategyId)
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (strategyError) {
+      if (strategyError.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Estrategia no encontrada' }, { status: 404 });
+      }
+      console.error('Error fetching strategy:', strategyError);
+      return NextResponse.json({ error: 'Error al obtener estrategia' }, { status: 500 });
+    }
+
+    // Verificar si la estrategia está activa
+    const { data: userStrategy, error: userStrategyError } = await supabase
+      .from('user_strategies')
+      .select('is_active')
+      .eq('user_id', session.user.id)
+      .eq('strategy_id', strategyId)
+      .single();
+
+    // Mock performance data (se puede mejorar con datos reales después)
     const mockPerformance = {
-      win_rate: strategy.id === 'sqzmom_adx' ? 68 : strategy.id === 'conservative' ? 65 : strategy.id === 'moderate' ? 62 : 58,
-      total_trades: strategy.id === 'sqzmom_adx' ? 145 : strategy.id === 'conservative' ? 120 : strategy.id === 'moderate' ? 98 : 87,
-      profit_loss: strategy.id === 'sqzmom_adx' ? 12.3 : strategy.id === 'conservative' ? 8.5 : strategy.id === 'moderate' ? 6.2 : 4.1,
-      sharpe_ratio: strategy.id === 'sqzmom_adx' ? 1.4 : strategy.id === 'conservative' ? 1.2 : strategy.id === 'moderate' ? 1.1 : 0.9,
-      max_drawdown: strategy.id === 'sqzmom_adx' ? -4.2 : strategy.id === 'conservative' ? -3.2 : strategy.id === 'moderate' ? -4.8 : -5.5,
-      avg_trade_duration: strategy.id === 'sqzmom_adx' ? 22.5 : strategy.id === 'conservative' ? 18.5 : strategy.id === 'moderate' ? 14.2 : 12.8
+      win_rate: 65,
+      total_trades: 120,
+      profit_loss: 8.5,
+      sharpe_ratio: 1.2,
+      max_drawdown: -3.2,
+      avg_trade_duration: 18.5
     };
 
-    // Mock recent signals
+    // Mock recent signals (se puede mejorar con datos reales después)
     const mockSignals = [
       {
         created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
@@ -108,7 +107,8 @@ export async function GET(
     return NextResponse.json({
       strategy: {
         ...strategy,
-        is_active: strategy.id === 'conservative' // Make conservative active by default
+        indicators: JSON.parse(strategy.indicators),
+        is_active: userStrategy?.is_active || false
       },
       recent_signals: mockSignals,
       performance: mockPerformance
@@ -128,26 +128,70 @@ export async function PUT(
     const params = await context.params;
     const strategyId = params.id;
 
+    const cookieStore = await cookies();
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
+            }
+          },
+        },
+      }
+    );
+
+    // Verificar la sesión
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name, description, risk_level, timeframe, indicators, stop_loss, take_profit, max_positions } = body;
 
-    // Mock update - just return success
-    const mockUpdatedStrategy = {
-      id: strategyId,
-      name: name || 'Updated Strategy',
-      description: description || 'Updated description',
-      risk_level: risk_level || 'Medium',
-      timeframe: timeframe || '4h',
-      indicators: indicators || ['SMA', 'RSI'],
-      stop_loss: stop_loss || 2,
-      take_profit: take_profit || 4,
-      max_positions: max_positions || 3,
-      created_at: new Date().toISOString()
-    };
+    // Actualizar la estrategia
+    const { data: updatedStrategy, error: updateError } = await supabase
+      .from('strategies')
+      .update({
+        name,
+        description,
+        risk_level,
+        timeframe,
+        indicators: JSON.stringify(indicators),
+        stop_loss,
+        take_profit,
+        max_positions
+      })
+      .eq('id', strategyId)
+      .eq('user_id', session.user.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating strategy:', updateError);
+      return NextResponse.json({ error: 'Error al actualizar estrategia' }, { status: 500 });
+    }
 
     return NextResponse.json({
       message: 'Estrategia actualizada exitosamente',
-      strategy: mockUpdatedStrategy
+      strategy: {
+        ...updatedStrategy,
+        indicators: JSON.parse(updatedStrategy.indicators)
+      }
     });
 
   } catch (error) {

@@ -200,14 +200,14 @@ export default function SignalsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">Rango de Fechas</label>
-              <div className="flex space-x-2">
+              <div className="flex flex-col space-y-2 md:flex-row md:space-x-2 md:space-y-0">
                 <input
                   type="date"
                   className="border rounded px-2 py-1 text-sm w-full"
                   value={dateRange.start}
                   onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
                 />
-                <span className="flex items-center">a</span>
+                <span className="flex items-center md:flex-shrink-0">a</span>
                 <input
                   type="date"
                   className="border rounded px-2 py-1 text-sm w-full"

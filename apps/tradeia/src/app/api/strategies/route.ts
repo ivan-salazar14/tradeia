@@ -1,84 +1,130 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
+    const cookieStore = await cookies();
 
-    // For development/testing, allow requests without authentication
-    let token = null;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
+            }
+          },
+        },
+      }
+    );
+
+    // Verificar la sesión
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const apiBase = process.env.SIGNALS_API_BASE || 'http://localhost:3001';
+    // Obtener estrategias del usuario
+    const { data: userStrategies, error: userStrategiesError } = await supabase
+      .from('user_strategies')
+      .select(`
+        strategy_id,
+        is_active,
+        strategies (
+          id,
+          name,
+          description,
+          risk_level,
+          timeframe,
+          indicators,
+          stop_loss,
+          take_profit,
+          max_positions,
+          created_at
+        )
+      `)
+      .eq('user_id', session.user.id);
 
-    // Try to fetch strategies from external API (only if token exists)
-    if (token) {
-      try {
-        const response = await fetch(`${apiBase}/strategies`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+    if (userStrategiesError) {
+      console.error('Error fetching user strategies:', userStrategiesError);
+      return NextResponse.json({ error: 'Error al obtener estrategias' }, { status: 500 });
+    }
 
-        if (response.ok) {
-          const data = await response.json();
-          return NextResponse.json({
-            strategies: data.strategies || data || [],
-            current_strategy: data.current_strategy || null
-          });
-        } else {
-          console.warn('External API not available, using fallback strategies');
+    // Si no hay estrategias del usuario, devolver estrategias por defecto
+    if (!userStrategies || userStrategies.length === 0) {
+      const mockStrategies = [
+        {
+          id: 'conservative',
+          name: 'Conservative Strategy',
+          description: 'Low-risk strategy with basic technical indicators',
+          risk_level: 'Low',
+          timeframe: '4h',
+          indicators: ['SMA', 'RSI'],
+          created_at: new Date().toISOString(),
+          is_active: true
+        },
+        {
+          id: 'moderate',
+          name: 'Moderate Strategy',
+          description: 'Balanced risk strategy with multiple indicators',
+          risk_level: 'Medium',
+          timeframe: '1h',
+          indicators: ['SMA', 'RSI', 'MACD'],
+          created_at: new Date().toISOString(),
+          is_active: false
+        },
+        {
+          id: 'sqzmom_adx',
+          name: 'ADX Squeeze Momentum',
+          description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation',
+          risk_level: 'Medium',
+          timeframe: '4h',
+          indicators: ['ADX', 'Squeeze Momentum'],
+          created_at: new Date().toISOString(),
+          is_active: false
+        },
+        {
+          id: 'aggressive',
+          name: 'Aggressive Strategy',
+          description: 'High-risk strategy for experienced traders',
+          risk_level: 'High',
+          timeframe: '15m',
+          indicators: ['RSI', 'MACD', 'Bollinger Bands'],
+          created_at: new Date().toISOString(),
+          is_active: false
         }
-      } catch (fetchError) {
-        console.warn('External API fetch failed, using fallback strategies:', fetchError);
-      }
+      ];
+
+      return NextResponse.json({
+        strategies: mockStrategies,
+        current_strategy: { strategy_id: 'conservative' }
+      });
     }
 
-    // Fallback: Return mock strategies when external API is not available
-    const mockStrategies = [
-      {
-        id: 'conservative',
-        name: 'Conservative Strategy',
-        description: 'Low-risk strategy with basic technical indicators',
-        risk_level: 'Low',
-        timeframe: '4h',
-        indicators: ['SMA', 'RSI'],
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 'moderate',
-        name: 'Moderate Strategy',
-        description: 'Balanced risk strategy with multiple indicators',
-        risk_level: 'Medium',
-        timeframe: '1h',
-        indicators: ['SMA', 'RSI', 'MACD'],
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 'sqzmom_adx',
-        name: 'ADX Squeeze Momentum',
-        description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation',
-        risk_level: 'Medium',
-        timeframe: '4h',
-        indicators: ['ADX', 'Squeeze Momentum'],
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 'aggressive',
-        name: 'Aggressive Strategy',
-        description: 'High-risk strategy for experienced traders',
-        risk_level: 'High',
-        timeframe: '15m',
-        indicators: ['RSI', 'MACD', 'Bollinger Bands'],
-        created_at: new Date().toISOString()
-      }
-    ];
+    // Formatear las estrategias del usuario
+    const strategies = userStrategies.map(userStrategy => ({
+      ...userStrategy.strategies,
+      is_active: userStrategy.is_active
+    }));
+
+    // Encontrar la estrategia activa
+    const currentStrategy = userStrategies.find(us => us.is_active);
 
     return NextResponse.json({
-      strategies: mockStrategies,
-      current_strategy: null
+      strategies,
+      current_strategy: currentStrategy ? { strategy_id: currentStrategy.strategy_id } : null
     });
 
   } catch (error) {
@@ -89,15 +135,37 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
+    const cookieStore = await cookies();
 
-    // For development/testing, allow requests without authentication
-    let token = null;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
+            }
+          },
+        },
+      }
+    );
+
+    // Verificar la sesión
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
-
-    const apiBase = process.env.SIGNALS_API_BASE || 'http://localhost:3001';
 
     const body = await request.json();
     const { name, description, risk_level, timeframe, indicators, stop_loss, take_profit, max_positions } = body;
@@ -107,58 +175,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Datos requeridos faltantes' }, { status: 400 });
     }
 
-    // Try to create strategy via external API (only if token exists)
-    if (token) {
-      try {
-        const response = await fetch(`${apiBase}/strategies`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name,
-            description,
-            risk_level,
-            timeframe,
-            indicators,
-            stop_loss: stop_loss || 2,
-            take_profit: take_profit || 4,
-            max_positions: max_positions || 3
-          })
-        });
+    // Crear la estrategia en la base de datos
+    const { data: strategy, error: createError } = await supabase
+      .from('strategies')
+      .insert({
+        name,
+        description,
+        risk_level,
+        timeframe,
+        indicators: JSON.stringify(indicators),
+        stop_loss: stop_loss || 2,
+        take_profit: take_profit || 4,
+        max_positions: max_positions || 3,
+        user_id: session.user.id
+      })
+      .select()
+      .single();
 
-        if (response.ok) {
-          const data = await response.json();
-          return NextResponse.json({
-            message: 'Estrategia creada exitosamente',
-            strategy: data.strategy || data
-          }, { status: 201 });
-        } else {
-          console.warn('External API not available for creating strategies');
-        }
-      } catch (fetchError) {
-        console.warn('External API fetch failed for creating strategies:', fetchError);
-      }
+    if (createError) {
+      console.error('Error creating strategy:', createError);
+      return NextResponse.json({ error: 'Error al crear estrategia' }, { status: 500 });
     }
 
-    // Fallback: Return success with mock strategy when external API is not available
-    const mockStrategy = {
-      id: `strategy_${Date.now()}`,
-      name,
-      description,
-      risk_level,
-      timeframe,
-      indicators,
-      stop_loss: stop_loss || 2,
-      take_profit: take_profit || 4,
-      max_positions: max_positions || 3,
-      created_at: new Date().toISOString()
-    };
+    // Crear la relación usuario-estrategia
+    const { error: userStrategyError } = await supabase
+      .from('user_strategies')
+      .insert({
+        user_id: session.user.id,
+        strategy_id: strategy.id,
+        is_active: false // Nueva estrategia no activa por defecto
+      });
+
+    if (userStrategyError) {
+      console.error('Error creating user strategy relation:', userStrategyError);
+      // No devolver error aquí, la estrategia ya se creó
+    }
 
     return NextResponse.json({
-      message: 'Estrategia creada exitosamente (modo offline)',
-      strategy: mockStrategy
+      message: 'Estrategia creada exitosamente',
+      strategy: {
+        ...strategy,
+        indicators: JSON.parse(strategy.indicators),
+        is_active: false
+      }
     }, { status: 201 });
 
   } catch (error) {
