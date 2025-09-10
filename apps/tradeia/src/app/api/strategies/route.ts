@@ -36,6 +36,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    // Check if tables exist first
+    const { data: tableCheck, error: tableCheckError } = await supabase
+      .from('user_strategies')
+      .select('count')
+      .limit(1);
+
+    if (tableCheckError) {
+      console.error('Database tables not found:', tableCheckError);
+      return NextResponse.json({
+        error: 'Database tables not initialized',
+        details: 'Please run the migration to create strategies tables',
+        code: 'TABLES_NOT_FOUND'
+      }, { status: 500 });
+    }
+
     // Obtener estrategias del usuario
     const { data: userStrategies, error: userStrategiesError } = await supabase
       .from('user_strategies')
@@ -173,6 +188,21 @@ export async function POST(request: NextRequest) {
     // Validar datos requeridos
     if (!name || !description || !risk_level || !timeframe || !indicators || !Array.isArray(indicators)) {
       return NextResponse.json({ error: 'Datos requeridos faltantes' }, { status: 400 });
+    }
+
+    // Check if tables exist first
+    const { data: tableCheck, error: tableCheckError } = await supabase
+      .from('strategies')
+      .select('count')
+      .limit(1);
+
+    if (tableCheckError) {
+      console.error('Database tables not found:', tableCheckError);
+      return NextResponse.json({
+        error: 'Database tables not initialized',
+        details: 'Please run the migration to create strategies tables',
+        code: 'TABLES_NOT_FOUND'
+      }, { status: 500 });
     }
 
     // Crear la estrategia en la base de datos
