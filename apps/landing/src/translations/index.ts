@@ -16,8 +16,8 @@ export const translations = {
     // Hero Section
     hero: {
       title: 'Welcome to TradeIA:',
-      subtitle: 'AI-Powered Quantitative Trading',
-      description: 'a platform specializing in automated trading signals for cryptocurrencies. Using advanced technical analysis, we generate precise buy/sell signals based on real-time market data. Our system is built for reliability, with optimized cronjobs, a secure API, and customizable strategies.',
+      subtitle: 'AI-Trading Strategies',
+      description: 'a platform specializing in strategies for trading cryptocurrencies. Using advanced technical analysis, we generate precise buy/sell signals based on real-time market data. Our system is built for reliability, with optimized cronjobs, a secure API, and customizable strategies.',
       benefits: {
         signals: {
           title: 'Automated Signals',
@@ -256,11 +256,11 @@ export const translations = {
     // Hero Section
     hero: {
       title: 'Bienvenido a TradeIA:',
-      subtitle: 'Trading Cuantitativo con IA',
-      description: 'TradeIA es una plataforma robusta especializada en señales de trading automatizadas para criptomonedas. Utilizando análisis técnico avanzado, generamos señales precisas de compra/venta basadas en datos de mercado en tiempo real de Binance. Nuestro sistema está construido para la confiabilidad, con cronjobs optimizados, una API segura y estrategias personalizables.',
+      subtitle: 'Estrategias de Trading para Criptomonedas',
+      description: 'Una plataforma especializada en estrategias de trading para criptomonedas. Utilizando análisis técnico avanzado, generamos señales precisas de compra/venta basadas en datos de mercado en tiempo real. Con backtesting y cronjobs optimizados, una API segura y estrategias personalizables.',
       benefits: {
         signals: {
-          title: 'Señales Automatizadas',
+          title: 'Estrategias Pre-Configuradas',
           description: 'Obtén puntos de entrada/salida con stop-loss y take-profit'
         },
         precision: {
@@ -269,11 +269,11 @@ export const translations = {
         },
         security: {
           title: 'Seguro y Eficiente',
-          description: 'Base de datos PostgreSQL, autenticación JWT y procesamiento de baja latencia'
+          description: ' autenticación segura y procesamiento de baja latencia'
         }
       },
       buttons: {
-        signup: 'Regístrate Gratis',
+        signup: 'Regístrate es Gratis',
         login: 'Iniciar Sesión',
         demo: 'Demo del Dashboard'
       }
