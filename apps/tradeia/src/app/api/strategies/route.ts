@@ -30,11 +30,38 @@ export async function GET(request: NextRequest) {
     );
 
     // Verificar la sesión
+    console.log('[STRATEGIES POST] Checking session...');
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    if (sessionError || !session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    console.log('[STRATEGIES POST] Session error:', sessionError);
+    console.log('[STRATEGIES POST] Session exists:', !!session);
+    console.log('[STRATEGIES POST] Session user:', session?.user?.email);
+
+    if (sessionError) {
+      console.error('[STRATEGIES POST] Session error:', sessionError);
+      return NextResponse.json({
+        error: 'Error de sesión',
+        details: sessionError.message
+      }, { status: 401 });
     }
+
+    if (!session) {
+      console.error('[STRATEGIES POST] No session found');
+      return NextResponse.json({
+        error: 'No autorizado - no hay sesión',
+        details: 'Usuario no autenticado'
+      }, { status: 401 });
+    }
+
+    if (!session.user) {
+      console.error('[STRATEGIES POST] Session exists but no user');
+      return NextResponse.json({
+        error: 'No autorizado - sesión inválida',
+        details: 'Sesión sin usuario válido'
+      }, { status: 401 });
+    }
+
+    console.log('[STRATEGIES POST] Authentication successful for user:', session.user.email);
 
     // Check if tables exist first
     const { data: tableCheck, error: tableCheckError } = await supabase
@@ -176,11 +203,38 @@ export async function POST(request: NextRequest) {
     );
 
     // Verificar la sesión
+    console.log('[STRATEGIES] Checking session...');
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    if (sessionError || !session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    console.log('[STRATEGIES] Session error:', sessionError);
+    console.log('[STRATEGIES] Session exists:', !!session);
+    console.log('[STRATEGIES] Session user:', session?.user?.email);
+
+    if (sessionError) {
+      console.error('[STRATEGIES] Session error:', sessionError);
+      return NextResponse.json({
+        error: 'Error de sesión',
+        details: sessionError.message
+      }, { status: 401 });
     }
+
+    if (!session) {
+      console.error('[STRATEGIES] No session found');
+      return NextResponse.json({
+        error: 'No autorizado - no hay sesión',
+        details: 'Usuario no autenticado'
+      }, { status: 401 });
+    }
+
+    if (!session.user) {
+      console.error('[STRATEGIES] Session exists but no user');
+      return NextResponse.json({
+        error: 'No autorizado - sesión inválida',
+        details: 'Sesión sin usuario válido'
+      }, { status: 401 });
+    }
+
+    console.log('[STRATEGIES] Authentication successful for user:', session.user.email);
 
     const body = await request.json();
     const { name, description, risk_level, timeframe, indicators, stop_loss, take_profit, max_positions } = body;
