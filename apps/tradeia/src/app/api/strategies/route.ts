@@ -137,14 +137,6 @@ export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
 
-    // Extract project reference and cookie name to match client-side configuration
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
-    const cookieName = `sb-${projectRef}-auth-token`;
-
-    // Get the auth token from the correct cookie
-    const authToken = cookieStore.get(cookieName)?.value;
-
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -165,25 +157,14 @@ export async function POST(request: NextRequest) {
             }
           },
         },
-        global: {
-          headers: authToken ? {
-            Authorization: `Bearer ${authToken}`,
-          } : {},
-        },
       }
     );
 
     // Verificar la sesión
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    if (sessionError) {
-      console.error('Session error:', sessionError);
-      return NextResponse.json({ error: 'Error de autenticación' }, { status: 401 });
-    }
-
-    if (!session || !session.user) {
-      console.error('No valid session found');
-      return NextResponse.json({ error: 'No autorizado - inicia sesión' }, { status: 401 });
+    if (sessionError || !session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
     const body = await request.json();
