@@ -28,6 +28,7 @@ const Header = () => {
     { name: t('nav.home'), path: '/' },
     { name: t('nav.features'), path: '/features' },
     { name: t('nav.strategies'), path: '/strategies' },
+    { name: t('nav.pricing'), path: '/pricing' },
     { name: t('nav.education'), path: '/education' },
     { name: t('nav.docs'), path: '/docs' },
     { name: t('nav.about'), path: '/about' },

@@ -52,10 +52,10 @@ const Pricing: React.FC = () => {
             <div className="text-center">
               <h3 className="text-2xl font-semibold text-gray-800">Profesional</h3>
               <div className="mt-4">
-                <span className="text-4xl font-bold">$3</span>
+                <span className="text-4xl font-bold">$5</span>
                 <span className="text-gray-600">/mes</span>
               </div>
-              <p className="mt-2 text-gray-600">Para traders con nivel básico en el mercado</p>
+              <p className="mt-2 text-gray-600">Para traders que deseen operar automaticamente con nuestras estrategias en el mercado</p>
             </div>
             <ul className="mt-8 space-y-3 mb-8">
               <li className="flex items-center">
@@ -80,7 +80,7 @@ const Pricing: React.FC = () => {
                 <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="ml-2">Actualizaciones semanales</span>
+                <span className="ml-2">Conexión con el broker de preferencia y ejecución de señales</span>
               </li>
               <li className="flex items-center">
                 <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
