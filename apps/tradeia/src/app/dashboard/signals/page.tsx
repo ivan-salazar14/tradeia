@@ -152,7 +152,6 @@ export default function SignalsPage() {
 
         const res = await fetch('/api/strategies', {
           headers: {
-            Authorization: `Bearer ${token}`,
             'x-user-id': data.session?.user?.id || ''
           },
           cache: 'no-store',
