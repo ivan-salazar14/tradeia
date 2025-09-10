@@ -78,6 +78,8 @@ export async function GET(req: NextRequest) {
   const offset = searchParams.get('offset');
   const initialBalance = parseFloat(searchParams.get('initial_balance') || '10000');
   const riskPerTrade = parseFloat(searchParams.get('risk_per_trade') || '1.0');
+  const includeLiveSignals = searchParams.get('include_live_signals') === 'true';
+  const forceFresh = searchParams.get('force_fresh') === 'true';
 
   const auth = req.headers.get('authorization');
   if (!auth) {
@@ -105,6 +107,8 @@ export async function GET(req: NextRequest) {
   if (endDate) qs.set('end_date', endDate);
   if (limit) qs.set('limit', limit);
   if (offset) qs.set('offset', offset);
+  if (includeLiveSignals) qs.set('include_live_signals', 'true');
+  if (forceFresh) qs.set('force_fresh', 'true');
 
   try {
     // If client provided explicit strategies, fetch stored signals filtered by strategy_id.
@@ -220,6 +224,9 @@ export async function GET(req: NextRequest) {
       symbol: signal.symbol,
       timeframe: signal.timeframe,
       timestamp: signal.timestamp,
+      execution_timestamp: signal.execution_timestamp,
+      signal_age_hours: signal.signal_age_hours,
+      signal_source: signal.signal_source,
       type: signal.type,
       direction: signal.direction,
       strategyId: signal.strategyId,

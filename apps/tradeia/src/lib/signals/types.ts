@@ -5,6 +5,9 @@ export interface UnifiedSignal {
   symbol: string; // e.g., BTC/USDT
   timeframe: string; // e.g., 4h
   timestamp: string; // ISO string
+  execution_timestamp?: string; // When to execute the signal
+  signal_age_hours?: number; // How old the signal is
+  signal_source?: string; // "backtest" or "live"
   type: 'entry' | 'exit' | 'update';
   direction: SignalDirection; // normalized
   strategyId?: string;

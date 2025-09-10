@@ -6,6 +6,9 @@ export function normalizeExampleProvider(payload: any): UnifiedSignal {
   const symbol = payload?.symbol ?? payload?.pair ?? payload?.market ?? payload?.ticker ?? undefined;
   const timeframe = payload?.timeframe ?? payload?.tf ?? payload?.interval ?? undefined;
   const timestamp = payload?.timestamp ?? payload?.created_at ?? payload?.createdAt ?? payload?.time ?? payload?.ts ?? undefined;
+  const execution_timestamp = payload?.execution_timestamp ?? payload?.executionTimestamp ?? undefined;
+  const signal_age_hours = payload?.signal_age_hours ?? payload?.signalAgeHours ?? undefined;
+  const signal_source = payload?.signal_source ?? payload?.signalSource ?? undefined;
   const type = (payload?.signal_type as UnifiedSignal['type']) || (payload?.type as UnifiedSignal['type']) || 'entry';
   const direction = payload?.signal_direction ?? payload?.direction ?? payload?.side ?? payload?.trend ?? undefined;
   const entry = payload?.entry ?? payload?.entry_price ?? payload?.price ?? undefined;
@@ -21,6 +24,9 @@ export function normalizeExampleProvider(payload: any): UnifiedSignal {
     symbol,
     timeframe,
     timestamp,
+    execution_timestamp,
+    signal_age_hours,
+    signal_source,
     type,
     direction,
     strategyId,
