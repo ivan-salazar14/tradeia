@@ -85,13 +85,38 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
 
-    // Establecer cookies de acceso y refresh token
+    // Establecer cookies de acceso y refresh token con nombres correctos para Supabase SSR
     if (data.session) {
-      // Acceso
+      // Extraer el project reference de la URL de Supabase
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
+
+      // Acceso token con nombre correcto para SSR
+      response.cookies.set({
+        name: `sb-${projectRef}-auth-token`,
+        value: data.session.access_token,
+        httpOnly: true,
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: data.session.expires_in || 3600,
+      })
+      // Refresh token con nombre correcto para SSR
+      response.cookies.set({
+        name: `sb-${projectRef}-refresh-token`,
+        value: data.session.refresh_token,
+        httpOnly: true,
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24 * 30, // 30 días
+      })
+
+      // También mantener los nombres genéricos para compatibilidad con el cliente del navegador
       response.cookies.set({
         name: "sb-access-token",
         value: data.session.access_token,
-        httpOnly: true,
+        httpOnly: false, // No httpOnly para que el cliente pueda leerlo
         path: "/",
         sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
@@ -101,7 +126,7 @@ export async function POST(request: NextRequest) {
       response.cookies.set({
         name: "sb-refresh-token",
         value: data.session.refresh_token,
-        httpOnly: true,
+        httpOnly: false, // No httpOnly para que el cliente pueda leerlo
         path: "/",
         sameSite: "lax",
         secure: process.env.NODE_ENV === "production",

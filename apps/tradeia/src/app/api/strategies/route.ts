@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
 
     // Verificar la sesión
     console.log('[STRATEGIES POST] Checking session...');
+    console.log('[STRATEGIES POST] Available cookies:', cookieStore.getAll().map(c => c.name));
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
     console.log('[STRATEGIES POST] Session error:', sessionError);
@@ -257,6 +258,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar la sesión
     console.log('[STRATEGIES] Checking session...');
+    console.log('[STRATEGIES] Available cookies:', cookieStore.getAll().map(c => c.name));
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
     console.log('[STRATEGIES] Session error:', sessionError);
