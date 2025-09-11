@@ -5,13 +5,25 @@ import { cookies } from 'next/headers';
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    
+
+    // Extraer el project reference de la URL de Supabase
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           get(name: string) {
+            // Try project-specific cookie first, then fallback to generic
+            if (name === `sb-${projectRef}-auth-token`) {
+              return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
+            }
+            if (name === `sb-${projectRef}-refresh-token`) {
+              return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
+            }
+            // Fallback for other cookies
             return cookieStore.get(name)?.value;
           },
           set(name: string, value: string, options: any) {

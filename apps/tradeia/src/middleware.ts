@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 // Rutas que requieren autenticación (solo páginas, no APIs)
 const protectedRoutes = ['/dashboard', '/profile', '/signals', '/bot', '/performance']
@@ -41,7 +42,7 @@ export async function middleware(request: NextRequest) {
     },
 })
 
-  // Create Supabase client with cookie handling
+  // Create Supabase server client with cookie handling
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

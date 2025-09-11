@@ -20,9 +20,11 @@ export async function POST(request: Request) {
   try {
     console.log('[BACKTEST] Verifying authentication...');
 
-    // Verify authentication
     const cookieStore = await cookies();
-    console.log('[BACKTEST] Available cookies:', cookieStore.getAll().map(c => c.name));
+
+    // Extraer el project reference de la URL de Supabase
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,6 +32,14 @@ export async function POST(request: Request) {
       {
         cookies: {
           get(name: string) {
+            // Try project-specific cookie first, then fallback to generic
+            if (name === `sb-${projectRef}-auth-token`) {
+              return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
+            }
+            if (name === `sb-${projectRef}-refresh-token`) {
+              return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
+            }
+            // Fallback for other cookies
             return cookieStore.get(name)?.value;
           },
           set(name: string, value: string, options: any) {
@@ -54,6 +64,8 @@ export async function POST(request: Request) {
       }
     );
 
+    // Verify authentication
+    console.log('[BACKTEST] Available cookies:', cookieStore.getAll().map(c => c.name));
     console.log('[BACKTEST] Getting session...');
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
