@@ -11,16 +11,23 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return cookieStore.getAll();
+          get(name: string) {
+            return cookieStore.get(name)?.value;
           },
-          setAll(cookiesToSet) {
+          set(name: string, value: string, options: any) {
             try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
+              cookieStore.set(name, value, options);
             } catch {
-              // The `setAll` method was called from a Server Component.
+              // The `set` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set(name, '', { ...options, maxAge: 0 });
+            } catch {
+              // The `remove` method was called from a Server Component.
               // This can be ignored if you have middleware refreshing
               // user sessions.
             }
@@ -30,13 +37,13 @@ export async function GET(request: NextRequest) {
     );
 
     // Verificar la sesión
-    console.log('[STRATEGIES POST] Checking session...');
-    console.log('[STRATEGIES POST] Available cookies:', cookieStore.getAll().map(c => c.name));
+    console.log('[STRATEGIES GET] Checking session...');
+    console.log('[STRATEGIES GET] Available cookies:', cookieStore.getAll().map(c => c.name));
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    console.log('[STRATEGIES POST] Session error:', sessionError);
-    console.log('[STRATEGIES POST] Session exists:', !!session);
-    console.log('[STRATEGIES POST] Session user:', session?.user?.email);
+    console.log('[STRATEGIES GET] Session error:', sessionError);
+    console.log('[STRATEGIES GET] Session exists:', !!session);
+    console.log('[STRATEGIES GET] Session user:', session?.user?.email);
 
     if (sessionError) {
       console.error('[STRATEGIES POST] Session error:', sessionError);
@@ -238,16 +245,23 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return cookieStore.getAll();
+          get(name: string) {
+            return cookieStore.get(name)?.value;
           },
-          setAll(cookiesToSet) {
+          set(name: string, value: string, options: any) {
             try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
+              cookieStore.set(name, value, options);
             } catch {
-              // The `setAll` method was called from a Server Component.
+              // The `set` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set(name, '', { ...options, maxAge: 0 });
+            } catch {
+              // The `remove` method was called from a Server Component.
               // This can be ignored if you have middleware refreshing
               // user sessions.
             }
@@ -257,13 +271,13 @@ export async function POST(request: NextRequest) {
     );
 
     // Verificar la sesión
-    console.log('[STRATEGIES] Checking session...');
-    console.log('[STRATEGIES] Available cookies:', cookieStore.getAll().map(c => c.name));
+    console.log('[STRATEGIES POST] Checking session...');
+    console.log('[STRATEGIES POST] Available cookies:', cookieStore.getAll().map(c => c.name));
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    console.log('[STRATEGIES] Session error:', sessionError);
-    console.log('[STRATEGIES] Session exists:', !!session);
-    console.log('[STRATEGIES] Session user:', session?.user?.email);
+    console.log('[STRATEGIES POST] Session error:', sessionError);
+    console.log('[STRATEGIES POST] Session exists:', !!session);
+    console.log('[STRATEGIES POST] Session user:', session?.user?.email);
 
     if (sessionError) {
       console.error('[STRATEGIES] Session error:', sessionError);
