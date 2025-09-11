@@ -85,8 +85,39 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
 
-    // Establecer cookies de acceso y refresh token con nombres correctos para Supabase SSR
+    // Limpiar cookies antiguas antes de establecer las nuevas
     if (data.session) {
+      // Limpiar cualquier cookie antigua que pueda existir
+      response.cookies.set({
+        name: "sb-access-token",
+        value: '',
+        path: "/",
+        maxAge: 0
+      });
+      response.cookies.set({
+        name: "sb-refresh-token",
+        value: '',
+        path: "/",
+        maxAge: 0
+      });
+
+      // También limpiar cookies con nombres antiguos de proyectos si existen
+      const oldProjectRefs = ['ztlxyfrznqerebeysxbx']; // Agregar otros project refs si es necesario
+      oldProjectRefs.forEach(ref => {
+        response.cookies.set({
+          name: `sb-${ref}-auth-token`,
+          value: '',
+          path: "/",
+          maxAge: 0
+        });
+        response.cookies.set({
+          name: `sb-${ref}-refresh-token`,
+          value: '',
+          path: "/",
+          maxAge: 0
+        });
+      });
+
       // Extraer el project reference de la URL de Supabase
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
