@@ -36,15 +36,13 @@ export default function StrategiesPage() {
       setLoading(true);
 
       const response = await fetch('/api/strategies/', {
-        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (response.ok && response.status==200) {
 
       const data = await response.json();
       
@@ -68,7 +66,7 @@ export default function StrategiesPage() {
       }));
       
       setStrategies(mappedStrategies);
-    } catch (error) {
+    }} catch (error) {
       console.error("Error fetching strategies:", error);
       // Fallback a datos de ejemplo si hay error
       const mockStrategies: Strategy[] = [

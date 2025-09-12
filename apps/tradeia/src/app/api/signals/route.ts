@@ -503,7 +503,6 @@ export async function GET(req: NextRequest) {
         _mock: true // Indicate this is mock data
       }, {
         headers: {
-          'Content-Encoding': 'gzip',
           'Cache-Control': 'public, max-age=300'
         }
       });
@@ -635,7 +634,6 @@ export async function GET(req: NextRequest) {
       }
     }, {
       headers: {
-        'Content-Encoding': 'gzip',
         'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
       }
     });
@@ -719,7 +717,6 @@ export async function GET(req: NextRequest) {
       _error: err?.message ?? String(err)
     }, {
       headers: {
-        'Content-Encoding': 'gzip',
         'Cache-Control': 'public, max-age=300'
       }
     });
