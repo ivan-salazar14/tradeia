@@ -14,6 +14,16 @@ interface RiskParameters {
   risk_per_trade_pct: number;
 }
 
+interface MockStrategy {
+  id: string;
+  name: string;
+  description: string;
+  risk_level: string;
+  timeframe: string;
+  indicators: string[];
+  is_active: boolean;
+}
+
 function calculatePortfolioMetrics(signals: UnifiedSignal[], initialBalance: number, riskPerTrade: number): PortfolioMetrics {
   let totalPositionSize = 0;
   let totalRiskAmount = 0;
@@ -56,6 +66,64 @@ function calculatePortfolioMetrics(signals: UnifiedSignal[], initialBalance: num
 }
 
 const API_BASE = process.env.SIGNALS_API_BASE; // e.g., https://provider.example.com
+
+// Mock strategies list for signals and backtest views
+const mockStrategies: MockStrategy[] = [
+  {
+    id: 'conservative',
+    name: 'Conservative Strategy',
+    description: 'Low-risk strategy with basic technical indicators',
+    risk_level: 'Low',
+    timeframe: '4h',
+    indicators: ['SMA', 'RSI'],
+    is_active: true
+  },
+  {
+    id: 'moderate',
+    name: 'Moderate Strategy',
+    description: 'Balanced risk strategy with multiple indicators',
+    risk_level: 'Medium',
+    timeframe: '1h',
+    indicators: ['SMA', 'RSI', 'MACD'],
+    is_active: false
+  },
+  {
+    id: 'sqzmom_adx',
+    name: 'ADX Squeeze Momentum',
+    description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation',
+    risk_level: 'Medium',
+    timeframe: '4h',
+    indicators: ['ADX', 'Squeeze Momentum'],
+    is_active: false
+  },
+  {
+    id: 'aggressive',
+    name: 'Aggressive Strategy',
+    description: 'High-risk strategy for experienced traders',
+    risk_level: 'High',
+    timeframe: '15m',
+    indicators: ['RSI', 'MACD', 'Bollinger Bands'],
+    is_active: false
+  },
+  {
+    id: 'scalping',
+    name: 'Scalping Strategy',
+    description: 'Fast-paced strategy for quick profits',
+    risk_level: 'High',
+    timeframe: '5m',
+    indicators: ['EMA', 'Stochastic'],
+    is_active: false
+  },
+  {
+    id: 'swing',
+    name: 'Swing Trading',
+    description: 'Medium-term strategy for trend following',
+    risk_level: 'Medium',
+    timeframe: '1d',
+    indicators: ['Moving Average', 'Volume'],
+    is_active: false
+  }
+];
 
 // Simple in-memory circuit breaker (per server instance)
 let failCount = 0;
@@ -206,6 +274,7 @@ export async function GET(req: NextRequest) {
 
       return NextResponse.json({
         signals: paginatedMockSignals,
+        strategies: mockStrategies,
         portfolio_metrics: portfolioMetrics,
         risk_parameters: riskParameters,
         pagination: {
@@ -342,6 +411,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       signals: transformedSignals,
+      strategies: mockStrategies,
       portfolio_metrics: portfolioMetrics,
       risk_parameters: riskParameters,
       pagination: {
@@ -405,6 +475,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       signals: paginatedMockSignals,
+      strategies: mockStrategies,
       portfolio_metrics: portfolioMetrics,
       risk_parameters: riskParameters,
       pagination: {

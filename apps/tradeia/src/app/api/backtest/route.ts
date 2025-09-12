@@ -14,6 +14,74 @@ type BacktestParams = {
   risk_per_trade: string;
 };
 
+interface MockStrategy {
+  id: string;
+  name: string;
+  description: string;
+  risk_level: string;
+  timeframe: string;
+  indicators: string[];
+  is_active: boolean;
+}
+
+// Mock strategies list for backtest view
+const mockStrategies: MockStrategy[] = [
+  {
+    id: 'conservative',
+    name: 'Conservative Strategy',
+    description: 'Low-risk strategy with basic technical indicators',
+    risk_level: 'Low',
+    timeframe: '4h',
+    indicators: ['SMA', 'RSI'],
+    is_active: true
+  },
+  {
+    id: 'moderate',
+    name: 'Moderate Strategy',
+    description: 'Balanced risk strategy with multiple indicators',
+    risk_level: 'Medium',
+    timeframe: '1h',
+    indicators: ['SMA', 'RSI', 'MACD'],
+    is_active: false
+  },
+  {
+    id: 'sqzmom_adx',
+    name: 'ADX Squeeze Momentum',
+    description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation',
+    risk_level: 'Medium',
+    timeframe: '4h',
+    indicators: ['ADX', 'Squeeze Momentum'],
+    is_active: false
+  },
+  {
+    id: 'aggressive',
+    name: 'Aggressive Strategy',
+    description: 'High-risk strategy for experienced traders',
+    risk_level: 'High',
+    timeframe: '15m',
+    indicators: ['RSI', 'MACD', 'Bollinger Bands'],
+    is_active: false
+  },
+  {
+    id: 'scalping',
+    name: 'Scalping Strategy',
+    description: 'Fast-paced strategy for quick profits',
+    risk_level: 'High',
+    timeframe: '5m',
+    indicators: ['EMA', 'Stochastic'],
+    is_active: false
+  },
+  {
+    id: 'swing',
+    name: 'Swing Trading',
+    description: 'Medium-term strategy for trend following',
+    risk_level: 'Medium',
+    timeframe: '1d',
+    indicators: ['Moving Average', 'Volume'],
+    is_active: false
+  }
+];
+
 export async function POST(request: Request) {
   console.log('[BACKTEST] ===== STARTING BACKTEST REQUEST =====');
 
@@ -184,6 +252,7 @@ export async function POST(request: Request) {
           const paginatedData = {
             ...data,
             trades: processedTrades,
+            strategies: mockStrategies,
             pagination: {
               total: totalTrades,
               limit: cappedLimit,
@@ -266,6 +335,7 @@ export async function POST(request: Request) {
 
     const mockResult = {
       trades: processedTrades,
+      strategies: mockStrategies,
       initial_balance: parseFloat(params.initial_balance),
       final_balance: parseFloat(params.initial_balance) + 2200,
       total_return: 2200,
