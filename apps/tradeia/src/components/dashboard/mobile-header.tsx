@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,12 @@ const menu = [
   { label: "Gestión de Bots", path: "/dashboard/bots", icon: "bots" },
   { label: "Soporte", path: "/dashboard/support", icon: "support" },
 ];
+
+interface Strategy {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 const getPageTitle = (pathname: string): string => {
   const cleanPath = pathname.replace(/\/undefined/g, '');
@@ -75,6 +81,33 @@ export default function MobileHeader({ pathname }: MobileHeaderProps) {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [strategiesLoading, setStrategiesLoading] = useState(true);
+
+  // Fetch strategies on component mount
+  useEffect(() => {
+    const fetchStrategies = async () => {
+      try {
+        setStrategiesLoading(true);
+        const response = await fetch('/api/strategies?limit=50');
+        if (response.ok) {
+          const data = await response.json();
+          setStrategies(data.strategies || []);
+        } else {
+          console.warn('Failed to fetch strategies for mobile menu');
+          // Set empty array so component doesn't break
+          setStrategies([]);
+        }
+      } catch (error) {
+        console.warn('Error fetching strategies for mobile menu:', error);
+        setStrategies([]);
+      } finally {
+        setStrategiesLoading(false);
+      }
+    };
+
+    fetchStrategies();
+  }, []);
 
   const handleLogout = async () => {
     try {
