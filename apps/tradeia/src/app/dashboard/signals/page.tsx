@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { getSupabaseClient } from "@/lib/supabase-singleton";
 import { format, subDays } from "date-fns";
 
 type Signal = {
@@ -74,25 +73,8 @@ export default function SignalsPage() {
       setLoading(true);
       setError(null);
 
-      const supabaseClient = getSupabaseClient();
-      if (!supabaseClient) {
-        setError("Error al inicializar cliente de Supabase.");
-        setLoading(false);
-        return;
-      }
-
-      const { data: sessionData } = await supabaseClient.auth.getSession();
-      const token = sessionData.session?.access_token;
-      const meta = sessionData.session?.user?.user_metadata as any;
-      const userActive: string[] = meta?.active_strategies || [];
-      // If user selected strategies locally, prefer those; otherwise, fallback to user's active strategies metadata
-      const activeStrategies: string[] = selectedStrategies.length > 0 ? selectedStrategies : userActive;
-
-      if (!token) {
-        setError("Sesión no válida. Inicie sesión nuevamente.");
-        setLoading(false);
-        return;
-      }
+      // Use mock strategies - no need for Supabase client
+      const activeStrategies: string[] = selectedStrategies.length > 0 ? selectedStrategies : ['moderate'];
 
       const params = new URLSearchParams({
         timeframe,
@@ -107,7 +89,7 @@ export default function SignalsPage() {
       if (Array.isArray(activeStrategies) && activeStrategies.length === 1) {
         params.set('strategy_id', activeStrategies[0]);
       }
-      const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+      const headers: Record<string, string> = {};
       // For multi-select, send header to let backend filter locally by all
       if (Array.isArray(activeStrategies) && activeStrategies.length > 1) {
         headers["X-Active-Strategies"] = activeStrategies.join(",");
@@ -133,43 +115,44 @@ export default function SignalsPage() {
     fetchSignals();
   }, [fetchSignals]);
 
-  // Load available strategies for filter options
+  // Use static mock strategies instead of API call
   useEffect(() => {
-    (async () => {
-      try {
-        const supabaseClient = getSupabaseClient();
-        if (!supabaseClient) {
-          console.error('Failed to load trading strategies: Supabase client not available');
-          return;
-        }
+    console.log('[SIGNALS-PAGE] ===== USING MOCK STRATEGIES =====');
 
-        const { data } = await supabaseClient.auth.getSession();
-        const token = data.session?.access_token;
-        if (!token) {
-          console.error('Failed to load trading strategies: No access token');
-          return;
-        }
-
-        const res = await fetch('/api/strategies', {
-          headers: {
-            'x-user-id': data.session?.user?.id || ''
-          },
-          cache: 'no-store',
-        });
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error('Failed to load trading strategies:', res.status, errorText);
-          return;
-        }
-
-        const json = await res.json();
-        const strategies = Array.isArray(json?.strategies) ? json.strategies : [];
-        setStrategyOptions(strategies);
-      } catch (error) {
-        console.error('Failed to load trading strategies:', error);
+    const mockStrategies = [
+      {
+        id: 'conservative',
+        name: 'Conservative Strategy',
+        description: 'Low-risk strategy with basic technical indicators'
+      },
+      {
+        id: 'moderate',
+        name: 'Moderate Strategy',
+        description: 'Balanced risk strategy with multiple indicators'
+      },
+      {
+        id: 'sqzmom_adx',
+        name: 'ADX Squeeze Momentum',
+        description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation'
+      },
+      {
+        id: 'aggressive',
+        name: 'Aggressive Strategy',
+        description: 'High-risk strategy for experienced traders'
+      },
+      {
+        id: 'scalping',
+        name: 'Scalping Strategy',
+        description: 'Fast-paced strategy for quick profits'
+      },
+      {
+        id: 'swing',
+        name: 'Swing Trading',
+        description: 'Medium-term strategy for trend following'
       }
-    })();
+    ];
+
+    setStrategyOptions(mockStrategies);
   }, []);
 
   // Create a map of strategy IDs to names for quick lookup

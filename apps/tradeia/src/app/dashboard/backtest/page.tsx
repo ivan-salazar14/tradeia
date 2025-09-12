@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabaseClient } from '@/lib/supabase-singleton';
-console.log('[BACKTEST-PAGE] ===== IMPORTING SUPABASE SINGLETON =====');
 import { format } from 'date-fns';
 
 interface Strategy {
@@ -177,73 +175,54 @@ export default function BacktestPage({ params }: PageProps) {
     setCurrentPage(1); // Reset to first page
   };
 
-  // Fetch available strategies when component mounts
+  // Use static mock strategies instead of API call
   useEffect(() => {
-    console.log('[BACKTEST-PAGE] ===== COMPONENT MOUNT - FETCHING STRATEGIES =====');
+    console.log('[BACKTEST-PAGE] ===== USING MOCK STRATEGIES =====');
 
-    const fetchStrategies = async () => {
-      console.log('[BACKTEST-PAGE] Getting Supabase client from singleton...');
-
-      const supabaseClient = getSupabaseClient();
-      if (!supabaseClient) {
-        console.error('[BACKTEST-PAGE] Failed to get Supabase client from singleton');
-        setError('Failed to initialize Supabase client');
-        setLoading(false);
-        return;
+    const mockStrategies = [
+      {
+        id: 'conservative',
+        name: 'Conservative Strategy',
+        description: 'Low-risk strategy with basic technical indicators'
+      },
+      {
+        id: 'moderate',
+        name: 'Moderate Strategy',
+        description: 'Balanced risk strategy with multiple indicators'
+      },
+      {
+        id: 'sqzmom_adx',
+        name: 'ADX Squeeze Momentum',
+        description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation'
+      },
+      {
+        id: 'aggressive',
+        name: 'Aggressive Strategy',
+        description: 'High-risk strategy for experienced traders'
+      },
+      {
+        id: 'scalping',
+        name: 'Scalping Strategy',
+        description: 'Fast-paced strategy for quick profits'
+      },
+      {
+        id: 'swing',
+        name: 'Swing Trading',
+        description: 'Medium-term strategy for trend following'
       }
+    ];
 
-      console.log('[BACKTEST-PAGE] Supabase client obtained, getting session...');
+    setStrategies(mockStrategies);
 
-      try {
-        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+    // Set default strategy
+    if (mockStrategies.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        strategy: mockStrategies[0].id
+      }));
+    }
 
-        console.log('[BACKTEST-PAGE] Session check result:');
-        console.log('[BACKTEST-PAGE] - Session error:', sessionError);
-        console.log('[BACKTEST-PAGE] - Session exists:', !!session);
-        console.log('[BACKTEST-PAGE] - Access token:', session?.access_token ? 'Present' : 'NULL');
-
-        if (sessionError) {
-          console.error('[BACKTEST-PAGE] Session error details:', sessionError);
-        }
-
-        if (sessionError || !session) {
-          console.log('[BACKTEST-PAGE] No valid session found, redirecting to login');
-          router.push('/login');
-          return;
-        }
-
-        console.log('[BACKTEST-PAGE] Session validated, proceeding with strategies fetch');
-        
-        const response = await fetch('/api/strategies', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'x-user-id': session.user?.id || ''
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch strategies');
-        }
-        
-        const { strategies: fetchedStrategies } = await response.json();
-        setStrategies(fetchedStrategies || []);
-        
-        // Set default strategy if available
-        if (fetchedStrategies?.length > 0) {
-          setFormData(prev => ({
-            ...prev,
-            strategy: fetchedStrategies[0].id
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching strategies:', error);
-        setError('Failed to load trading strategies');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchStrategies();
+    setLoading(false);
   }, []);
   
   // Check if Supabase client is available when component mounts

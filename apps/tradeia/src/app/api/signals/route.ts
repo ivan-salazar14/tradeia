@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { normalizeExampleProvider } from '@/lib/signals/normalize';
 import { UnifiedSignal } from '@/lib/signals/types';
 
@@ -140,6 +142,7 @@ export async function GET(req: NextRequest) {
   const symbol = (searchParams.get('symbol') || '').toUpperCase();
   const timeframe = (searchParams.get('timeframe') || '4h').toLowerCase();
   const strategyIdParam = searchParams.get('strategy_id')?.trim() || '';
+  const strategyIdsParam = searchParams.get('strategy_ids')?.split(',').map(id => id.trim()).filter(Boolean) || null;
   const startDate = searchParams.get('start_date');
   const endDate = searchParams.get('end_date');
   const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200); // Cap at 200, default 50
@@ -154,6 +157,81 @@ export async function GET(req: NextRequest) {
   if (!auth) {
     return NextResponse.json({ error: 'Missing Authorization header' }, { status: 401 });
   }
+
+  // Setup Supabase client for user strategy lookup
+  const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          if (name === `sb-${projectRef}-auth-token`) {
+            return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
+          }
+          if (name === `sb-${projectRef}-refresh-token`) {
+            return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
+          }
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set(name, value, options);
+          } catch {
+            // Ignore in server context
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set(name, '', { ...options, maxAge: 0 });
+          } catch {
+            // Ignore in server context
+          }
+        },
+      },
+    }
+  );
+
+  // Get user's active strategies or use defaults
+  let userStrategyIds: string[] = [];
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data: userStrategies } = await supabase
+        .from('user_strategies')
+        .select('strategy_id')
+        .eq('user_id', session.user.id)
+        .eq('is_active', true);
+
+      if (userStrategies && userStrategies.length > 0) {
+        userStrategyIds = userStrategies.map(us => us.strategy_id);
+      }
+    }
+  } catch (error) {
+    console.warn('[SIGNALS] Failed to fetch user strategies, using defaults:', error);
+  }
+
+  // Determine which strategies to use for filtering
+  let activeStrategyIds: string[] = [];
+
+  if (strategyIdsParam && strategyIdsParam.length > 0) {
+    // Use explicitly provided strategy_ids
+    activeStrategyIds = strategyIdsParam;
+  } else if (strategyIdParam) {
+    // Use single strategy_id parameter
+    activeStrategyIds = [strategyIdParam];
+  } else if (userStrategyIds.length > 0) {
+    // Use user's active strategies
+    activeStrategyIds = userStrategyIds;
+  } else {
+    // Default to moderate strategy
+    activeStrategyIds = ['moderate'];
+  }
+
+  console.log('[SIGNALS] Using strategy IDs for filtering:', activeStrategyIds);
 
   // Basic input validation
   if (symbol && !/^[A-Z0-9]+\/[A-Z0-9]+$/.test(symbol)) {
@@ -180,20 +258,20 @@ export async function GET(req: NextRequest) {
   if (forceFresh) qs.set('force_fresh', 'true');
 
   try {
-    // If client provided explicit strategies, fetch stored signals filtered by strategy_id.
-    // Else, generate signals using user's current strategy (external server resolves it).
-    const activeHeader = req.headers.get('x-active-strategies');
+    // Use strategy_ids for database-level filtering
     let resp: Response;
-    if (activeHeader || strategyIdParam) {
-      const parts = activeHeader
-        ? activeHeader.split(',').map(s => s.trim()).filter(Boolean)
-        : strategyIdParam
-          ? [strategyIdParam]
-          : [];
-      const qsSignals = new URLSearchParams(qs);
-      // only restrict upstream when exactly one strategy is chosen
-      if (parts.length === 1) qsSignals.set('strategy_id', parts[0]);
+    const qsSignals = new URLSearchParams(qs);
+
+    // Add strategy_ids parameter for database filtering
+    if (activeStrategyIds.length > 0) {
+      qsSignals.set('strategy_ids', activeStrategyIds.join(','));
+    }
+
+    // If we have specific strategies, fetch filtered signals
+    // Otherwise, generate signals using default strategy
+    if (activeStrategyIds.length > 0 && activeStrategyIds[0] !== 'moderate') {
       const getUrl = `${API_BASE}/signals?${qsSignals.toString()}`;
+      console.log('[SIGNALS] Fetching filtered signals from:', getUrl.replace(/Authorization=[^&]*/, 'Authorization=***'));
       resp = await fetch(getUrl, {
         headers: {
           'Authorization': auth,
@@ -201,7 +279,9 @@ export async function GET(req: NextRequest) {
         cache: 'no-store',
       });
     } else {
+      // Generate signals with default strategy
       const postUrl = `${API_BASE}/strategies/signals/generate?${qs.toString()}`;
+      console.log('[SIGNALS] Generating signals from:', postUrl.replace(/Authorization=[^&]*/, 'Authorization=***'));
       resp = await fetch(postUrl, {
         method: 'POST',
         headers: {
@@ -230,7 +310,7 @@ export async function GET(req: NextRequest) {
           signal_source: 'mock_strategy',
           type: 'entry',
           direction: 'BUY',
-          strategyId: strategyIdParam || 'conservative',
+          strategyId: activeStrategyIds[0] || 'moderate',
           entry: 45000 + Math.random() * 5000,
           tp1: 47000 + Math.random() * 3000,
           tp2: 49000 + Math.random() * 2000,
@@ -248,7 +328,7 @@ export async function GET(req: NextRequest) {
           signal_source: 'mock_strategy',
           type: 'entry',
           direction: 'SELL',
-          strategyId: strategyIdParam || 'moderate',
+          strategyId: activeStrategyIds[1] || activeStrategyIds[0] || 'moderate',
           entry: 2800 + Math.random() * 200,
           tp1: 2600 + Math.random() * 100,
           tp2: 2400 + Math.random() * 100,
@@ -336,17 +416,12 @@ export async function GET(req: NextRequest) {
       return true;
     });
 
-    // Optional: filter by active strategies if provided in header X-Active-Strategies: csv
-    // reuse header value read earlier
+    // Filter by active strategies at database level (already done via strategy_ids parameter)
+    // Additional client-side filtering if needed
     let filtered = quality;
-    if (activeHeader) {
-      const active = new Set(
-        activeHeader
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      );
-      filtered = quality.filter((s) => !s.strategyId || active.has(s.strategyId));
+    if (activeStrategyIds.length > 0) {
+      const activeSet = new Set(activeStrategyIds);
+      filtered = quality.filter((s) => !s.strategyId || activeSet.has(s.strategyId));
     }
 
     // reset breaker on success
@@ -449,7 +524,7 @@ export async function GET(req: NextRequest) {
         signal_source: 'mock_strategy_fallback',
         type: 'entry',
         direction: 'BUY',
-        strategyId: strategyIdParam || 'conservative',
+        strategyId: activeStrategyIds[0] || 'moderate',
         entry: 46000 + Math.random() * 4000,
         tp1: 48000 + Math.random() * 2000,
         tp2: 50000 + Math.random() * 2000,
