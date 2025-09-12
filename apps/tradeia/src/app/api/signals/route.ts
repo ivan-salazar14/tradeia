@@ -134,8 +134,15 @@ const OPEN_THRESHOLD = 3; // failures
 const OPEN_MS = 30_000; // 30s cooldown
 
 export async function GET(req: NextRequest) {
+  console.log('[SIGNALS API] API_BASE value:', API_BASE);
+  console.log('[SIGNALS API] API_BASE exists:', !!API_BASE);
+
   if (!API_BASE) {
-    return NextResponse.json({ error: 'SIGNALS_API_BASE is not configured' }, { status: 500 });
+    console.error('[SIGNALS API] SIGNALS_API_BASE environment variable is not configured');
+    return NextResponse.json({
+      error: 'SIGNALS_API_BASE is not configured',
+      details: 'Please check your environment variables'
+    }, { status: 500 });
   }
 
   const { searchParams } = new URL(req.url);
@@ -267,27 +274,98 @@ export async function GET(req: NextRequest) {
       qsSignals.set('strategy_ids', activeStrategyIds.join(','));
     }
 
-    // If we have specific strategies, fetch filtered signals
-    // Otherwise, generate signals using default strategy
-    if (activeStrategyIds.length > 0 && activeStrategyIds[0] !== 'moderate') {
-      const getUrl = `${API_BASE}/signals?${qsSignals.toString()}`;
-      console.log('[SIGNALS] Fetching filtered signals from:', getUrl.replace(/Authorization=[^&]*/, 'Authorization=***'));
-      resp = await fetch(getUrl, {
-        headers: {
-          'Authorization': auth,
-        },
-        cache: 'no-store',
-      });
-    } else {
-      // Generate signals with default strategy
+    // Try to connect to external API, but fallback to mock data if not available
+    try {
+      // Always use POST to /strategies/signals/generate endpoint as per API specification
       const postUrl = `${API_BASE}/strategies/signals/generate?${qs.toString()}`;
       console.log('[SIGNALS] Generating signals from:', postUrl.replace(/Authorization=[^&]*/, 'Authorization=***'));
+
       resp = await fetch(postUrl, {
         method: 'POST',
         headers: {
           'Authorization': auth,
+          'Content-Type': 'application/json',
         },
         cache: 'no-store',
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+      });
+    } catch (networkError) {
+      console.warn('[SIGNALS] External API not available, using mock data:', networkError);
+      // Return mock signals data when external API is not available
+      const mockSignals: UnifiedSignal[] = [
+        {
+          id: 'mock-signal-1',
+          symbol: symbol || 'BTC/USDT',
+          timeframe: timeframe,
+          timestamp: new Date().toISOString(),
+          execution_timestamp: new Date().toISOString(),
+          signal_age_hours: 2.5,
+          signal_source: 'mock_strategy',
+          type: 'entry',
+          direction: 'BUY',
+          strategyId: activeStrategyIds[0] || 'moderate',
+          entry: 45000 + Math.random() * 5000,
+          tp1: 47000 + Math.random() * 3000,
+          tp2: 49000 + Math.random() * 2000,
+          stopLoss: 43000 + Math.random() * 2000,
+          source: { provider: 'mock_provider' },
+          marketScenario: 'bullish_trend'
+        },
+        {
+          id: 'mock-signal-2',
+          symbol: symbol || 'ETH/USDT',
+          timeframe: timeframe,
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          execution_timestamp: new Date(Date.now() - 3600000).toISOString(),
+          signal_age_hours: 1.0,
+          signal_source: 'mock_strategy',
+          type: 'entry',
+          direction: 'SELL',
+          strategyId: activeStrategyIds[1] || activeStrategyIds[0] || 'moderate',
+          entry: 2800 + Math.random() * 200,
+          tp1: 2600 + Math.random() * 100,
+          tp2: 2400 + Math.random() * 100,
+          stopLoss: 3000 + Math.random() * 100,
+          source: { provider: 'mock_provider' },
+          marketScenario: 'bearish_correction'
+        }
+      ];
+
+      const portfolioMetrics = calculatePortfolioMetrics(mockSignals, initialBalance, riskPerTrade);
+      const riskParameters: RiskParameters = {
+        initial_balance: initialBalance,
+        risk_per_trade_pct: riskPerTrade
+      };
+
+      // Apply pagination to mock signals
+      const totalSignals = mockSignals.length;
+      const paginatedMockSignals = mockSignals.slice(offset, offset + limit);
+      const totalPages = Math.ceil(totalSignals / limit);
+      const currentPage = Math.floor(offset / limit) + 1;
+      const hasNextPage = offset + limit < totalSignals;
+      const hasPrevPage = offset > 0;
+
+      return NextResponse.json({
+        signals: paginatedMockSignals,
+        strategies: mockStrategies,
+        portfolio_metrics: portfolioMetrics,
+        risk_parameters: riskParameters,
+        pagination: {
+          total: totalSignals,
+          limit,
+          offset,
+          current_page: currentPage,
+          total_pages: totalPages,
+          has_next: hasNextPage,
+          has_prev: hasPrevPage
+        },
+        _mock: true,
+        _message: 'External signals API not available, showing mock data'
+      }, {
+        headers: {
+          'Content-Encoding': 'gzip',
+          'Cache-Control': 'public, max-age=300'
+        }
       });
     }
 
@@ -297,6 +375,8 @@ export async function GET(req: NextRequest) {
       if (failCount >= OPEN_THRESHOLD) {
         openUntil = Date.now() + OPEN_MS;
       }
+      console.warn('[SIGNALS] External API failed with status:', resp.status);
+      console.warn('[SIGNALS] External API response text:', text);
       console.warn('[SIGNALS] External API failed, using mock data fallback');
       // Return mock signals data instead of error
       const mockSignals: UnifiedSignal[] = [
@@ -376,6 +456,7 @@ export async function GET(req: NextRequest) {
     }
 
     const data = await resp.json();
+    console.log('[SIGNALS] External API response data:', JSON.stringify(data, null, 2));
 
     const normalizeOne = (p: any): UnifiedSignal => {
       const signal = normalizeExampleProvider(p);

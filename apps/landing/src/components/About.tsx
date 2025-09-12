@@ -32,19 +32,19 @@ const About = () => {
   const teamMembers = [
     {
       name: 'Ana Martínez',
-      position: 'CEO & Fundador',
+      position: 'CEO',
       bio: 'Más de 15 años de experiencia en mercados financieros y tecnología.',
       image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
     },
     {
       name: 'Ivan Salazar',
-      position: 'Directora de Tecnología',
-      bio: 'Experta en desarrollo de software y arquitectura de sistemas financieros.',
-      image: '../assets/1646873495552.jpg'
+      position: 'Software Engineer Especialista en Trading - Founder',
+      bio: 'Experto en desarrollo de software y arquitectura de sistemas financieros.',
+      image: '../assets/1646873495552.jpeg'
     },
     {
       name: 'David López',
-      position: 'Estratega en Jefe',
+      position: 'Analista en Estrategias Profesionales',
       bio: 'Experto en análisis cuantitativo y desarrollo de estrategias de trading.',
       image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
     }
