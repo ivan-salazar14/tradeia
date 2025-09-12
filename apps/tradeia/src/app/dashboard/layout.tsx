@@ -1,13 +1,15 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import Sidebar from "@/components/dashboard/sidebar";
+import MobileHeader from "@/components/dashboard/mobile-header";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, loading, session } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
@@ -61,9 +63,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <MobileHeader pathname={pathname} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

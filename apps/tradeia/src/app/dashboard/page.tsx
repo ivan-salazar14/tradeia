@@ -39,20 +39,6 @@ export default function DashboardPage() {
 
   return (
     <>
-      {/* Header */}
-      <header className="flex justify-between items-center p-4 bg-white border-b-2">
-        <div className="flex items-center">
-          <h1 className="text-2xl font-semibold text-gray-700 ml-4">Panel de Control</h1>
-        </div>
-        <div className="flex items-center space-x-4">
-          <span className="text-gray-500">🔔</span>
-          <div className="font-semibold">{user.email}</div>
-          <Button onClick={handleLogout} variant="outline" size="sm">
-            Cerrar Sesión
-          </Button>
-        </div>
-      </header>
-
       {/* Onboarding banner removed - no forced redirects */}
 
       {/* Main Dashboard Content */}

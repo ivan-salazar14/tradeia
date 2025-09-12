@@ -100,21 +100,24 @@ export default function Sidebar() {
 
   return (
     <div className="hidden md:flex flex-col w-64 bg-white shadow-lg">
+      {/* Desktop Sidebar Header */}
       <div className="flex items-center justify-center h-20 shadow-md">
         <h1 className="text-2xl font-bold text-indigo-600">AI Trader</h1>
       </div>
+
+      {/* Desktop Navigation */}
       <nav className="flex-1 px-2 py-4 space-y-2">
         {menu.map((item) => {
           // Clean the path for comparison to handle any undefined segments
           const cleanPathname = pathname.replace(/\/undefined/g, '');
           const cleanItemPath = item.path.replace(/\/undefined/g, '');
           const active = cleanPathname === cleanItemPath;
-          
+
           return (
             <button
               key={item.path}
               onClick={() => handleNavigation(item.path)}
-              className={`nav-item flex items-center w-full px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-200 ${active ? "active" : ""}`}
+              className={`nav-item flex items-center w-full px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors duration-150 ${active ? "active" : ""}`}
               style={active ? { backgroundColor: "#e0e7ff", color: "#4f46e5", fontWeight: 600 } : {}}
             >
               <span className="sidebar-icon mr-4">{icons[item.icon]}</span>
