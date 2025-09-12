@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,40 @@ interface Strategy {
   name: string;
   description?: string;
 }
+
+// Static mock strategies for mobile navigation
+const mockStrategies: Strategy[] = [
+  {
+    id: 'conservative',
+    name: 'Conservative Strategy',
+    description: 'Low-risk strategy with basic technical indicators'
+  },
+  {
+    id: 'moderate',
+    name: 'Moderate Strategy',
+    description: 'Balanced risk strategy with multiple indicators'
+  },
+  {
+    id: 'sqzmom_adx',
+    name: 'ADX Squeeze Momentum',
+    description: 'Strategy using ADX and Squeeze Momentum indicators'
+  },
+  {
+    id: 'aggressive',
+    name: 'Aggressive Strategy',
+    description: 'High-risk strategy for experienced traders'
+  },
+  {
+    id: 'scalping',
+    name: 'Scalping Strategy',
+    description: 'Fast-paced strategy for quick profits'
+  },
+  {
+    id: 'swing',
+    name: 'Swing Trading',
+    description: 'Medium-term strategy for trend following'
+  }
+];
 
 const getPageTitle = (pathname: string): string => {
   const cleanPath = pathname.replace(/\/undefined/g, '');
@@ -81,33 +115,6 @@ export default function MobileHeader({ pathname }: MobileHeaderProps) {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [strategies, setStrategies] = useState<Strategy[]>([]);
-  const [strategiesLoading, setStrategiesLoading] = useState(true);
-
-  // Fetch strategies on component mount
-  useEffect(() => {
-    const fetchStrategies = async () => {
-      try {
-        setStrategiesLoading(true);
-        const response = await fetch('/api/strategies?limit=50');
-        if (response.ok) {
-          const data = await response.json();
-          setStrategies(data.strategies || []);
-        } else {
-          console.warn('Failed to fetch strategies for mobile menu');
-          // Set empty array so component doesn't break
-          setStrategies([]);
-        }
-      } catch (error) {
-        console.warn('Error fetching strategies for mobile menu:', error);
-        setStrategies([]);
-      } finally {
-        setStrategiesLoading(false);
-      }
-    };
-
-    fetchStrategies();
-  }, []);
 
   const handleLogout = async () => {
     try {
@@ -199,6 +206,33 @@ export default function MobileHeader({ pathname }: MobileHeaderProps) {
                   </button>
                 );
               })}
+
+              {/* Strategies Section */}
+              <div className="pt-4 border-t border-gray-200">
+                <h3 className="px-4 py-2 text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                  Estrategias Disponibles
+                </h3>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {mockStrategies.map((strategy) => (
+                    <div
+                      key={strategy.id}
+                      className="w-full flex items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors duration-150"
+                    >
+                      <span className="mr-3 text-indigo-500">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{strategy.name}</div>
+                        {strategy.description && (
+                          <div className="text-xs text-gray-500 truncate">{strategy.description}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </nav>
 
             {/* Mobile Menu Footer */}
