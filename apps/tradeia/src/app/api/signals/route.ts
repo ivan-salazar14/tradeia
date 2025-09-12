@@ -390,7 +390,7 @@ export async function GET(req: NextRequest) {
           signal_source: 'mock_strategy',
           type: 'entry',
           direction: 'BUY',
-          strategyId: activeStrategyIds[0] || 'moderate',
+          strategyId: 'conservative', // Use mock strategy IDs that match frontend
           entry: 45000 + Math.random() * 5000,
           tp1: 47000 + Math.random() * 3000,
           tp2: 49000 + Math.random() * 2000,
@@ -408,13 +408,67 @@ export async function GET(req: NextRequest) {
           signal_source: 'mock_strategy',
           type: 'entry',
           direction: 'SELL',
-          strategyId: activeStrategyIds[1] || activeStrategyIds[0] || 'moderate',
+          strategyId: 'moderate', // Use mock strategy IDs that match frontend
           entry: 2800 + Math.random() * 200,
           tp1: 2600 + Math.random() * 100,
           tp2: 2400 + Math.random() * 100,
           stopLoss: 3000 + Math.random() * 100,
           source: { provider: 'mock_provider' },
           marketScenario: 'bearish_correction'
+        },
+        {
+          id: 'mock-signal-3',
+          symbol: symbol || 'ADA/USDT',
+          timeframe: timeframe,
+          timestamp: new Date(Date.now() - 7200000).toISOString(),
+          execution_timestamp: new Date(Date.now() - 7200000).toISOString(),
+          signal_age_hours: 2.0,
+          signal_source: 'mock_strategy',
+          type: 'entry',
+          direction: 'BUY',
+          strategyId: 'sqzmom_adx', // Use mock strategy IDs that match frontend
+          entry: 0.45 + Math.random() * 0.1,
+          tp1: 0.48 + Math.random() * 0.05,
+          tp2: 0.51 + Math.random() * 0.05,
+          stopLoss: 0.42 + Math.random() * 0.03,
+          source: { provider: 'mock_provider' },
+          marketScenario: 'sideways_consolidation'
+        },
+        {
+          id: 'mock-signal-4',
+          symbol: symbol || 'SOL/USDT',
+          timeframe: timeframe,
+          timestamp: new Date(Date.now() - 10800000).toISOString(),
+          execution_timestamp: new Date(Date.now() - 10800000).toISOString(),
+          signal_age_hours: 3.0,
+          signal_source: 'mock_strategy',
+          type: 'entry',
+          direction: 'SELL',
+          strategyId: 'aggressive', // Use mock strategy IDs that match frontend
+          entry: 140 + Math.random() * 20,
+          tp1: 130 + Math.random() * 10,
+          tp2: 120 + Math.random() * 10,
+          stopLoss: 150 + Math.random() * 5,
+          source: { provider: 'mock_provider' },
+          marketScenario: 'overbought_condition'
+        },
+        {
+          id: 'mock-signal-5',
+          symbol: symbol || 'DOT/USDT',
+          timeframe: timeframe,
+          timestamp: new Date(Date.now() - 14400000).toISOString(),
+          execution_timestamp: new Date(Date.now() - 14400000).toISOString(),
+          signal_age_hours: 4.0,
+          signal_source: 'mock_strategy',
+          type: 'entry',
+          direction: 'BUY',
+          strategyId: 'scalping', // Use mock strategy IDs that match frontend
+          entry: 5.2 + Math.random() * 0.8,
+          tp1: 5.4 + Math.random() * 0.3,
+          tp2: 5.6 + Math.random() * 0.3,
+          stopLoss: 5.0 + Math.random() * 0.2,
+          source: { provider: 'mock_provider' },
+          marketScenario: 'breakout_up'
         }
       ];
 
@@ -605,13 +659,31 @@ export async function GET(req: NextRequest) {
         signal_source: 'mock_strategy_fallback',
         type: 'entry',
         direction: 'BUY',
-        strategyId: activeStrategyIds[0] || 'moderate',
+        strategyId: 'conservative', // Use mock strategy IDs that match frontend
         entry: 46000 + Math.random() * 4000,
         tp1: 48000 + Math.random() * 2000,
         tp2: 50000 + Math.random() * 2000,
         stopLoss: 44000 + Math.random() * 2000,
         source: { provider: 'mock_provider_fallback' },
         marketScenario: 'sideways_consolidation'
+      },
+      {
+        id: 'mock-signal-exception-2',
+        symbol: symbol || 'ETH/USDT',
+        timeframe: timeframe,
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        execution_timestamp: new Date(Date.now() - 3600000).toISOString(),
+        signal_age_hours: 1.0,
+        signal_source: 'mock_strategy_fallback',
+        type: 'entry',
+        direction: 'SELL',
+        strategyId: 'moderate', // Use mock strategy IDs that match frontend
+        entry: 2800 + Math.random() * 200,
+        tp1: 2600 + Math.random() * 100,
+        tp2: 2400 + Math.random() * 100,
+        stopLoss: 3000 + Math.random() * 100,
+        source: { provider: 'mock_provider_fallback' },
+        marketScenario: 'bearish_correction'
       }
     ];
 
