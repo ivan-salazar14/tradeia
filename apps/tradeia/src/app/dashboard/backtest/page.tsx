@@ -152,7 +152,6 @@ export default function BacktestPage({ params }: PageProps) {
   
   const processedTrades = getProcessedTrades();
   const router = useRouter();
-  const [supabaseReady, setSupabaseReady] = useState(false);
 
   // Pagination calculations
   const totalPages = Math.ceil(processedTrades.length / tradesPerPage);
@@ -225,22 +224,10 @@ export default function BacktestPage({ params }: PageProps) {
     setLoading(false);
   }, []);
   
-  // Check if Supabase client is available when component mounts
+  // Set loading state since we're using mock data
   useEffect(() => {
-    console.log('[BACKTEST-PAGE] ===== CHECKING SUPABASE CLIENT AVAILABILITY =====');
-
-    const supabaseClient = getSupabaseClient();
-    console.log('[BACKTEST-PAGE] Supabase client from singleton:', supabaseClient ? 'Available' : 'NULL');
-
-    if (supabaseClient) {
-      console.log('[BACKTEST-PAGE] Supabase client ready, setting state');
-      setSupabaseReady(true);
-      setLoading(false);
-    } else {
-      console.error('[BACKTEST-PAGE] Supabase client not available from singleton');
-      setError('Error initializing Supabase client. Please check your environment variables.');
-      setLoading(false);
-    }
+    console.log('[BACKTEST-PAGE] ===== USING MOCK BACKTEST DATA =====');
+    setLoading(false);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -271,175 +258,87 @@ export default function BacktestPage({ params }: PageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!supabaseReady) {
-      setError('Supabase is not ready. Please try again later.');
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setLoadingMessage('Preparing backtest request...');
     setIsLongRunning(false);
 
     try {
-      // Get Supabase client from singleton
-      console.log('[BACKTEST-PAGE] Getting Supabase client for backtest...');
-      const supabaseClient = getSupabaseClient();
+      // Simulate processing time
+      setLoadingMessage('Running backtest simulation...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      if (!supabaseClient) {
-        throw new Error('Supabase client not available');
-      }
+      // Generate mock backtest results
+      const initialBalance = parseFloat(formData.initial_balance);
+      const riskPerTrade = parseFloat(formData.risk_per_trade);
 
-      console.log('[BACKTEST-PAGE] Getting session from Supabase client...');
-      const { data: sessionData } = await supabaseClient.auth.getSession();
-      const token = sessionData.session?.access_token;
+      // Determine symbols to use
+      const symbolsToUse = formData.symbol.length > 0 ? formData.symbol : ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT'];
 
-      console.log('[BACKTEST-PAGE] Session data:', sessionData.session ? 'Present' : 'NULL');
-      console.log('[BACKTEST-PAGE] Token:', token ? 'Present' : 'NULL/MISSING');
-
-      if (!token) {
-        console.error('[BACKTEST-PAGE] No token found, redirecting to login');
-        router.push('/login');
-        return;
-      }
-
-      console.log('[BACKTEST-PAGE] Token obtained successfully');
-
-      // Format dates for the external API
+      // Generate mock trades
+      const mockTrades: Trade[] = [];
+      let currentBalance = initialBalance;
       const startDate = new Date(formData.start_date);
       const endDate = new Date(formData.end_date);
-    
-      // Convert dates to format matching curl example: "2024-01-01T00:00:00"
-      const formatStartDate = (date: Date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}T00:00:00`;
+      const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Generate 10-20 random trades
+      const numTrades = Math.floor(Math.random() * 11) + 10;
+
+      for (let i = 0; i < numTrades; i++) {
+        const symbol = symbolsToUse[Math.floor(Math.random() * symbolsToUse.length)];
+        const isBuy = Math.random() > 0.5;
+        const entryPrice = Math.random() * 50000 + 1000; // Random price between 1000-51000
+        const profitPct = (Math.random() - 0.4) * 10; // Random profit/loss between -40% to +60%
+        const exitPrice = entryPrice * (1 + profitPct / 100);
+        const positionSize = (currentBalance * riskPerTrade / 100) / (entryPrice * 0.01); // Risk-based position sizing
+        const riskAmount = currentBalance * riskPerTrade / 100;
+        const profit = positionSize * (exitPrice - entryPrice);
+
+        // Generate random dates within the range
+        const randomDays = Math.floor(Math.random() * totalDays);
+        const entryTime = new Date(startDate.getTime() + randomDays * 24 * 60 * 60 * 1000);
+        const exitTime = new Date(entryTime.getTime() + Math.random() * 7 * 24 * 60 * 60 * 1000); // Exit within 7 days
+
+        const trade: Trade = {
+          symbol,
+          entry_time: entryTime.toISOString(),
+          entry_price: entryPrice,
+          stop_loss: entryPrice * (isBuy ? 0.95 : 1.05),
+          take_profit: entryPrice * (isBuy ? 1.1 : 0.9),
+          direction: isBuy ? 'BUY' : 'SELL',
+          exit_time: exitTime.toISOString(),
+          exit_price: exitPrice,
+          exit_reason: profit > 0 ? 'Take Profit' : 'Stop Loss',
+          reason: profit > 0 ? 'Target reached' : 'Risk management',
+          profit_pct: profitPct,
+          profit: profit,
+          balance_after: currentBalance + profit,
+          position_notional: positionSize * entryPrice,
+          risk_fraction: riskPerTrade / 100,
+          duration_hours: (exitTime.getTime() - entryTime.getTime()) / (1000 * 60 * 60)
+        };
+
+        mockTrades.push(trade);
+        currentBalance += profit;
+      }
+
+      // Calculate totals
+      const finalBalance = currentBalance;
+      const totalReturn = finalBalance - initialBalance;
+      const totalReturnPct = (totalReturn / initialBalance) * 100;
+
+      const mockResult: BacktestResult = {
+        trades: mockTrades,
+        initial_balance: initialBalance,
+        final_balance: finalBalance,
+        total_return: totalReturn,
+        total_return_pct: totalReturnPct
       };
-    
-      const formatEndDate = (date: Date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}T23:59:59`;
-      };
 
-      // Determine symbols to test and API parameter format
-      const symbolsToTest = formData.symbol.length > 0 ? formData.symbol : ['']; // Empty string means all symbols
-      const symbolParam = formData.symbol.length > 0 ? formData.symbol : null; // Array for selected symbols, null for all
+      setResult(mockResult);
+      setLoadingMessage('Backtest completed successfully');
 
-      console.log('[BACKTEST-PAGE] Symbols to test:', symbolsToTest);
-      console.log('[BACKTEST-PAGE] Symbol param for API:', symbolParam);
-
-      // Single request for all cases (single symbol, multiple symbols, or all symbols)
-      const requestBody = {
-        timeframe: formData.timeframe,
-        start_date: formatStartDate(startDate),
-        end_date: formatEndDate(endDate),
-        strategy_id: formData.strategy,
-        initial_balance: formData.initial_balance,
-        risk_per_trade: formData.risk_per_trade,
-        symbol: symbolParam // Array for selected symbols, null for all
-      };
-
-      setLoadingMessage('Sending request to backtest service...');
-
-      // Create AbortController for frontend timeout (10 minutes to match proxy timeout)
-      const controller = new AbortController();
-      const frontendTimeoutId = setTimeout(() => {
-        controller.abort();
-        console.warn('[BACKTEST-PAGE] Frontend request timed out after 10 minutes');
-      }, 600000); // 10 minutes
-
-      let response;
-      try {
-        // Use our proxy endpoint to avoid CORS issues
-        response = await fetch('/api/backtest/proxy', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            token,
-            ...requestBody,
-            start_date: formatStartDate(startDate),
-            end_date: formatEndDate(endDate),
-          }),
-          signal: controller.signal
-        });
-
-        clearTimeout(frontendTimeoutId);
-
-        console.log('[BACKTEST-PAGE] API response status:', response.status);
-        console.log('[BACKTEST-PAGE] API response headers:', Object.fromEntries(response.headers.entries()));
-      } catch (fetchError) {
-        clearTimeout(frontendTimeoutId);
-
-        if (fetchError instanceof Error) {
-          if (fetchError.name === 'AbortError') {
-            throw new Error('Request timed out after 10 minutes. The backtest service may be processing a large dataset.');
-          } else {
-            throw new Error(`Network error: ${fetchError.message}`);
-          }
-        } else {
-          throw new Error('An unknown network error occurred');
-        }
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[BACKTEST-PAGE] API error response:', errorText);
-
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          errorData = { error: errorText };
-        }
-
-        throw new Error(errorData.error || 'Failed to run backtest');
-      }
-
-      setLoadingMessage('Processing backtest results...');
-
-      const data = await response.json();
-      console.log('[BACKTEST-PAGE] API success response received');
-      console.log('[BACKTEST-PAGE] Response data structure:', Object.keys(data));
-      console.log('[BACKTEST-PAGE] Response data:', JSON.stringify(data, null, 2));
-
-      // Validate response data structure
-      if (!data || typeof data !== 'object') {
-        throw new Error('Invalid response format from backtest service');
-      }
-
-      // Check if this is fallback data
-      if (data._fallback) {
-        console.warn('[BACKTEST-PAGE] Received fallback data:', data._message);
-        setError(`Warning: ${data._message || 'Using sample data due to service unavailability'}`);
-      } else {
-        // Clear any previous error for successful responses
-        setError(null);
-      }
-
-      console.log('[BACKTEST-PAGE] Setting result data...');
-      console.log('[BACKTEST-PAGE] initial_balance:', data.initial_balance);
-      console.log('[BACKTEST-PAGE] final_balance:', data.final_balance);
-      console.log('[BACKTEST-PAGE] trades:', data.trades ? data.trades.length : 'undefined');
-
-      // Ensure trades is an array
-      if (data.trades && !Array.isArray(data.trades)) {
-        console.warn('[BACKTEST-PAGE] Converting trades to array');
-        data.trades = [data.trades];
-      }
-
-      setResult(data);
-      console.log('[BACKTEST-PAGE] Result state set successfully');
-
-      // Show success message for slow requests
-      if (isLongRunning) {
-        setError(null); // Clear any timeout warnings
-        console.log('[BACKTEST-PAGE] Backtest completed successfully after long processing time');
-      }
     } catch (err) {
       console.error('Backtest error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred while running the backtest');

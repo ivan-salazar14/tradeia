@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowRight, Play } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -6,7 +5,7 @@ const Hero = () => {
   const { t } = useLanguage();
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 md:pt-24">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900"></div>
       <div className="absolute inset-0 bg-black opacity-30"></div>
@@ -74,8 +73,8 @@ const Hero = () => {
               <code className="text-green-400 text-sm">
                 <div className="mb-2"># Get trading signals from TradeIA API</div>
                 <div className="mb-2 text-blue-400">response = requests.post('https://api.tradeia.com/signals/generate',</div>
-                <div className="ml-4 mb-2 text-yellow-400">headers={'{'}'Authorization': 'Bearer YOUR_TOKEN'{'}'},</div>
-                <div className="ml-4 mb-2 text-purple-400">json={'{'}'symbol': 'BTC/USDT', 'timeframe': '4h'{'}'})</div>
+                <div className="ml-4 mb-2 text-yellow-400">headers={&#123;'Authorization': 'Bearer YOUR_TOKEN'&#125;},</div>
+                <div className="ml-4 mb-2 text-purple-400">json={&#123;'symbol': 'BTC/USDT', 'timeframe': '4h'&#125;})</div>
                 <div className="mb-2">&nbsp;</div>
                 <div className="text-green-400"># Response includes signals with entry/exit points</div>
                 <div className="text-blue-400">signals = response.json()['signals']</div>
