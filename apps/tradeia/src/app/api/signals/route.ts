@@ -74,12 +74,13 @@ export async function GET(req: NextRequest) {
   const strategyIdParam = searchParams.get('strategy_id')?.trim() || '';
   const startDate = searchParams.get('start_date');
   const endDate = searchParams.get('end_date');
-  const limit = searchParams.get('limit');
-  const offset = searchParams.get('offset');
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200); // Cap at 200, default 50
+  const offset = parseInt(searchParams.get('offset') || '0');
   const initialBalance = parseFloat(searchParams.get('initial_balance') || '10000');
   const riskPerTrade = parseFloat(searchParams.get('risk_per_trade') || '1.0');
   const includeLiveSignals = searchParams.get('include_live_signals') === 'true';
   const forceFresh = searchParams.get('force_fresh') === 'true';
+  const fields = searchParams.get('fields')?.split(',') || null; // Field selection
 
   const auth = req.headers.get('authorization');
   if (!auth) {
@@ -105,8 +106,8 @@ export async function GET(req: NextRequest) {
   qs.set('timeframe', timeframe);
   if (startDate) qs.set('start_date', startDate);
   if (endDate) qs.set('end_date', endDate);
-  if (limit) qs.set('limit', limit);
-  if (offset) qs.set('offset', offset);
+  qs.set('limit', limit.toString());
+  qs.set('offset', offset.toString());
   if (includeLiveSignals) qs.set('include_live_signals', 'true');
   if (forceFresh) qs.set('force_fresh', 'true');
 
@@ -195,11 +196,33 @@ export async function GET(req: NextRequest) {
         risk_per_trade_pct: riskPerTrade
       };
 
+      // Apply pagination to mock signals
+      const totalSignals = mockSignals.length;
+      const paginatedMockSignals = mockSignals.slice(offset, offset + limit);
+      const totalPages = Math.ceil(totalSignals / limit);
+      const currentPage = Math.floor(offset / limit) + 1;
+      const hasNextPage = offset + limit < totalSignals;
+      const hasPrevPage = offset > 0;
+
       return NextResponse.json({
-        signals: mockSignals,
+        signals: paginatedMockSignals,
         portfolio_metrics: portfolioMetrics,
         risk_parameters: riskParameters,
+        pagination: {
+          total: totalSignals,
+          limit,
+          offset,
+          current_page: currentPage,
+          total_pages: totalPages,
+          has_next: hasNextPage,
+          has_prev: hasPrevPage
+        },
         _mock: true // Indicate this is mock data
+      }, {
+        headers: {
+          'Content-Encoding': 'gzip',
+          'Cache-Control': 'public, max-age=300'
+        }
       });
     }
 
@@ -270,32 +293,71 @@ export async function GET(req: NextRequest) {
       risk_per_trade_pct: riskPerTrade
     };
 
-    // Transform signals to match frontend expectations
-    const transformedSignals = filtered.map(signal => ({
-      id: signal.id,
-      symbol: signal.symbol,
-      timeframe: signal.timeframe,
-      timestamp: signal.timestamp,
-      execution_timestamp: signal.execution_timestamp,
-      signal_age_hours: signal.signal_age_hours,
-      signal_source: signal.signal_source,
-      type: signal.type,
-      direction: signal.direction,
-      strategyId: signal.strategyId,
-      entry: signal.entry,
-      tp1: signal.tp1,
-      tp2: signal.tp2,
-      stopLoss: signal.stopLoss,
-      source: signal.source,
-      position_size: signal.entry ? (initialBalance * riskPerTrade / 100) / Math.abs(signal.entry - (signal.stopLoss || signal.entry)) * signal.entry : undefined,
-      risk_amount: signal.entry ? (initialBalance * riskPerTrade / 100) : undefined,
-      reward_to_risk: signal.entry && signal.tp1 && signal.stopLoss ? Math.abs(signal.tp1 - signal.entry) / Math.abs(signal.entry - signal.stopLoss) : undefined
-    }));
+    // Apply pagination to filtered signals
+    const totalSignals = filtered.length;
+    const paginatedSignals = filtered.slice(offset, offset + limit);
+
+    // Transform signals to match frontend expectations with field selection
+    const transformedSignals = paginatedSignals.map(signal => {
+      const baseSignal = {
+        id: signal.id,
+        symbol: signal.symbol,
+        timeframe: signal.timeframe,
+        timestamp: signal.timestamp,
+        execution_timestamp: signal.execution_timestamp,
+        signal_age_hours: signal.signal_age_hours,
+        signal_source: signal.signal_source,
+        type: signal.type,
+        direction: signal.direction,
+        strategyId: signal.strategyId,
+        entry: signal.entry,
+        tp1: signal.tp1,
+        tp2: signal.tp2,
+        stopLoss: signal.stopLoss,
+        source: signal.source,
+        position_size: signal.entry ? (initialBalance * riskPerTrade / 100) / Math.abs(signal.entry - (signal.stopLoss || signal.entry)) * signal.entry : undefined,
+        risk_amount: signal.entry ? (initialBalance * riskPerTrade / 100) : undefined,
+        reward_to_risk: signal.entry && signal.tp1 && signal.stopLoss ? Math.abs(signal.tp1 - signal.entry) / Math.abs(signal.entry - signal.stopLoss) : undefined
+      };
+
+      // Apply field selection if specified
+      if (fields && fields.length > 0) {
+        const selectedSignal: any = {};
+        fields.forEach(field => {
+          if (baseSignal.hasOwnProperty(field.trim())) {
+            selectedSignal[field.trim()] = (baseSignal as any)[field.trim()];
+          }
+        });
+        return selectedSignal;
+      }
+
+      return baseSignal;
+    });
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalSignals / limit);
+    const currentPage = Math.floor(offset / limit) + 1;
+    const hasNextPage = offset + limit < totalSignals;
+    const hasPrevPage = offset > 0;
 
     return NextResponse.json({
       signals: transformedSignals,
       portfolio_metrics: portfolioMetrics,
-      risk_parameters: riskParameters
+      risk_parameters: riskParameters,
+      pagination: {
+        total: totalSignals,
+        limit,
+        offset,
+        current_page: currentPage,
+        total_pages: totalPages,
+        has_next: hasNextPage,
+        has_prev: hasPrevPage
+      }
+    }, {
+      headers: {
+        'Content-Encoding': 'gzip',
+        'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
+      }
     });
   } catch (err: any) {
     failCount += 1;
@@ -333,12 +395,34 @@ export async function GET(req: NextRequest) {
       risk_per_trade_pct: riskPerTrade
     };
 
+    // Apply pagination to exception mock signals
+    const totalSignals = mockSignals.length;
+    const paginatedMockSignals = mockSignals.slice(offset, offset + limit);
+    const totalPages = Math.ceil(totalSignals / limit);
+    const currentPage = Math.floor(offset / limit) + 1;
+    const hasNextPage = offset + limit < totalSignals;
+    const hasPrevPage = offset > 0;
+
     return NextResponse.json({
-      signals: mockSignals,
+      signals: paginatedMockSignals,
       portfolio_metrics: portfolioMetrics,
       risk_parameters: riskParameters,
+      pagination: {
+        total: totalSignals,
+        limit,
+        offset,
+        current_page: currentPage,
+        total_pages: totalPages,
+        has_next: hasNextPage,
+        has_prev: hasPrevPage
+      },
       _mock: true,
       _error: err?.message ?? String(err)
+    }, {
+      headers: {
+        'Content-Encoding': 'gzip',
+        'Cache-Control': 'public, max-age=300'
+      }
     });
   }
 }

@@ -4,6 +4,11 @@ import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100); // Cap at 100, default 20
+    const offset = parseInt(searchParams.get('offset') || '0');
+    const fields = searchParams.get('fields')?.split(',') || null; // Field selection
+
     const cookieStore = await cookies();
 
     // Extraer el project reference de la URL de Supabase
@@ -145,13 +150,30 @@ export async function GET(request: NextRequest) {
         }
       ];
 
+      // Apply pagination to mock strategies
+      const totalStrategies = mockStrategies.length;
+      const paginatedStrategies = mockStrategies.slice(offset, offset + limit);
+      const totalPages = Math.ceil(totalStrategies / limit);
+      const currentPage = Math.floor(offset / limit) + 1;
+      const hasNextPage = offset + limit < totalStrategies;
+      const hasPrevPage = offset > 0;
+
       return NextResponse.json({
-        strategies: mockStrategies,
-        current_strategy: { strategy_id: 'conservative' }
+        strategies: paginatedStrategies,
+        current_strategy: { strategy_id: 'conservative' },
+        pagination: {
+          total: totalStrategies,
+          limit,
+          offset,
+          current_page: currentPage,
+          total_pages: totalPages,
+          has_next: hasNextPage,
+          has_prev: hasPrevPage
+        }
       });
     }
 
-    // Obtener estrategias del usuario
+    // Obtener estrategias del usuario con paginación
     const { data: userStrategies, error: userStrategiesError } = await supabase
       .from('user_strategies')
       .select(`
@@ -170,7 +192,8 @@ export async function GET(request: NextRequest) {
           created_at
         )
       `)
-      .eq('user_id', session.user.id);
+      .eq('user_id', session.user.id)
+      .range(offset, offset + limit - 1);
 
     if (userStrategiesError) {
       console.error('Error fetching user strategies:', userStrategiesError);
@@ -222,24 +245,87 @@ export async function GET(request: NextRequest) {
         }
       ];
 
+      // Apply pagination to mock strategies
+      const totalStrategies = mockStrategies.length;
+      const paginatedStrategies = mockStrategies.slice(offset, offset + limit);
+      const totalPages = Math.ceil(totalStrategies / limit);
+      const currentPage = Math.floor(offset / limit) + 1;
+      const hasNextPage = offset + limit < totalStrategies;
+      const hasPrevPage = offset > 0;
+
       return NextResponse.json({
-        strategies: mockStrategies,
-        current_strategy: { strategy_id: 'conservative' }
+        strategies: paginatedStrategies,
+        current_strategy: { strategy_id: 'conservative' },
+        pagination: {
+          total: totalStrategies,
+          limit,
+          offset,
+          current_page: currentPage,
+          total_pages: totalPages,
+          has_next: hasNextPage,
+          has_prev: hasPrevPage
+        }
+      }, {
+        headers: {
+          'Content-Encoding': 'gzip',
+          'Cache-Control': 'private, max-age=600'
+        }
       });
     }
 
-    // Formatear las estrategias del usuario
-    const strategies = userStrategies.map(userStrategy => ({
-      ...userStrategy.strategies,
-      is_active: userStrategy.is_active
-    }));
+    // Formatear las estrategias del usuario con field selection
+    const strategies = userStrategies.map(userStrategy => {
+      const baseStrategy = {
+        ...userStrategy.strategies,
+        is_active: userStrategy.is_active
+      };
+
+      // Apply field selection if specified
+      if (fields && fields.length > 0) {
+        const selectedStrategy: any = {};
+        fields.forEach(field => {
+          if (baseStrategy.hasOwnProperty(field.trim())) {
+            selectedStrategy[field.trim()] = (baseStrategy as any)[field.trim()];
+          }
+        });
+        return selectedStrategy;
+      }
+
+      return baseStrategy;
+    });
 
     // Encontrar la estrategia activa
     const currentStrategy = userStrategies.find(us => us.is_active);
 
+    // Get total count for pagination metadata
+    const { count: totalCount } = await supabase
+      .from('user_strategies')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', session.user.id);
+
+    const totalStrategies = totalCount || 0;
+    const totalPages = Math.ceil(totalStrategies / limit);
+    const currentPage = Math.floor(offset / limit) + 1;
+    const hasNextPage = offset + limit < totalStrategies;
+    const hasPrevPage = offset > 0;
+
     return NextResponse.json({
       strategies,
-      current_strategy: currentStrategy ? { strategy_id: currentStrategy.strategy_id } : null
+      current_strategy: currentStrategy ? { strategy_id: currentStrategy.strategy_id } : null,
+      pagination: {
+        total: totalStrategies,
+        limit,
+        offset,
+        current_page: currentPage,
+        total_pages: totalPages,
+        has_next: hasNextPage,
+        has_prev: hasPrevPage
+      }
+    }, {
+      headers: {
+        'Content-Encoding': 'gzip',
+        'Cache-Control': 'private, max-age=600' // Cache for 10 minutes, private since user-specific
+      }
     });
 
   } catch (error) {
