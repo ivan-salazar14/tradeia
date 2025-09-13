@@ -139,6 +139,7 @@ export default function SignalsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept-Encoding': 'identity',
         },
         body: JSON.stringify(requestBody)
       });

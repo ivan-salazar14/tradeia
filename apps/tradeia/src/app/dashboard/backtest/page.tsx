@@ -66,6 +66,7 @@ export default function BacktestPage({ params }: PageProps) {
   });
   
   const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [strategiesLoading, setStrategiesLoading] = useState(true);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -177,6 +178,7 @@ export default function BacktestPage({ params }: PageProps) {
   // Use static mock strategies instead of API call
   useEffect(() => {
     console.log('[BACKTEST-PAGE] ===== USING MOCK STRATEGIES =====');
+    setStrategiesLoading(true);
 
     const mockStrategies = [
       {
@@ -211,7 +213,10 @@ export default function BacktestPage({ params }: PageProps) {
       }
     ];
 
+    console.log('[BACKTEST-PAGE] Setting mock strategies:', mockStrategies.length);
+    console.log('[BACKTEST-PAGE] Mock strategies data:', mockStrategies);
     setStrategies(mockStrategies);
+    setStrategiesLoading(false);
 
     // Set default strategy
     if (mockStrategies.length > 0) {
@@ -229,6 +234,15 @@ export default function BacktestPage({ params }: PageProps) {
     console.log('[BACKTEST-PAGE] ===== USING MOCK BACKTEST DATA =====');
     setLoading(false);
   }, []);
+
+  // Debug logging for strategy options
+  useEffect(() => {
+    console.log('[BACKTEST-PAGE] Strategy options updated:', strategies.length, 'strategies');
+    console.log('[BACKTEST-PAGE] Strategies loading:', strategiesLoading);
+    if (strategies.length > 0) {
+      console.log('[BACKTEST-PAGE] Available strategies:', strategies.map(s => `${s.id}: ${s.name}`));
+    }
+  }, [strategies, strategiesLoading]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -351,7 +365,22 @@ export default function BacktestPage({ params }: PageProps) {
 
   return (
     <div className="container mx-auto px-4 py-4 md:py-8 max-w-full overflow-x-hidden">
-      <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Backtesting</h1>
+      <div className="flex items-center justify-between mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold">Backtesting</h1>
+        {strategies.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 000 16zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              Mock Mode
+            </span>
+            <span className="text-sm text-gray-500">
+              {strategies.length} strategies loaded
+            </span>
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8">
         {/* Backtest Form */}
         <div className="xl:col-span-1 order-2 xl:order-1">
@@ -445,6 +474,11 @@ export default function BacktestPage({ params }: PageProps) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Strategy
+                  {strategies.length > 0 && (
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Mock ({strategies.length})
+                    </span>
+                  )}
                 </label>
                 <div className="relative">
                   <select
@@ -453,9 +487,9 @@ export default function BacktestPage({ params }: PageProps) {
                     onChange={handleChange}
                     className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white appearance-none bg-no-repeat bg-right bg-[length:1rem] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzM4NSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+')] dark:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzlDQTNBRiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+')]"
                     required
-                    disabled={loading || strategies.length === 0}
+                    disabled={loading || strategiesLoading}
                   >
-                    {loading ? (
+                    {strategiesLoading ? (
                       <option value="">Loading strategies...</option>
                     ) : strategies.length > 0 ? (
                       strategies.map((strategy) => (
