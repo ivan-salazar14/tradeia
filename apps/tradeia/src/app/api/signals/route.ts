@@ -134,6 +134,10 @@ const OPEN_THRESHOLD = 3; // failures
 const OPEN_MS = 30_000; // 30s cooldown
 
 export async function GET(req: NextRequest) {
+  console.log('[SIGNALS API] ===== STARTING REQUEST =====');
+  console.log('[SIGNALS API] Request URL:', req.url);
+  console.log('[SIGNALS API] Request method:', req.method);
+  console.log('[SIGNALS API] Request headers:', Object.fromEntries(req.headers.entries()));
   console.log('[SIGNALS API] API_BASE value:', API_BASE);
   console.log('[SIGNALS API] API_BASE exists:', !!API_BASE);
 
@@ -345,6 +349,12 @@ export async function GET(req: NextRequest) {
       const hasNextPage = offset + limit < totalSignals;
       const hasPrevPage = offset > 0;
 
+      console.log('[SIGNALS API] ===== SENDING MOCK RESPONSE (NETWORK ERROR) =====');
+      console.log('[SIGNALS API] Mock signals count:', paginatedMockSignals.length);
+      console.log('[SIGNALS API] Response headers:', {
+        'Cache-Control': 'public, max-age=300'
+      });
+
       return NextResponse.json({
         signals: paginatedMockSignals,
         strategies: mockStrategies,
@@ -363,7 +373,6 @@ export async function GET(req: NextRequest) {
         _message: 'External signals API not available, showing mock data'
       }, {
         headers: {
-          'Content-Encoding': 'gzip',
           'Cache-Control': 'public, max-age=300'
         }
       });
@@ -618,6 +627,12 @@ export async function GET(req: NextRequest) {
     const hasNextPage = offset + limit < totalSignals;
     const hasPrevPage = offset > 0;
 
+    console.log('[SIGNALS API] ===== SENDING SUCCESS RESPONSE =====');
+    console.log('[SIGNALS API] Response signals count:', transformedSignals.length);
+    console.log('[SIGNALS API] Response headers:', {
+      'Cache-Control': 'public, max-age=300'
+    });
+
     return NextResponse.json({
       signals: transformedSignals,
       strategies: mockStrategies,
@@ -698,6 +713,13 @@ export async function GET(req: NextRequest) {
     const currentPage = Math.floor(offset / limit) + 1;
     const hasNextPage = offset + limit < totalSignals;
     const hasPrevPage = offset > 0;
+
+    console.log('[SIGNALS API] ===== SENDING EXCEPTION FALLBACK RESPONSE =====');
+    console.log('[SIGNALS API] Exception mock signals count:', paginatedMockSignals.length);
+    console.log('[SIGNALS API] Exception error:', err?.message ?? String(err));
+    console.log('[SIGNALS API] Response headers:', {
+      'Cache-Control': 'public, max-age=300'
+    });
 
     return NextResponse.json({
       signals: paginatedMockSignals,

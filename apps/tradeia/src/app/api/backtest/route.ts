@@ -84,6 +84,9 @@ const mockStrategies: MockStrategy[] = [
 
 export async function POST(request: Request) {
   console.log('[BACKTEST] ===== STARTING BACKTEST REQUEST =====');
+  console.log('[BACKTEST] Request URL:', request.url);
+  console.log('[BACKTEST] Request method:', request.method);
+  console.log('[BACKTEST] Request headers:', Object.fromEntries(request.headers.entries()));
 
   try {
     // Extract pagination and field selection parameters from request body
@@ -265,6 +268,11 @@ export async function POST(request: Request) {
           };
 
           console.log('[BACKTEST] ===== BACKTEST REQUEST COMPLETED =====');
+          console.log('[BACKTEST] Response signals count:', paginatedData.trades?.length || 0);
+          console.log('[BACKTEST] Response headers:', {
+            'Cache-Control': 'private, max-age=300'
+          });
+
           return NextResponse.json(paginatedData, {
             headers: {
               'Cache-Control': 'private, max-age=300' // Cache for 5 minutes, private since user-specific
@@ -351,6 +359,11 @@ export async function POST(request: Request) {
     };
 
     console.log('[BACKTEST] ===== BACKTEST REQUEST COMPLETED WITH FALLBACK =====');
+    console.log('[BACKTEST] Fallback mock trades count:', mockResult.trades?.length || 0);
+    console.log('[BACKTEST] Response headers:', {
+      'Cache-Control': 'private, max-age=300'
+    });
+
     return NextResponse.json(mockResult, {
       headers: {
         'Cache-Control': 'private, max-age=300'
