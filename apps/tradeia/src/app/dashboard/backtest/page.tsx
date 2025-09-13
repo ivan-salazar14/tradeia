@@ -177,56 +177,61 @@ export default function BacktestPage({ params }: PageProps) {
 
   // Use static mock strategies instead of API call
   useEffect(() => {
-    console.log('[BACKTEST-PAGE] ===== USING MOCK STRATEGIES =====');
+    console.log('[BACKTEST-PAGE] ===== LOADING MOCK STRATEGIES =====');
     setStrategiesLoading(true);
 
-    const mockStrategies = [
-      {
-        id: 'conservative',
-        name: 'Conservative Strategy',
-        description: 'Low-risk strategy with basic technical indicators'
-      },
-      {
-        id: 'moderate',
-        name: 'Moderate Strategy',
-        description: 'Balanced risk strategy with multiple indicators'
-      },
-      {
-        id: 'sqzmom_adx',
-        name: 'ADX Squeeze Momentum',
-        description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation'
-      },
-      {
-        id: 'aggressive',
-        name: 'Aggressive Strategy',
-        description: 'High-risk strategy for experienced traders'
-      },
-      {
-        id: 'scalping',
-        name: 'Scalping Strategy',
-        description: 'Fast-paced strategy for quick profits'
-      },
-      {
-        id: 'swing',
-        name: 'Swing Trading',
-        description: 'Medium-term strategy for trend following'
-      }
-    ];
+    // Simulate loading delay for better UX
+    setTimeout(() => {
+      const mockStrategies = [
+        {
+          id: 'conservative',
+          name: 'Conservative Strategy',
+          description: 'Low-risk strategy with basic technical indicators like SMA and RSI'
+        },
+        {
+          id: 'moderate',
+          name: 'Moderate Strategy',
+          description: 'Balanced risk strategy with multiple indicators including MACD'
+        },
+        {
+          id: 'sqzmom_adx',
+          name: 'ADX Squeeze Momentum',
+          description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation'
+        },
+        {
+          id: 'aggressive',
+          name: 'Aggressive Strategy',
+          description: 'High-risk strategy for experienced traders with Bollinger Bands'
+        },
+        {
+          id: 'scalping',
+          name: 'Scalping Strategy',
+          description: 'Fast-paced strategy for quick profits using EMA and Stochastic'
+        },
+        {
+          id: 'swing',
+          name: 'Swing Trading',
+          description: 'Medium-term strategy for trend following with Volume analysis'
+        }
+      ];
 
-    console.log('[BACKTEST-PAGE] Setting mock strategies:', mockStrategies.length);
-    console.log('[BACKTEST-PAGE] Mock strategies data:', mockStrategies);
-    setStrategies(mockStrategies);
-    setStrategiesLoading(false);
+      console.log('[BACKTEST-PAGE] ✅ Mock strategies loaded successfully:', mockStrategies.length);
+      console.log('[BACKTEST-PAGE] Available strategies:', mockStrategies.map(s => `${s.id}: ${s.name}`));
 
-    // Set default strategy
-    if (mockStrategies.length > 0) {
+      setStrategies(mockStrategies);
+      setStrategiesLoading(false);
+
+      // Set default strategy to moderate
+      const defaultStrategy = 'moderate';
       setFormData(prev => ({
         ...prev,
-        strategy: mockStrategies[0].id
+        strategy: defaultStrategy
       }));
-    }
 
-    setLoading(false);
+      console.log('[BACKTEST-PAGE] ✅ Default strategy set to:', defaultStrategy);
+      console.log('[BACKTEST-PAGE] ✅ Strategy dropdown should now show:', mockStrategies.find(s => s.id === defaultStrategy)?.name);
+      setLoading(false);
+    }, 500); // Small delay to show loading state
   }, []);
   
   // Set loading state since we're using mock data
@@ -474,11 +479,25 @@ export default function BacktestPage({ params }: PageProps) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Strategy
-                  {strategies.length > 0 && (
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      Mock ({strategies.length})
-                    </span>
-                  )}
+                   {strategiesLoading ? (
+                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                       <svg className="w-3 h-3 mr-1 animate-spin" fill="currentColor" viewBox="0 0 20 20">
+                         <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                       </svg>
+                       Loading...
+                     </span>
+                   ) : strategies.length > 0 ? (
+                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                       <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                       </svg>
+                       Mock ({strategies.length})
+                     </span>
+                   ) : (
+                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                       Error
+                     </span>
+                   )}
                 </label>
                 <div className="relative">
                   <select
@@ -490,16 +509,19 @@ export default function BacktestPage({ params }: PageProps) {
                     disabled={loading || strategiesLoading}
                   >
                     {strategiesLoading ? (
-                      <option value="">Loading strategies...</option>
+                      <option value="" disabled>Loading strategies...</option>
                     ) : strategies.length > 0 ? (
-                      strategies.map((strategy) => (
-                        <option key={strategy.id} value={strategy.id}>
-                          {strategy.name}
-                          {strategy.description && ` - ${strategy.description.slice(0, 50)}${strategy.description.length > 50 ? '...' : ''}`}
-                        </option>
-                      ))
+                      <>
+                        <option value="" disabled>--- Select a Strategy ---</option>
+                        {strategies.map((strategy) => (
+                          <option key={strategy.id} value={strategy.id}>
+                            {strategy.name}
+                            {strategy.description && ` - ${strategy.description.slice(0, 40)}${strategy.description.length > 40 ? '...' : ''}`}
+                          </option>
+                        ))}
+                      </>
                     ) : (
-                      <option value="">No strategies available</option>
+                      <option value="" disabled>No strategies available</option>
                     )}
                   </select>
 
