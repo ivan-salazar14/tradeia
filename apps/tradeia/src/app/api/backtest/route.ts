@@ -267,7 +267,6 @@ export async function POST(request: Request) {
           console.log('[BACKTEST] ===== BACKTEST REQUEST COMPLETED =====');
           return NextResponse.json(paginatedData, {
             headers: {
-              'Content-Encoding': 'gzip',
               'Cache-Control': 'private, max-age=300' // Cache for 5 minutes, private since user-specific
             }
           });
@@ -354,7 +353,6 @@ export async function POST(request: Request) {
     console.log('[BACKTEST] ===== BACKTEST REQUEST COMPLETED WITH FALLBACK =====');
     return NextResponse.json(mockResult, {
       headers: {
-        'Content-Encoding': 'gzip',
         'Cache-Control': 'private, max-age=300'
       }
     });
