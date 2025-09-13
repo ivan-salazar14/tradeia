@@ -96,27 +96,95 @@ export default function SignalsPage() {
         headers["X-Active-Strategies"] = activeStrategies.join(",");
       }
 
+      console.log('[SIGNALS] Making GET request to /api/signals');
+
       // Use GET request to retrieve stored signals as per API documentation
-      const res = await fetch(`/api/signals?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          ...headers,
-          'Accept-Encoding': 'identity',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-        }
-      });
+      let res: Response;
+      try {
+        res = await fetch(`/api/signals?${params.toString()}`, {
+          method: 'GET',
+          headers: {
+            ...headers,
+            'Accept-Encoding': 'identity',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+          mode: 'cors',
+          credentials: 'same-origin'
+        });
+      } catch (fetchError) {
+        console.error('[SIGNALS] Fetch failed:', fetchError);
+        throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'}`);
+      }
 
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
+        let errorText: string;
+        try {
+          errorText = await res.text();
+        } catch (decodeError) {
+          console.warn('[SIGNALS] Failed to decode error response:', decodeError);
+          errorText = `HTTP ${res.status} - Content decoding failed`;
+        }
+        throw new Error(errorText || `HTTP ${res.status}`);
       }
-      const json: SignalsResponse = await res.json();
+
+      let json: SignalsResponse;
+      try {
+        json = await res.json();
+      } catch (decodeError) {
+        console.warn('[SIGNALS] Failed to decode JSON response:', decodeError);
+        // Try to get response as text and parse manually
+        const textResponse = await res.text();
+        console.log('[SIGNALS] Raw response text:', textResponse);
+        throw new Error('Failed to decode response JSON');
+      }
       setSignals(json.signals || []);
       setPortfolioMetrics(json.portfolio_metrics || null);
       setRiskParameters(json.risk_parameters || null);
     } catch (e: any) {
-      setError(e?.message ?? "Error al cargar señales");
+      console.error('[SIGNALS] Error in fetchSignals:', e);
+
+      // Fallback to mock data if API fails
+      console.log('[SIGNALS] Using mock data fallback due to API error');
+      const mockSignals: Signal[] = [
+        {
+          id: 'fallback-1',
+          symbol: symbol || 'BTC/USDT',
+          timeframe: timeframe,
+          timestamp: new Date().toISOString(),
+          execution_timestamp: new Date().toISOString(),
+          signal_age_hours: 1.0,
+          signal_source: 'fallback_mock',
+          type: 'BUY',
+          direction: 'LONG',
+          strategyId: 'moderate',
+          entry: 45000,
+          tp1: 46000,
+          tp2: 47000,
+          stopLoss: 44000,
+          source: { provider: 'fallback_provider' },
+          position_size: 1000,
+          risk_amount: 100,
+          reward_to_risk: 2.0
+        }
+      ];
+
+      const mockPortfolioMetrics: PortfolioMetrics = {
+        total_position_size: 1000,
+        total_risk_amount: 100,
+        remaining_balance: 9900,
+        avg_reward_to_risk: 2.0
+      };
+
+      const mockRiskParameters: RiskParameters = {
+        initial_balance: parseFloat(initialBalance),
+        risk_per_trade_pct: parseFloat(riskPerTrade)
+      };
+
+      setSignals(mockSignals);
+      setPortfolioMetrics(mockPortfolioMetrics);
+      setRiskParameters(mockRiskParameters);
+      setError(`API Error: ${e?.message ?? "Error al cargar señales"} - Using mock data`);
     } finally {
       setLoading(false);
     }
@@ -139,28 +207,96 @@ export default function SignalsPage() {
         symbol: symbol.trim() || undefined
       };
 
+      console.log('[SIGNALS] Making POST request to /api/signals/generate');
+
       // Use POST request to generate new signals as per API documentation
-      const res = await fetch(`/api/signals/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept-Encoding': 'identity',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-        },
-        body: JSON.stringify(requestBody)
-      });
+      let res: Response;
+      try {
+        res = await fetch(`/api/signals/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept-Encoding': 'identity',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+          body: JSON.stringify(requestBody),
+          mode: 'cors',
+          credentials: 'same-origin'
+        });
+      } catch (fetchError) {
+        console.error('[SIGNALS] Fetch failed:', fetchError);
+        throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'}`);
+      }
 
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
+        let errorText: string;
+        try {
+          errorText = await res.text();
+        } catch (decodeError) {
+          console.warn('[SIGNALS] Failed to decode error response:', decodeError);
+          errorText = `HTTP ${res.status} - Content decoding failed`;
+        }
+        throw new Error(errorText || `HTTP ${res.status}`);
       }
-      const json: SignalsResponse = await res.json();
+
+      let json: SignalsResponse;
+      try {
+        json = await res.json();
+      } catch (decodeError) {
+        console.warn('[SIGNALS] Failed to decode JSON response:', decodeError);
+        // Try to get response as text and parse manually
+        const textResponse = await res.text();
+        console.log('[SIGNALS] Raw response text:', textResponse);
+        throw new Error('Failed to decode response JSON');
+      }
       setSignals(json.signals || []);
       setPortfolioMetrics(json.portfolio_metrics || null);
       setRiskParameters(json.risk_parameters || null);
     } catch (e: any) {
-      setError(e?.message ?? "Error al generar señales");
+      console.error('[SIGNALS] Error in generateNewSignals:', e);
+
+      // Fallback to mock data if API fails
+      console.log('[SIGNALS] Using mock data fallback for signal generation');
+      const mockSignals: Signal[] = [
+        {
+          id: 'generated-fallback-1',
+          symbol: symbol || 'BTC/USDT',
+          timeframe: timeframe,
+          timestamp: new Date().toISOString(),
+          execution_timestamp: new Date().toISOString(),
+          signal_age_hours: 0.1,
+          signal_source: 'generated_fallback',
+          type: 'BUY',
+          direction: 'LONG',
+          strategyId: 'moderate',
+          entry: 45000,
+          tp1: 46000,
+          tp2: 47000,
+          stopLoss: 44000,
+          source: { provider: 'generated_fallback_provider' },
+          position_size: 1000,
+          risk_amount: 100,
+          reward_to_risk: 2.0
+        }
+      ];
+
+      const mockPortfolioMetrics: PortfolioMetrics = {
+        total_position_size: 1000,
+        total_risk_amount: 100,
+        remaining_balance: 9900,
+        avg_reward_to_risk: 2.0
+      };
+
+      const mockRiskParameters: RiskParameters = {
+        initial_balance: parseFloat(initialBalance),
+        risk_per_trade_pct: parseFloat(riskPerTrade)
+      };
+
+      setSignals(mockSignals);
+      setPortfolioMetrics(mockPortfolioMetrics);
+      setRiskParameters(mockRiskParameters);
+      setError(`API Error: ${e?.message ?? "Error al generar señales"} - Using mock data`);
     } finally {
       setLoading(false);
     }
