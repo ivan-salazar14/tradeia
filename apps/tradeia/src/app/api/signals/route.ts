@@ -744,3 +744,426 @@ export async function GET(req: NextRequest) {
     });
   }
 }
+
+export async function POST(req: NextRequest) {
+  console.log('[SIGNALS API POST] ===== STARTING GENERATE SIGNALS REQUEST =====');
+  console.log('[SIGNALS API POST] Request URL:', req.url);
+  console.log('[SIGNALS API POST] Request method:', req.method);
+  console.log('[SIGNALS API POST] Request headers:', Object.fromEntries(req.headers.entries()));
+
+  if (!API_BASE) {
+    console.error('[SIGNALS API POST] SIGNALS_API_BASE environment variable is not configured');
+    return NextResponse.json({
+      error: 'SIGNALS_API_BASE is not configured',
+      details: 'Please check your environment variables'
+    }, { status: 500 });
+  }
+
+  const auth = req.headers.get('authorization');
+  if (!auth) {
+    return NextResponse.json({ error: 'Missing Authorization header' }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    const {
+      symbol,
+      timeframe = '4h',
+      start_date,
+      end_date,
+      initial_balance = 10000,
+      risk_per_trade = 1.0
+    } = body;
+
+    console.log('[SIGNALS API POST] Request body:', { symbol, timeframe, start_date, end_date, initial_balance, risk_per_trade });
+
+    // Setup Supabase client for user strategy lookup
+    const cookieStore = await cookies();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            if (name === `sb-${projectRef}-auth-token`) {
+              return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
+            }
+            if (name === `sb-${projectRef}-refresh-token`) {
+              return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
+            }
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set(name, value, options);
+            } catch {
+              // Ignore in server context
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set(name, '', { ...options, maxAge: 0 });
+            } catch {
+              // Ignore in server context
+            }
+          },
+        },
+      }
+    );
+
+    // Get user's active strategies or use defaults
+    let userStrategyIds: string[] = [];
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: userStrategies } = await supabase
+          .from('user_strategies')
+          .select('strategy_id')
+          .eq('user_id', session.user.id)
+          .eq('is_active', true);
+
+        if (userStrategies && userStrategies.length > 0) {
+          userStrategyIds = userStrategies.map(us => us.strategy_id);
+        }
+      }
+    } catch (error) {
+      console.warn('[SIGNALS POST] Failed to fetch user strategies, using defaults:', error);
+    }
+
+    // Determine which strategies to use for filtering
+    let activeStrategyIds: string[] = [];
+    if (userStrategyIds.length > 0) {
+      // Use user's active strategies
+      activeStrategyIds = userStrategyIds;
+    } else {
+      // Default to moderate strategy
+      activeStrategyIds = ['moderate'];
+    }
+
+    console.log('[SIGNALS POST] Using strategy IDs for filtering:', activeStrategyIds);
+
+    // Basic input validation
+    if (symbol && !/^[A-Z0-9]+\/[A-Z0-9]+$/.test(symbol)) {
+      return NextResponse.json({ error: 'Invalid symbol format. Use BASE/QUOTE e.g., BTC/USDT' }, { status: 400 });
+    }
+    if (!/^(\d+[mhdw]|1m|5m|15m|1h|4h|1d|1w)$/i.test(timeframe)) {
+      return NextResponse.json({ error: 'Invalid timeframe format.' }, { status: 400 });
+    }
+
+    // Circuit breaker check
+    const now = Date.now();
+    if (openUntil > now) {
+      return NextResponse.json({ error: 'Upstream temporarily unavailable (circuit open). Try again later.' }, { status: 503 });
+    }
+
+    const qs = new URLSearchParams();
+    if (symbol) qs.set('symbol', symbol);
+    qs.set('timeframe', timeframe);
+    if (start_date) qs.set('start_date', start_date);
+    if (end_date) qs.set('end_date', end_date);
+
+    try {
+      // Use POST to /strategies/signals/generate endpoint as per API specification
+      const postUrl = `${API_BASE}/strategies/signals/generate?${qs.toString()}`;
+      console.log('[SIGNALS POST] Generating signals from:', postUrl.replace(/Authorization=[^&]*/, 'Authorization=***'));
+
+      const resp = await fetch(postUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': auth,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        failCount += 1;
+        if (failCount >= OPEN_THRESHOLD) {
+          openUntil = Date.now() + OPEN_MS;
+        }
+        console.warn('[SIGNALS POST] External API failed with status:', resp.status);
+        console.warn('[SIGNALS POST] External API response text:', text);
+        console.warn('[SIGNALS POST] External API failed, using mock data fallback');
+
+        // Return mock signals data when external API is not available
+        const mockSignals: UnifiedSignal[] = [
+          {
+            id: 'mock-generated-1',
+            symbol: symbol || 'BTC/USDT',
+            timeframe: timeframe,
+            timestamp: new Date().toISOString(),
+            execution_timestamp: new Date().toISOString(),
+            signal_age_hours: 0.1,
+            signal_source: 'generated_signal',
+            type: 'entry',
+            direction: 'BUY',
+            strategyId: activeStrategyIds[0] || 'moderate',
+            entry: 45000 + Math.random() * 5000,
+            tp1: 47000 + Math.random() * 3000,
+            tp2: 49000 + Math.random() * 2000,
+            stopLoss: 43000 + Math.random() * 2000,
+            source: { provider: 'generated_provider' },
+            marketScenario: 'bullish_trend'
+          },
+          {
+            id: 'mock-generated-2',
+            symbol: symbol || 'ETH/USDT',
+            timeframe: timeframe,
+            timestamp: new Date().toISOString(),
+            execution_timestamp: new Date().toISOString(),
+            signal_age_hours: 0.05,
+            signal_source: 'generated_signal',
+            type: 'entry',
+            direction: 'SELL',
+            strategyId: activeStrategyIds[1] || activeStrategyIds[0] || 'moderate',
+            entry: 2800 + Math.random() * 200,
+            tp1: 2600 + Math.random() * 100,
+            tp2: 2400 + Math.random() * 100,
+            stopLoss: 3000 + Math.random() * 100,
+            source: { provider: 'generated_provider' },
+            marketScenario: 'bearish_correction'
+          }
+        ];
+
+        const portfolioMetrics = calculatePortfolioMetrics(mockSignals, initial_balance, risk_per_trade);
+        const riskParameters: RiskParameters = {
+          initial_balance: initial_balance,
+          risk_per_trade_pct: risk_per_trade
+        };
+
+        console.log('[SIGNALS API POST] ===== SENDING MOCK GENERATED RESPONSE =====');
+        console.log('[SIGNALS API POST] Mock generated signals count:', mockSignals.length);
+        console.log('[SIGNALS API POST] Response headers:', {
+          'Cache-Control': 'public, max-age=300'
+        });
+
+        return NextResponse.json({
+          signals: mockSignals,
+          strategies: mockStrategies,
+          portfolio_metrics: portfolioMetrics,
+          risk_parameters: riskParameters,
+          _mock: true,
+          _message: 'External signals generation API not available, showing mock generated data'
+        }, {
+          headers: {
+            'Cache-Control': 'public, max-age=300'
+          }
+        });
+      }
+
+      const data = await resp.json();
+      console.log('[SIGNALS POST] External API response data:', JSON.stringify(data, null, 2));
+
+      const normalizeOne = (p: any): UnifiedSignal => {
+        const signal = normalizeExampleProvider(p);
+        // Ensure strategyId is included in the normalized signal
+        if (p.strategy_id) {
+          signal.strategyId = p.strategy_id;
+        }
+        return signal;
+      };
+
+      // Unwrap common container shapes from upstream
+      const pickArray = (d: any): any[] | null => {
+        if (!d) return null;
+        if (Array.isArray(d)) return d;
+        if (Array.isArray(d.signals)) return d.signals;
+        if (Array.isArray(d.results)) return d.results;
+        if (Array.isArray(d.items)) return d.items;
+        if (d.data) return pickArray(d.data);
+        return null;
+      };
+
+      const payloadArr = pickArray(data);
+      const signals: UnifiedSignal[] = Array.isArray(payloadArr)
+        ? payloadArr.map(normalizeOne)
+        : [normalizeOne(data)];
+
+      // basic quality checks: remove items missing required fields or invalid numbers
+      const quality = signals.filter((s) => {
+        if (!s.id || !s.symbol || !s.timeframe || !s.timestamp || !s.direction) return false;
+        if (s.entry !== undefined && typeof s.entry !== 'number') return false;
+        if (s.tp1 !== undefined && typeof s.tp1 !== 'number') return false;
+        if (s.tp2 !== undefined && typeof s.tp2 !== 'number') return false;
+        if (s.stopLoss !== undefined && typeof s.stopLoss !== 'number') return false;
+        // Filter out signals that are not actual trading signals
+        if (s.reason === 'No signal generated' || s.reason === 'no signal generated') return false;
+        if (s.marketScenario === null && !s.entry) return false;
+        return true;
+      });
+
+      // Filter by active strategies at database level
+      let filtered = quality;
+      if (activeStrategyIds.length > 0) {
+        const activeSet = new Set(activeStrategyIds);
+        filtered = quality.filter((s) => !s.strategyId || activeSet.has(s.strategyId));
+      }
+
+      // reset breaker on success
+      failCount = 0;
+      openUntil = 0;
+
+      // Calculate portfolio metrics
+      const portfolioMetrics = calculatePortfolioMetrics(filtered, initial_balance, risk_per_trade);
+
+      // Prepare risk parameters
+      const riskParameters: RiskParameters = {
+        initial_balance: initial_balance,
+        risk_per_trade_pct: risk_per_trade
+      };
+
+      // Transform signals to match frontend expectations
+      const transformedSignals = filtered.map(signal => ({
+        id: signal.id,
+        symbol: signal.symbol,
+        timeframe: signal.timeframe,
+        timestamp: signal.timestamp,
+        execution_timestamp: signal.execution_timestamp,
+        signal_age_hours: signal.signal_age_hours,
+        signal_source: signal.signal_source,
+        type: signal.type,
+        direction: signal.direction,
+        strategyId: signal.strategyId,
+        entry: signal.entry,
+        tp1: signal.tp1,
+        tp2: signal.tp2,
+        stopLoss: signal.stopLoss,
+        source: signal.source,
+        position_size: signal.entry ? (initial_balance * risk_per_trade / 100) / Math.abs(signal.entry - (signal.stopLoss || signal.entry)) * signal.entry : undefined,
+        risk_amount: signal.entry ? (initial_balance * risk_per_trade / 100) : undefined,
+        reward_to_risk: signal.entry && signal.tp1 && signal.stopLoss ? Math.abs(signal.tp1 - signal.entry) / Math.abs(signal.entry - signal.stopLoss) : undefined
+      }));
+
+      console.log('[SIGNALS API POST] ===== SENDING SUCCESS RESPONSE =====');
+      console.log('[SIGNALS API POST] Response signals count:', transformedSignals.length);
+      console.log('[SIGNALS API POST] Response headers:', {
+        'Cache-Control': 'public, max-age=300'
+      });
+
+      return NextResponse.json({
+        signals: transformedSignals,
+        strategies: mockStrategies,
+        portfolio_metrics: portfolioMetrics,
+        risk_parameters: riskParameters
+      }, {
+        headers: {
+          'Cache-Control': 'public, max-age=300'
+        }
+      });
+    } catch (networkError) {
+      console.warn('[SIGNALS POST] External API not available, using mock data:', networkError);
+      failCount += 1;
+      if (failCount >= OPEN_THRESHOLD) {
+        openUntil = Date.now() + OPEN_MS;
+      }
+
+      // Return mock signals data when external API is not available
+      const mockSignals: UnifiedSignal[] = [
+        {
+          id: 'mock-post-fallback-1',
+          symbol: symbol || 'BTC/USDT',
+          timeframe: timeframe,
+          timestamp: new Date().toISOString(),
+          execution_timestamp: new Date().toISOString(),
+          signal_age_hours: 0.2,
+          signal_source: 'mock_generated_fallback',
+          type: 'entry',
+          direction: 'BUY',
+          strategyId: activeStrategyIds[0] || 'moderate',
+          entry: 45000 + Math.random() * 5000,
+          tp1: 47000 + Math.random() * 3000,
+          tp2: 49000 + Math.random() * 2000,
+          stopLoss: 43000 + Math.random() * 2000,
+          source: { provider: 'mock_provider_fallback' },
+          marketScenario: 'bullish_trend'
+        }
+      ];
+
+      const portfolioMetrics = calculatePortfolioMetrics(mockSignals, initial_balance, risk_per_trade);
+      const riskParameters: RiskParameters = {
+        initial_balance: initial_balance,
+        risk_per_trade_pct: risk_per_trade
+      };
+
+      console.log('[SIGNALS API POST] ===== SENDING EXCEPTION FALLBACK RESPONSE =====');
+      console.log('[SIGNALS API POST] Exception mock signals count:', mockSignals.length);
+      console.log('[SIGNALS API POST] Exception error:', networkError instanceof Error ? networkError.message : String(networkError));
+      console.log('[SIGNALS API POST] Response headers:', {
+        'Cache-Control': 'public, max-age=300'
+      });
+
+      return NextResponse.json({
+        signals: mockSignals,
+        strategies: mockStrategies,
+        portfolio_metrics: portfolioMetrics,
+        risk_parameters: riskParameters,
+        _mock: true,
+        _error: networkError instanceof Error ? networkError.message : String(networkError)
+      }, {
+        headers: {
+          'Cache-Control': 'public, max-age=300'
+        }
+      });
+    }
+  } catch (err: any) {
+    failCount += 1;
+    if (failCount >= OPEN_THRESHOLD) {
+      openUntil = Date.now() + OPEN_MS;
+    }
+
+    console.warn('[SIGNALS POST] Request failed with exception, using mock data fallback:', err?.message);
+
+    // Return mock signals data on any exception
+    const mockSignals: UnifiedSignal[] = [
+      {
+        id: 'mock-post-exception-1',
+        symbol: 'BTC/USDT',
+        timeframe: '4h',
+        timestamp: new Date().toISOString(),
+        execution_timestamp: new Date().toISOString(),
+        signal_age_hours: 0.1,
+        signal_source: 'mock_exception_fallback',
+        type: 'entry',
+        direction: 'BUY',
+        strategyId: 'conservative',
+        entry: 46000 + Math.random() * 4000,
+        tp1: 48000 + Math.random() * 2000,
+        tp2: 50000 + Math.random() * 2000,
+        stopLoss: 44000 + Math.random() * 2000,
+        source: { provider: 'mock_provider_exception' },
+        marketScenario: 'sideways_consolidation'
+      }
+    ];
+
+    const portfolioMetrics = calculatePortfolioMetrics(mockSignals, 10000, 1.0);
+    const riskParameters: RiskParameters = {
+      initial_balance: 10000,
+      risk_per_trade_pct: 1.0
+    };
+
+    console.log('[SIGNALS API POST] ===== SENDING FINAL FALLBACK RESPONSE =====');
+    console.log('[SIGNALS API POST] Final mock signals count:', mockSignals.length);
+    console.log('[SIGNALS API POST] Exception error:', err instanceof Error ? err.message : String(err));
+    console.log('[SIGNALS API POST] Response headers:', {
+      'Cache-Control': 'public, max-age=300'
+    });
+
+    return NextResponse.json({
+      signals: mockSignals,
+      strategies: mockStrategies,
+      portfolio_metrics: portfolioMetrics,
+      risk_parameters: riskParameters,
+      _mock: true,
+      _error: err instanceof Error ? err.message : String(err)
+    }, {
+      headers: {
+        'Cache-Control': 'public, max-age=300'
+      }
+    });
+  }
+}

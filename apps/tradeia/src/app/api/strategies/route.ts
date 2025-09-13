@@ -94,7 +94,6 @@ export async function GET(request: NextRequest) {
     _mock: true
   }, {
     headers: {
-      'Content-Encoding': 'gzip',
       'Cache-Control': 'private, max-age=600'
     }
   });

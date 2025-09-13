@@ -94,7 +94,12 @@ export default function SignalsPage() {
       if (Array.isArray(activeStrategies) && activeStrategies.length > 1) {
         headers["X-Active-Strategies"] = activeStrategies.join(",");
       }
-      const res = await fetch(`/api/signals?${params.toString()}`, { headers });
+
+      // Use GET request to retrieve stored signals as per API documentation
+      const res = await fetch(`/api/signals?${params.toString()}`, {
+        method: 'GET',
+        headers
+      });
 
       if (!res.ok) {
         const text = await res.text();
@@ -110,6 +115,47 @@ export default function SignalsPage() {
       setLoading(false);
     }
   }, [timeframe, symbol, selectedStrategies, dateRange, includeLiveSignals]);
+
+  const generateNewSignals = useMemo(() => async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Use mock strategies - no need for Supabase client
+      const activeStrategies: string[] = selectedStrategies.length > 0 ? selectedStrategies : ['moderate'];
+
+      const requestBody = {
+        timeframe,
+        start_date: `${dateRange.start}T00:00:00`,
+        end_date: `${dateRange.end}T23:59:59`,
+        initial_balance: parseFloat(initialBalance),
+        risk_per_trade: parseFloat(riskPerTrade),
+        symbol: symbol.trim() || undefined
+      };
+
+      // Use POST request to generate new signals as per API documentation
+      const res = await fetch(`/api/signals/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      const json: SignalsResponse = await res.json();
+      setSignals(json.signals || []);
+      setPortfolioMetrics(json.portfolio_metrics || null);
+      setRiskParameters(json.risk_parameters || null);
+    } catch (e: any) {
+      setError(e?.message ?? "Error al generar señales");
+    } finally {
+      setLoading(false);
+    }
+  }, [timeframe, symbol, selectedStrategies, dateRange, initialBalance, riskPerTrade]);
 
   useEffect(() => {
     fetchSignals();
@@ -190,12 +236,20 @@ export default function SignalsPage() {
         <div className="flex flex-col space-y-4 mb-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Señales</h2>
-            <button
-              onClick={fetchSignals}
-              className="px-3 py-1.5 text-sm rounded bg-indigo-600 text-white hover:bg-indigo-700"
-            >
-              Refrescar
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={fetchSignals}
+                className="px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
+              >
+                Get Stored Signals
+              </button>
+              <button
+                onClick={generateNewSignals}
+                className="px-3 py-1.5 text-sm rounded bg-green-600 text-white hover:bg-green-700"
+              >
+                Generate New Signals
+              </button>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
