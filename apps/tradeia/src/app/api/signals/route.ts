@@ -169,9 +169,21 @@ export async function GET(req: NextRequest) {
   const forceFresh = searchParams.get('force_fresh') === 'true';
   const fields = searchParams.get('fields')?.split(',') || null; // Field selection
 
+  // Check for Bearer token authentication
   const auth = req.headers.get('authorization');
-  if (!auth) {
-    return NextResponse.json({ error: 'Missing Authorization header' }, {
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Missing or invalid Authorization header. Use Bearer token.' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
+  }
+
+  // Extract token from Bearer header
+  const token = auth.substring(7); // Remove 'Bearer ' prefix
+  if (!token || token.length < 10) {
+    return NextResponse.json({ error: 'Invalid Bearer token' }, {
       status: 401,
       headers: {
         'Accept-Encoding': 'identity' // Disable gzip compression
@@ -801,9 +813,21 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Check for Bearer token authentication
   const auth = req.headers.get('authorization');
-  if (!auth) {
-    return NextResponse.json({ error: 'Missing Authorization header' }, {
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Missing or invalid Authorization header. Use Bearer token.' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
+  }
+
+  // Extract token from Bearer header
+  const token = auth.substring(7); // Remove 'Bearer ' prefix
+  if (!token || token.length < 10) {
+    return NextResponse.json({ error: 'Invalid Bearer token' }, {
       status: 401,
       headers: {
         'Accept-Encoding': 'identity' // Disable gzip compression

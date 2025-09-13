@@ -91,7 +91,23 @@ export async function POST(request: Request) {
   // Check for Bearer token authentication
   const auth = request.headers.get('authorization');
   if (!auth || !auth.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Missing or invalid Authorization header. Use Bearer token.' }, { status: 401 });
+    return NextResponse.json({ error: 'Missing or invalid Authorization header. Use Bearer token.' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
+  }
+
+  // Extract token from Bearer header
+  const token = auth.substring(7); // Remove 'Bearer ' prefix
+  if (!token || token.length < 10) {
+    return NextResponse.json({ error: 'Invalid Bearer token' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
   }
 
   try {
@@ -114,97 +130,7 @@ export async function POST(request: Request) {
     const cappedLimit = Math.min(parseInt(limit), 200);
     const cappedOffset = parseInt(offset);
 
-    console.log('[BACKTEST] Verifying authentication...');
-
-    const cookieStore = await cookies();
-
-    // Extraer el project reference de la URL de Supabase
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
-
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            // Try project-specific cookie first, then fallback to generic
-            if (name === `sb-${projectRef}-auth-token`) {
-              return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
-            }
-            if (name === `sb-${projectRef}-refresh-token`) {
-              return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
-            }
-            // Fallback for other cookies
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: any) {
-            try {
-              cookieStore.set(name, value, options);
-            } catch {
-              // The `set` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.set(name, '', { ...options, maxAge: 0 });
-            } catch {
-              // The `remove` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-        },
-      }
-    );
-
-    // Verify authentication
-    console.log('[BACKTEST] Available cookies:', cookieStore.getAll().map(c => c.name));
-    console.log('[BACKTEST] Getting session...');
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-    if (sessionError) {
-      console.error('[BACKTEST] Session error:', sessionError);
-      return NextResponse.json(
-        { error: 'Session error', details: sessionError.message },
-        {
-          status: 401,
-          headers: {
-            'Accept-Encoding': 'identity' // Disable gzip compression
-          }
-        }
-      );
-    }
-
-    if (!session) {
-      console.error('[BACKTEST] No session found');
-      return NextResponse.json(
-        { error: 'Unauthorized - No session' },
-        {
-          status: 401,
-          headers: {
-            'Accept-Encoding': 'identity' // Disable gzip compression
-          }
-        }
-      );
-    }
-
-    if (!session.access_token) {
-      console.error('[BACKTEST] Session found but no access token');
-      return NextResponse.json(
-        { error: 'Unauthorized - No access token' },
-        {
-          status: 401,
-          headers: {
-            'Accept-Encoding': 'identity' // Disable gzip compression
-          }
-        }
-      );
-    }
-
-    console.log('[BACKTEST] Session verified successfully, access token present');
+    console.log('[BACKTEST] Bearer token validated successfully');
 
     // Use already parsed body
     const params: BacktestParams = {
@@ -239,7 +165,7 @@ export async function POST(request: Request) {
     console.log('[BACKTEST] Calling external API:', apiUrl);
     console.log('[BACKTEST] Request headers:', {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token.substring(0, 20)}...` // Log partial token for security
+      'Authorization': `Bearer ${token.substring(0, 20)}...` // Log partial token for security
     });
 
     // Try to run backtest via external API
@@ -248,7 +174,7 @@ export async function POST(request: Request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${token}`,
           'Accept-Encoding': 'identity' // Disable gzip compression
         },
         body: JSON.stringify(params)
