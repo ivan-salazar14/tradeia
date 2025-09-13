@@ -146,7 +146,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       error: 'SIGNALS_API_BASE is not configured',
       details: 'Please check your environment variables'
-    }, { status: 500 });
+    }, {
+      status: 500,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
   }
 
   const { searchParams } = new URL(req.url);
@@ -166,7 +171,12 @@ export async function GET(req: NextRequest) {
 
   const auth = req.headers.get('authorization');
   if (!auth) {
-    return NextResponse.json({ error: 'Missing Authorization header' }, { status: 401 });
+    return NextResponse.json({ error: 'Missing Authorization header' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
   }
 
   // Setup Supabase client for user strategy lookup
@@ -258,16 +268,31 @@ export async function GET(req: NextRequest) {
 
   // Basic input validation
   if (symbol && !/^[A-Z0-9]+\/[A-Z0-9]+$/.test(symbol)) {
-    return NextResponse.json({ error: 'Invalid symbol format. Use BASE/QUOTE e.g., BTC/USDT' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid symbol format. Use BASE/QUOTE e.g., BTC/USDT' }, {
+      status: 400,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
   }
   if (!/^(\d+[mhdw]|1m|5m|15m|1h|4h|1d|1w)$/i.test(timeframe)) {
-    return NextResponse.json({ error: 'Invalid timeframe format.' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid timeframe format.' }, {
+      status: 400,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
   }
 
   // Circuit breaker check
   const now = Date.now();
   if (openUntil > now) {
-    return NextResponse.json({ error: 'Upstream temporarily unavailable (circuit open). Try again later.' }, { status: 503 });
+    return NextResponse.json({ error: 'Upstream temporarily unavailable (circuit open). Try again later.' }, {
+      status: 503,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
   }
 
   const qs = new URLSearchParams();
@@ -381,7 +406,8 @@ export async function GET(req: NextRequest) {
         _message: 'External signals API not available, showing mock data'
       }, {
         headers: {
-          'Cache-Control': 'public, max-age=300'
+          'Cache-Control': 'public, max-age=300',
+          'Accept-Encoding': 'identity' // Disable gzip compression
         }
       });
     }
@@ -520,7 +546,8 @@ export async function GET(req: NextRequest) {
         _mock: true // Indicate this is mock data
       }, {
         headers: {
-          'Cache-Control': 'public, max-age=300'
+          'Cache-Control': 'public, max-age=300',
+          'Accept-Encoding': 'identity' // Disable gzip compression
         }
       });
     }
@@ -657,7 +684,8 @@ export async function GET(req: NextRequest) {
       }
     }, {
       headers: {
-        'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
+        'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+        'Accept-Encoding': 'identity' // Disable gzip compression
       }
     });
   } catch (err: any) {
@@ -747,7 +775,8 @@ export async function GET(req: NextRequest) {
       _error: err?.message ?? String(err)
     }, {
       headers: {
-        'Cache-Control': 'public, max-age=300'
+        'Cache-Control': 'public, max-age=300',
+        'Accept-Encoding': 'identity' // Disable gzip compression
       }
     });
   }
@@ -764,12 +793,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       error: 'SIGNALS_API_BASE is not configured',
       details: 'Please check your environment variables'
-    }, { status: 500 });
+    }, {
+      status: 500,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
   }
 
   const auth = req.headers.get('authorization');
   if (!auth) {
-    return NextResponse.json({ error: 'Missing Authorization header' }, { status: 401 });
+    return NextResponse.json({ error: 'Missing Authorization header' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
   }
 
   try {
@@ -865,16 +904,31 @@ export async function POST(req: NextRequest) {
 
     // Basic input validation
     if (symbol && !/^[A-Z0-9]+\/[A-Z0-9]+$/.test(symbol)) {
-      return NextResponse.json({ error: 'Invalid symbol format. Use BASE/QUOTE e.g., BTC/USDT' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid symbol format. Use BASE/QUOTE e.g., BTC/USDT' }, {
+        status: 400,
+        headers: {
+          'Accept-Encoding': 'identity' // Disable gzip compression
+        }
+      });
     }
     if (!/^(\d+[mhdw]|1m|5m|15m|1h|4h|1d|1w)$/i.test(timeframe)) {
-      return NextResponse.json({ error: 'Invalid timeframe format.' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid timeframe format.' }, {
+        status: 400,
+        headers: {
+          'Accept-Encoding': 'identity' // Disable gzip compression
+        }
+      });
     }
 
     // Circuit breaker check
     const now = Date.now();
     if (openUntil > now) {
-      return NextResponse.json({ error: 'Upstream temporarily unavailable (circuit open). Try again later.' }, { status: 503 });
+      return NextResponse.json({ error: 'Upstream temporarily unavailable (circuit open). Try again later.' }, {
+        status: 503,
+        headers: {
+          'Accept-Encoding': 'identity' // Disable gzip compression
+        }
+      });
     }
 
     const qs = new URLSearchParams();
@@ -965,7 +1019,8 @@ export async function POST(req: NextRequest) {
           _message: 'External signals generation API not available, showing mock generated data'
         }, {
           headers: {
-            'Cache-Control': 'public, max-age=300'
+            'Cache-Control': 'public, max-age=300',
+            'Accept-Encoding': 'identity' // Disable gzip compression
           }
         });
       }
@@ -1066,7 +1121,8 @@ export async function POST(req: NextRequest) {
         risk_parameters: riskParameters
       }, {
         headers: {
-          'Cache-Control': 'public, max-age=300'
+          'Cache-Control': 'public, max-age=300',
+          'Accept-Encoding': 'identity' // Disable gzip compression
         }
       });
     } catch (networkError) {
@@ -1120,7 +1176,8 @@ export async function POST(req: NextRequest) {
         _error: networkError instanceof Error ? networkError.message : String(networkError)
       }, {
         headers: {
-          'Cache-Control': 'public, max-age=300'
+          'Cache-Control': 'public, max-age=300',
+          'Accept-Encoding': 'identity' // Disable gzip compression
         }
       });
     }
@@ -1176,7 +1233,8 @@ export async function POST(req: NextRequest) {
       _error: err instanceof Error ? err.message : String(err)
     }, {
       headers: {
-        'Cache-Control': 'public, max-age=300'
+        'Cache-Control': 'public, max-age=300',
+        'Accept-Encoding': 'identity' // Disable gzip compression
       }
     });
   }

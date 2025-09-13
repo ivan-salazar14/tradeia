@@ -88,6 +88,12 @@ export async function POST(request: Request) {
   console.log('[BACKTEST] Request method:', request.method);
   console.log('[BACKTEST] Request headers:', Object.fromEntries(request.headers.entries()));
 
+  // Check for Bearer token authentication
+  const auth = request.headers.get('authorization');
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Missing or invalid Authorization header. Use Bearer token.' }, { status: 401 });
+  }
+
   try {
     // Extract pagination and field selection parameters from request body
     const body = await request.json();
@@ -163,7 +169,12 @@ export async function POST(request: Request) {
       console.error('[BACKTEST] Session error:', sessionError);
       return NextResponse.json(
         { error: 'Session error', details: sessionError.message },
-        { status: 401 }
+        {
+          status: 401,
+          headers: {
+            'Accept-Encoding': 'identity' // Disable gzip compression
+          }
+        }
       );
     }
 
@@ -171,7 +182,12 @@ export async function POST(request: Request) {
       console.error('[BACKTEST] No session found');
       return NextResponse.json(
         { error: 'Unauthorized - No session' },
-        { status: 401 }
+        {
+          status: 401,
+          headers: {
+            'Accept-Encoding': 'identity' // Disable gzip compression
+          }
+        }
       );
     }
 
@@ -179,7 +195,12 @@ export async function POST(request: Request) {
       console.error('[BACKTEST] Session found but no access token');
       return NextResponse.json(
         { error: 'Unauthorized - No access token' },
-        { status: 401 }
+        {
+          status: 401,
+          headers: {
+            'Accept-Encoding': 'identity' // Disable gzip compression
+          }
+        }
       );
     }
 
@@ -204,7 +225,12 @@ export async function POST(request: Request) {
     if (missingParams.length > 0) {
       return NextResponse.json(
         { error: `Missing required parameters: ${missingParams.join(', ')}` },
-        { status: 400 }
+        {
+          status: 400,
+          headers: {
+            'Accept-Encoding': 'identity' // Disable gzip compression
+          }
+        }
       );
     }
 
@@ -222,7 +248,8 @@ export async function POST(request: Request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session.access_token}`,
+          'Accept-Encoding': 'identity' // Disable gzip compression
         },
         body: JSON.stringify(params)
       });
@@ -275,13 +302,18 @@ export async function POST(request: Request) {
 
           return NextResponse.json(paginatedData, {
             headers: {
-              'Cache-Control': 'private, max-age=300' // Cache for 5 minutes, private since user-specific
+              'Cache-Control': 'private, max-age=300', // Cache for 5 minutes, private since user-specific
+              'Accept-Encoding': 'identity' // Disable gzip compression
             }
           });
         }
 
         console.log('[BACKTEST] ===== BACKTEST REQUEST COMPLETED =====');
-        return NextResponse.json(data);
+        return NextResponse.json(data, {
+          headers: {
+            'Accept-Encoding': 'identity' // Disable gzip compression
+          }
+        });
       } else {
         console.warn('[BACKTEST] External API not available, using fallback');
       }
@@ -366,7 +398,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(mockResult, {
       headers: {
-        'Cache-Control': 'private, max-age=300'
+        'Cache-Control': 'private, max-age=300',
+        'Accept-Encoding': 'identity' // Disable gzip compression
       }
     });
 
@@ -386,7 +419,12 @@ export async function POST(request: Request) {
         timestamp: new Date().toISOString(),
         details: error instanceof Error ? error.stack : String(error)
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Accept-Encoding': 'identity' // Disable gzip compression
+        }
+      }
     );
   }
 }
