@@ -41,8 +41,8 @@ export default function BotsPage() {
 
       const res = await fetch('/api/strategies', {
         headers: {
-          Authorization: `Bearer ${token}`,
-          'x-user-id': data.session?.user?.id || ''
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
         }
       });
       if (!res.ok) throw new Error(await res.text());
@@ -90,7 +90,6 @@ export default function BotsPage() {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
-            'x-user-id': data.session?.user?.id || ''
           },
           body: JSON.stringify({ strategy_name: toSet })
         });

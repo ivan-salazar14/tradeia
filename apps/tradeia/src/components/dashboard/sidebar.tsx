@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
+import { Button } from "@/components/ui/button";
 
 const menu = [
   { label: "Panel de Control", path: "/dashboard", icon: "dashboard" },
@@ -46,6 +48,7 @@ const icons: Record<string, React.ReactElement> = {
 };
 
 export default function Sidebar() {
+  const { user, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -98,6 +101,16 @@ export default function Sidebar() {
     router.push(cleanPath);
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      router.push("/login");
+    } catch (error) {
+      console.error("Error during logout:", error);
+      router.push("/login");
+    }
+  };
+
   return (
     <div className="hidden md:flex flex-col w-64 bg-white shadow-lg">
       {/* Desktop Sidebar Header */}
@@ -126,6 +139,32 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* User Info and Logout Section */}
+      <div className="p-4 border-t border-gray-200">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+            <span className="text-sm font-medium text-indigo-600">
+              {user?.email?.charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {user?.email}
+            </p>
+          </div>
+        </div>
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          className="w-full justify-start"
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Cerrar Sesión
+        </Button>
+      </div>
     </div>
   );
 } 
