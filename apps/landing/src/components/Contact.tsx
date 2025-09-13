@@ -34,7 +34,7 @@ const Contact = () => {
     {
       icon: Phone,
       title: 'Teléfono',
-      details: ['+57 (555) 123-4567', 'Lunes a Viernes: 9:00 AM - 6:00 PM (Bogotá)'],
+      details: ['+57 (318) 7103619', 'Lunes a Viernes: 9:00 AM - 6:00 PM (Cali, Colombia)'],
       color: 'bg-green-500'
     },
     {

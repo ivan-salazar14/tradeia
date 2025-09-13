@@ -99,7 +99,12 @@ export default function SignalsPage() {
       // Use GET request to retrieve stored signals as per API documentation
       const res = await fetch(`/api/signals?${params.toString()}`, {
         method: 'GET',
-        headers
+        headers: {
+          ...headers,
+          'Accept-Encoding': 'identity',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        }
       });
 
       if (!res.ok) {
@@ -140,6 +145,8 @@ export default function SignalsPage() {
         headers: {
           'Content-Type': 'application/json',
           'Accept-Encoding': 'identity',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
         },
         body: JSON.stringify(requestBody)
       });

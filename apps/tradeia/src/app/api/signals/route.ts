@@ -289,6 +289,9 @@ export async function GET(req: NextRequest) {
         headers: {
           'Authorization': auth,
           'Content-Type': 'application/json',
+          'Accept-Encoding': 'identity',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
         },
         cache: 'no-store',
         signal: AbortSignal.timeout(5000), // 5 second timeout
@@ -875,6 +878,9 @@ export async function POST(req: NextRequest) {
         headers: {
           'Authorization': auth,
           'Content-Type': 'application/json',
+          'Accept-Encoding': 'identity',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
         },
         cache: 'no-store',
         signal: AbortSignal.timeout(5000), // 5 second timeout
