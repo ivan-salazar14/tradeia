@@ -210,16 +210,26 @@ export async function GET(req: NextRequest) {
   let userStrategyIds: string[] = [];
   try {
     const { data: { session } } = await supabase.auth.getSession();
+    console.log('[SIGNALS] Session check result:', session ? 'User authenticated' : 'No session');
+
     if (session?.user) {
-      const { data: userStrategies } = await supabase
+      console.log('[SIGNALS] User ID:', session.user.id);
+      const { data: userStrategies, error: strategiesError } = await supabase
         .from('user_strategies')
         .select('strategy_id')
         .eq('user_id', session.user.id)
         .eq('is_active', true);
 
-      if (userStrategies && userStrategies.length > 0) {
+      if (strategiesError) {
+        console.warn('[SIGNALS] Error fetching user strategies:', strategiesError);
+      } else if (userStrategies && userStrategies.length > 0) {
         userStrategyIds = userStrategies.map(us => us.strategy_id);
+        console.log('[SIGNALS] Found user strategies:', userStrategyIds);
+      } else {
+        console.log('[SIGNALS] No active strategies found for user');
       }
+    } else {
+      console.log('[SIGNALS] No authenticated user session');
     }
   } catch (error) {
     console.warn('[SIGNALS] Failed to fetch user strategies, using defaults:', error);
@@ -231,18 +241,20 @@ export async function GET(req: NextRequest) {
   if (strategyIdsParam && strategyIdsParam.length > 0) {
     // Use explicitly provided strategy_ids
     activeStrategyIds = strategyIdsParam;
+    console.log('[SIGNALS] Using explicitly provided strategy IDs:', activeStrategyIds);
   } else if (strategyIdParam) {
     // Use single strategy_id parameter
     activeStrategyIds = [strategyIdParam];
+    console.log('[SIGNALS] Using single strategy ID:', activeStrategyIds);
   } else if (userStrategyIds.length > 0) {
     // Use user's active strategies
     activeStrategyIds = userStrategyIds;
+    console.log('[SIGNALS] Using user active strategies:', activeStrategyIds);
   } else {
     // Default to moderate strategy
     activeStrategyIds = ['moderate'];
+    console.log('[SIGNALS] No user strategies found, using default moderate strategy');
   }
-
-  console.log('[SIGNALS] Using strategy IDs for filtering:', activeStrategyIds);
 
   // Basic input validation
   if (symbol && !/^[A-Z0-9]+\/[A-Z0-9]+$/.test(symbol)) {
@@ -292,51 +304,44 @@ export async function GET(req: NextRequest) {
           'Accept-Encoding': 'identity',
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache',
+          'User-Agent': 'TradeIA-Backend/1.0',
         },
         cache: 'no-store',
-        signal: AbortSignal.timeout(5000), // 5 second timeout
+        signal: AbortSignal.timeout(10000), // Increased timeout to 10 seconds
       });
     } catch (networkError) {
       console.warn('[SIGNALS] External API not available, using mock data:', networkError);
-      // Return mock signals data when external API is not available
-      const mockSignals: UnifiedSignal[] = [
-        {
-          id: 'mock-signal-1',
-          symbol: symbol || 'BTC/USDT',
+      // Generate mock signals based on active strategies
+      const mockSignals: UnifiedSignal[] = [];
+      const symbols = ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT', 'DOT/USDT'];
+
+      for (let i = 0; i < Math.min(activeStrategyIds.length * 2, 6); i++) {
+        const strategyId = activeStrategyIds[i % activeStrategyIds.length];
+        const mockSymbol = symbol || symbols[Math.floor(Math.random() * symbols.length)];
+        const isBuy = Math.random() > 0.5;
+        const basePrice = mockSymbol.includes('BTC') ? 45000 : mockSymbol.includes('ETH') ? 2800 : 1;
+
+        mockSignals.push({
+          id: `mock-signal-${i + 1}`,
+          symbol: mockSymbol,
           timeframe: timeframe,
-          timestamp: new Date().toISOString(),
-          execution_timestamp: new Date().toISOString(),
-          signal_age_hours: 2.5,
+          timestamp: new Date(Date.now() - (i * 3600000)).toISOString(),
+          execution_timestamp: new Date(Date.now() - (i * 3600000)).toISOString(),
+          signal_age_hours: i * 0.5 + 0.5,
           signal_source: 'mock_strategy',
           type: 'entry',
-          direction: 'BUY',
-          strategyId: activeStrategyIds[0] || 'moderate',
-          entry: 45000 + Math.random() * 5000,
-          tp1: 47000 + Math.random() * 3000,
-          tp2: 49000 + Math.random() * 2000,
-          stopLoss: 43000 + Math.random() * 2000,
+          direction: isBuy ? 'BUY' : 'SELL',
+          strategyId: strategyId,
+          entry: basePrice + Math.random() * (basePrice * 0.1),
+          tp1: basePrice * (isBuy ? 1.05 : 0.95) + Math.random() * (basePrice * 0.02),
+          tp2: basePrice * (isBuy ? 1.10 : 0.90) + Math.random() * (basePrice * 0.02),
+          stopLoss: basePrice * (isBuy ? 0.95 : 1.05) + Math.random() * (basePrice * 0.02),
           source: { provider: 'mock_provider' },
-          marketScenario: 'bullish_trend'
-        },
-        {
-          id: 'mock-signal-2',
-          symbol: symbol || 'ETH/USDT',
-          timeframe: timeframe,
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          execution_timestamp: new Date(Date.now() - 3600000).toISOString(),
-          signal_age_hours: 1.0,
-          signal_source: 'mock_strategy',
-          type: 'entry',
-          direction: 'SELL',
-          strategyId: activeStrategyIds[1] || activeStrategyIds[0] || 'moderate',
-          entry: 2800 + Math.random() * 200,
-          tp1: 2600 + Math.random() * 100,
-          tp2: 2400 + Math.random() * 100,
-          stopLoss: 3000 + Math.random() * 100,
-          source: { provider: 'mock_provider' },
-          marketScenario: 'bearish_correction'
-        }
-      ];
+          marketScenario: isBuy ? 'bullish_trend' : 'bearish_correction'
+        });
+      }
+
+      console.log('[SIGNALS] Generated mock signals:', mockSignals.length, 'for strategies:', activeStrategyIds);
 
       const portfolioMetrics = calculatePortfolioMetrics(mockSignals, initialBalance, riskPerTrade);
       const riskParameters: RiskParameters = {
@@ -821,16 +826,26 @@ export async function POST(req: NextRequest) {
     let userStrategyIds: string[] = [];
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('[SIGNALS POST] Session check result:', session ? 'User authenticated' : 'No session');
+
       if (session?.user) {
-        const { data: userStrategies } = await supabase
+        console.log('[SIGNALS POST] User ID:', session.user.id);
+        const { data: userStrategies, error: strategiesError } = await supabase
           .from('user_strategies')
           .select('strategy_id')
           .eq('user_id', session.user.id)
           .eq('is_active', true);
 
-        if (userStrategies && userStrategies.length > 0) {
+        if (strategiesError) {
+          console.warn('[SIGNALS POST] Error fetching user strategies:', strategiesError);
+        } else if (userStrategies && userStrategies.length > 0) {
           userStrategyIds = userStrategies.map(us => us.strategy_id);
+          console.log('[SIGNALS POST] Found user strategies:', userStrategyIds);
+        } else {
+          console.log('[SIGNALS POST] No active strategies found for user');
         }
+      } else {
+        console.log('[SIGNALS POST] No authenticated user session');
       }
     } catch (error) {
       console.warn('[SIGNALS POST] Failed to fetch user strategies, using defaults:', error);
@@ -841,12 +856,12 @@ export async function POST(req: NextRequest) {
     if (userStrategyIds.length > 0) {
       // Use user's active strategies
       activeStrategyIds = userStrategyIds;
+      console.log('[SIGNALS POST] Using user active strategies:', activeStrategyIds);
     } else {
       // Default to moderate strategy
       activeStrategyIds = ['moderate'];
+      console.log('[SIGNALS POST] No user strategies found, using default moderate strategy');
     }
-
-    console.log('[SIGNALS POST] Using strategy IDs for filtering:', activeStrategyIds);
 
     // Basic input validation
     if (symbol && !/^[A-Z0-9]+\/[A-Z0-9]+$/.test(symbol)) {
@@ -881,9 +896,10 @@ export async function POST(req: NextRequest) {
           'Accept-Encoding': 'identity',
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache',
+          'User-Agent': 'TradeIA-Backend/1.0',
         },
         cache: 'no-store',
-        signal: AbortSignal.timeout(5000), // 5 second timeout
+        signal: AbortSignal.timeout(10000), // Increased timeout to 10 seconds
       });
 
       if (!resp.ok) {
@@ -896,45 +912,37 @@ export async function POST(req: NextRequest) {
         console.warn('[SIGNALS POST] External API response text:', text);
         console.warn('[SIGNALS POST] External API failed, using mock data fallback');
 
-        // Return mock signals data when external API is not available
-        const mockSignals: UnifiedSignal[] = [
-          {
-            id: 'mock-generated-1',
-            symbol: symbol || 'BTC/USDT',
+        // Generate mock signals based on active strategies
+        const mockSignals: UnifiedSignal[] = [];
+        const symbols = ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT', 'DOT/USDT'];
+
+        for (let i = 0; i < Math.min(activeStrategyIds.length * 2, 6); i++) {
+          const strategyId = activeStrategyIds[i % activeStrategyIds.length];
+          const mockSymbol = symbol || symbols[Math.floor(Math.random() * symbols.length)];
+          const isBuy = Math.random() > 0.5;
+          const basePrice = mockSymbol.includes('BTC') ? 45000 : mockSymbol.includes('ETH') ? 2800 : 1;
+
+          mockSignals.push({
+            id: `mock-generated-${i + 1}`,
+            symbol: mockSymbol,
             timeframe: timeframe,
-            timestamp: new Date().toISOString(),
-            execution_timestamp: new Date().toISOString(),
-            signal_age_hours: 0.1,
+            timestamp: new Date(Date.now() - (i * 1800000)).toISOString(), // Stagger timestamps
+            execution_timestamp: new Date(Date.now() - (i * 1800000)).toISOString(),
+            signal_age_hours: i * 0.25 + 0.1,
             signal_source: 'generated_signal',
             type: 'entry',
-            direction: 'BUY',
-            strategyId: activeStrategyIds[0] || 'moderate',
-            entry: 45000 + Math.random() * 5000,
-            tp1: 47000 + Math.random() * 3000,
-            tp2: 49000 + Math.random() * 2000,
-            stopLoss: 43000 + Math.random() * 2000,
+            direction: isBuy ? 'BUY' : 'SELL',
+            strategyId: strategyId,
+            entry: basePrice + Math.random() * (basePrice * 0.1),
+            tp1: basePrice * (isBuy ? 1.05 : 0.95) + Math.random() * (basePrice * 0.02),
+            tp2: basePrice * (isBuy ? 1.10 : 0.90) + Math.random() * (basePrice * 0.02),
+            stopLoss: basePrice * (isBuy ? 0.95 : 1.05) + Math.random() * (basePrice * 0.02),
             source: { provider: 'generated_provider' },
-            marketScenario: 'bullish_trend'
-          },
-          {
-            id: 'mock-generated-2',
-            symbol: symbol || 'ETH/USDT',
-            timeframe: timeframe,
-            timestamp: new Date().toISOString(),
-            execution_timestamp: new Date().toISOString(),
-            signal_age_hours: 0.05,
-            signal_source: 'generated_signal',
-            type: 'entry',
-            direction: 'SELL',
-            strategyId: activeStrategyIds[1] || activeStrategyIds[0] || 'moderate',
-            entry: 2800 + Math.random() * 200,
-            tp1: 2600 + Math.random() * 100,
-            tp2: 2400 + Math.random() * 100,
-            stopLoss: 3000 + Math.random() * 100,
-            source: { provider: 'generated_provider' },
-            marketScenario: 'bearish_correction'
-          }
-        ];
+            marketScenario: isBuy ? 'bullish_trend' : 'bearish_correction'
+          });
+        }
+
+        console.log('[SIGNALS POST] Generated mock signals:', mockSignals.length, 'for strategies:', activeStrategyIds);
 
         const portfolioMetrics = calculatePortfolioMetrics(mockSignals, initial_balance, risk_per_trade);
         const riskParameters: RiskParameters = {

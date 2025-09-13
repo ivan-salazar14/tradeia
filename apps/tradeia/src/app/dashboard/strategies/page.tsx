@@ -38,7 +38,7 @@ export default function StrategiesPage() {
       const response = await fetch('/api/strategies/', {
         headers: {
           'Content-Type': 'application/json',
-          'authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
@@ -215,7 +215,8 @@ export default function StrategiesPage() {
                       method: 'POST',
                       credentials: 'include',
                       headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                         'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
                       },
                       body: JSON.stringify({
                         strategy_name: strategy.name
