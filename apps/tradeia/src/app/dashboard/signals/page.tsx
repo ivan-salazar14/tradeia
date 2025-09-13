@@ -52,6 +52,7 @@ export default function SignalsPage() {
   const timeframeOptions = ['1m','5m','15m','1h','4h','1d','1w'];
   const [symbol, setSymbol] = useState<string>("");
   const [strategyOptions, setStrategyOptions] = useState<Array<{ id: string; name: string }>>([]);
+  const [strategiesLoading, setStrategiesLoading] = useState(true);
   const [selectedStrategies, setSelectedStrategies] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState({
     start: format(subDays(new Date(), 7), 'yyyy-MM-dd'),
@@ -164,6 +165,7 @@ export default function SignalsPage() {
   // Use static mock strategies instead of API call
   useEffect(() => {
     console.log('[SIGNALS-PAGE] ===== USING MOCK STRATEGIES =====');
+    setStrategiesLoading(true);
 
     const mockStrategies = [
       {
@@ -198,13 +200,30 @@ export default function SignalsPage() {
       }
     ];
 
+    console.log('[SIGNALS-PAGE] Setting mock strategies:', mockStrategies.length);
+    console.log('[SIGNALS-PAGE] Mock strategies data:', mockStrategies);
     setStrategyOptions(mockStrategies);
+    setStrategiesLoading(false);
+
+    // Log when strategies are set
+    setTimeout(() => {
+      console.log('[SIGNALS-PAGE] Strategy options after set:', strategyOptions.length);
+    }, 100);
   }, []);
 
   // Create a map of strategy IDs to names for quick lookup
   const strategyMap = useMemo(() => {
     return new Map(strategyOptions.map(s => [s.id, s.name]));
   }, [strategyOptions]);
+
+  // Debug logging for strategy options
+  useEffect(() => {
+    console.log('[SIGNALS-PAGE] Strategy options updated:', strategyOptions.length, 'strategies');
+    console.log('[SIGNALS-PAGE] Strategies loading:', strategiesLoading);
+    if (strategyOptions.length > 0) {
+      console.log('[SIGNALS-PAGE] Available strategies:', strategyOptions.map(s => `${s.id}: ${s.name}`));
+    }
+  }, [strategyOptions, strategiesLoading]);
 
   // Pagination calculations
   const totalPages = Math.ceil(signals.length / signalsPerPage);
@@ -229,9 +248,24 @@ export default function SignalsPage() {
 
   return (
     <div className="p-6">
-      <p className="text-gray-600 mb-6">
-        En esta sección puede monitorear todas las señales de trading. Se muestran señales normalizadas desde proveedores externos.
-      </p>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-gray-600">
+          En esta sección puede monitorear todas las señales de trading. Se muestran señales normalizadas desde proveedores externos.
+        </p>
+        {strategyOptions.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              Mock Mode
+            </span>
+            <span className="text-sm text-gray-500">
+              {strategyOptions.length} strategies loaded
+            </span>
+          </div>
+        )}
+      </div>
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex flex-col space-y-4 mb-4">
           <div className="flex items-center justify-between">
@@ -324,7 +358,14 @@ export default function SignalsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Estrategias</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Estrategias
+                {strategyOptions.length > 0 && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    Mock ({strategyOptions.length})
+                  </span>
+                )}
+              </label>
               <select
                 multiple
                 className="border rounded px-2 py-1 text-sm w-full h-24"
@@ -333,13 +374,25 @@ export default function SignalsPage() {
                   const opts = Array.from(e.target.selectedOptions).map(o => o.value);
                   setSelectedStrategies(opts);
                 }}
+                disabled={strategiesLoading}
               >
-                {strategyOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.name}
-                  </option>
-                ))}
+                {strategiesLoading ? (
+                  <option disabled>Loading strategies...</option>
+                ) : strategyOptions.length === 0 ? (
+                  <option disabled>No strategies available</option>
+                ) : (
+                  strategyOptions.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.name}
+                    </option>
+                  ))
+                )}
               </select>
+              {strategyOptions.length > 0 && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Using mock strategies for demonstration
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
