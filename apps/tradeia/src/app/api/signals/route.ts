@@ -419,7 +419,10 @@ export async function GET(req: NextRequest) {
       }, {
         headers: {
           'Cache-Control': 'public, max-age=300',
-          'Accept-Encoding': 'identity' // Disable gzip compression
+          'Accept-Encoding': 'identity',
+          'Content-Encoding': 'identity',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Vary': 'Accept-Encoding'
         }
       });
     }
@@ -559,7 +562,10 @@ export async function GET(req: NextRequest) {
       }, {
         headers: {
           'Cache-Control': 'public, max-age=300',
-          'Accept-Encoding': 'identity' // Disable gzip compression
+          'Accept-Encoding': 'identity',
+          'Content-Encoding': 'identity',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Vary': 'Accept-Encoding'
         }
       });
     }
@@ -697,7 +703,10 @@ export async function GET(req: NextRequest) {
     }, {
       headers: {
         'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
-        'Accept-Encoding': 'identity' // Disable gzip compression
+        'Accept-Encoding': 'identity',
+        'Content-Encoding': 'identity',
+        'Content-Type': 'application/json; charset=utf-8',
+        'Vary': 'Accept-Encoding'
       }
     });
   } catch (err: any) {
@@ -1044,7 +1053,10 @@ export async function POST(req: NextRequest) {
         }, {
           headers: {
             'Cache-Control': 'public, max-age=300',
-            'Accept-Encoding': 'identity' // Disable gzip compression
+            'Accept-Encoding': 'identity',
+            'Content-Encoding': 'identity',
+            'Content-Type': 'application/json; charset=utf-8',
+            'Vary': 'Accept-Encoding'
           }
         });
       }
@@ -1146,7 +1158,10 @@ export async function POST(req: NextRequest) {
       }, {
         headers: {
           'Cache-Control': 'public, max-age=300',
-          'Accept-Encoding': 'identity' // Disable gzip compression
+          'Accept-Encoding': 'identity',
+          'Content-Encoding': 'identity',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Vary': 'Accept-Encoding'
         }
       });
     } catch (networkError) {
@@ -1201,7 +1216,10 @@ export async function POST(req: NextRequest) {
       }, {
         headers: {
           'Cache-Control': 'public, max-age=300',
-          'Accept-Encoding': 'identity' // Disable gzip compression
+          'Accept-Encoding': 'identity',
+          'Content-Encoding': 'identity',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Vary': 'Accept-Encoding'
         }
       });
     }
@@ -1258,7 +1276,10 @@ export async function POST(req: NextRequest) {
     }, {
       headers: {
         'Cache-Control': 'public, max-age=300',
-        'Accept-Encoding': 'identity' // Disable gzip compression
+        'Accept-Encoding': 'identity',
+        'Content-Encoding': 'identity',
+        'Content-Type': 'application/json; charset=utf-8',
+        'Vary': 'Accept-Encoding'
       }
     });
   }

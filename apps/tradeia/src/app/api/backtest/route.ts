@@ -229,7 +229,10 @@ export async function POST(request: Request) {
           return NextResponse.json(paginatedData, {
             headers: {
               'Cache-Control': 'private, max-age=300', // Cache for 5 minutes, private since user-specific
-              'Accept-Encoding': 'identity' // Disable gzip compression
+              'Accept-Encoding': 'identity',
+              'Content-Encoding': 'identity',
+              'Content-Type': 'application/json; charset=utf-8',
+              'Vary': 'Accept-Encoding'
             }
           });
         }
@@ -237,7 +240,10 @@ export async function POST(request: Request) {
         console.log('[BACKTEST] ===== BACKTEST REQUEST COMPLETED =====');
         return NextResponse.json(data, {
           headers: {
-            'Accept-Encoding': 'identity' // Disable gzip compression
+            'Accept-Encoding': 'identity',
+            'Content-Encoding': 'identity',
+            'Content-Type': 'application/json; charset=utf-8',
+            'Vary': 'Accept-Encoding'
           }
         });
       } else {
@@ -325,7 +331,10 @@ export async function POST(request: Request) {
     return NextResponse.json(mockResult, {
       headers: {
         'Cache-Control': 'private, max-age=300',
-        'Accept-Encoding': 'identity' // Disable gzip compression
+        'Accept-Encoding': 'identity',
+        'Content-Encoding': 'identity',
+        'Content-Type': 'application/json; charset=utf-8',
+        'Vary': 'Accept-Encoding'
       }
     });
 
@@ -348,7 +357,10 @@ export async function POST(request: Request) {
       {
         status: 500,
         headers: {
-          'Accept-Encoding': 'identity' // Disable gzip compression
+          'Accept-Encoding': 'identity',
+          'Content-Encoding': 'identity',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Vary': 'Accept-Encoding'
         }
       }
     );
