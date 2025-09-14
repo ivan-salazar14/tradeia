@@ -60,9 +60,15 @@ export default function BacktestPage({ params }: PageProps) {
   const [formData, setFormData] = useState({
     symbol: [] as string[],
     timeframe: '4h',
-    start_date: format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-    end_date: format(new Date(), 'yyyy-MM-dd'),
-    strategy: '',
+    start_date: (() => {
+      const date = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      return date.toISOString().split('T')[0]; // Ensure YYYY-MM-DD format
+    })(),
+    end_date: (() => {
+      const date = new Date();
+      return date.toISOString().split('T')[0]; // Ensure YYYY-MM-DD format
+    })(),
+    strategy: 'moderate', // Initialize with default strategy
     initial_balance: '10000',
     risk_per_trade: '1',
   });
@@ -293,12 +299,12 @@ export default function BacktestPage({ params }: PageProps) {
       // Build API request parameters
       const requestBody = {
         timeframe: formData.timeframe,
-        start_date: `${formData.start_date}T00:00:00`,
-        end_date: `${formData.end_date}T23:59:59`,
+        start_date: `${formData.start_date}T00:00:00Z`,
+        end_date: `${formData.end_date}T23:59:59Z`,
         initial_balance: parseFloat(formData.initial_balance),
         risk_per_trade: parseFloat(formData.risk_per_trade),
         symbol: formData.symbol.length > 0 ? formData.symbol[0] : undefined, // Use first symbol if multiple selected
-        strategy_id: formData.strategy || undefined
+        strategy_id: formData.strategy || 'moderate' // Ensure we always have a strategy
       };
 
       // Build headers
@@ -316,6 +322,12 @@ export default function BacktestPage({ params }: PageProps) {
 
       console.log('[BACKTEST] Making POST request to /api/signals');
       console.log('[BACKTEST] Request body:', requestBody);
+      console.log('[BACKTEST] Form data dates:', {
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        formatted_start: `${formData.start_date}T00:00:00Z`,
+        formatted_end: `${formData.end_date}T23:59:59Z`
+      });
 
       // Make API call to signals endpoint
       const response = await fetch('/api/signals', {
