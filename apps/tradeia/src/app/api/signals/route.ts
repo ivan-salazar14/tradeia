@@ -319,14 +319,20 @@ export async function GET(req: NextRequest) {
 
   // Send dates in simple format without timezone to avoid comparison issues
   if (startDate) {
-    // Extract just the date part if it includes time
-    const dateOnly = startDate.split('T')[0];
+    // Aggressively strip timezone info and extract just the date part
+    let dateOnly = startDate.split('T')[0]; // Remove time part
+    dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
+    dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
+    dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
     console.log('[SIGNALS] Sending start_date as date-only:', dateOnly, 'from:', startDate);
     qs.set('start_date', dateOnly);
   }
   if (endDate) {
-    // Extract just the date part if it includes time
-    const dateOnly = endDate.split('T')[0];
+    // Aggressively strip timezone info and extract just the date part
+    let dateOnly = endDate.split('T')[0]; // Remove time part
+    dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
+    dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
+    dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
     console.log('[SIGNALS] Sending end_date as date-only:', dateOnly, 'from:', endDate);
     qs.set('end_date', dateOnly);
   }
@@ -729,14 +735,20 @@ export async function POST(req: NextRequest) {
 
     // Send dates in simple format without timezone to avoid comparison issues
     if (start_date) {
-      // Extract just the date part if it includes time
-      const dateOnly = start_date.split('T')[0];
+      // Aggressively strip timezone info and extract just the date part
+      let dateOnly = start_date.split('T')[0]; // Remove time part
+      dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
+      dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
+      dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
       console.log('[SIGNALS POST] Sending start_date as date-only:', dateOnly, 'from:', start_date);
       qs.set('start_date', dateOnly);
     }
     if (end_date) {
-      // Extract just the date part if it includes time
-      const dateOnly = end_date.split('T')[0];
+      // Aggressively strip timezone info and extract just the date part
+      let dateOnly = end_date.split('T')[0]; // Remove time part
+      dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
+      dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
+      dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
       console.log('[SIGNALS POST] Sending end_date as date-only:', dateOnly, 'from:', end_date);
       qs.set('end_date', dateOnly);
     }
