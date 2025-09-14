@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { useAuth } from '@/contexts/auth-context';
 
 interface Strategy {
   id: string;
@@ -48,6 +49,7 @@ interface PageProps {
 }
 
 export default function BacktestPage({ params }: PageProps) {
+  const { session } = useAuth();
   const [resolvedParams, setResolvedParams] = useState<{ id?: string } | null>(null);
   
   // Resolve params promise
@@ -246,7 +248,7 @@ export default function BacktestPage({ params }: PageProps) {
     console.log('[BACKTEST-PAGE] Loading state:', loading);
     if (strategies.length > 0) {
       console.log('[BACKTEST-PAGE] Available strategies:', strategies.map(s => `${s.id}: ${s.name}`));
-      console.log('[BACKTEST-PAGE] Current selected strategy:', formData.strategy);
+      console.log(':', formData.strategy);
     } else {
       console.log('[BACKTEST-PAGE] ⚠️ No strategies available - this will show "No strategies available" in dropdown');
     }
@@ -286,84 +288,190 @@ export default function BacktestPage({ params }: PageProps) {
     setIsLongRunning(false);
 
     try {
-      // Simulate processing time
-      setLoadingMessage('Running backtest simulation...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      setLoadingMessage('Fetching signals from API...');
 
-      // Generate mock backtest results
+      // Build API request parameters
+      const requestBody = {
+        timeframe: formData.timeframe,
+        start_date: `${formData.start_date}T00:00:00`,
+        end_date: `${formData.end_date}T23:59:59`,
+        initial_balance: parseFloat(formData.initial_balance),
+        risk_per_trade: parseFloat(formData.risk_per_trade),
+        symbol: formData.symbol.length > 0 ? formData.symbol[0] : undefined, // Use first symbol if multiple selected
+        strategy_id: formData.strategy || undefined
+      };
+
+      // Build headers
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'identity',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      };
+
+      // Add Authorization header if user is authenticated
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
+      console.log('[BACKTEST] Making POST request to /api/signals/generate');
+      console.log('[BACKTEST] Request body:', requestBody);
+
+      // Make API call to signals endpoint
+      const response = await fetch('/api/signals/generate', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+        mode: 'cors',
+        credentials: 'same-origin'
+      });
+
+      if (!response.ok) {
+        let errorText: string;
+        try {
+          errorText = await response.text();
+        } catch (decodeError) {
+          console.warn('[BACKTEST] Failed to decode error response:', decodeError);
+          errorText = `HTTP ${response.status} - Content decoding failed`;
+        }
+        throw new Error(errorText || `HTTP ${response.status}`);
+      }
+
+      let json: any;
+      try {
+        json = await response.json();
+      } catch (decodeError) {
+        console.warn('[BACKTEST] Failed to decode JSON response:', decodeError);
+        throw new Error('Failed to decode response JSON');
+      }
+
+      console.log('[BACKTEST] API response received:', json);
+
+      // Process the signals into backtest format
+      const signals = json.signals || [];
       const initialBalance = parseFloat(formData.initial_balance);
       const riskPerTrade = parseFloat(formData.risk_per_trade);
 
-      // Determine symbols to use
-      const symbolsToUse = formData.symbol.length > 0 ? formData.symbol : ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT'];
-
-      // Generate mock trades
-      const mockTrades: Trade[] = [];
+      // Convert signals to trades format
+      const trades: Trade[] = [];
       let currentBalance = initialBalance;
-      const startDate = new Date(formData.start_date);
-      const endDate = new Date(formData.end_date);
-      const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Generate 10-20 random trades
-      const numTrades = Math.floor(Math.random() * 11) + 10;
+      for (const signal of signals) {
+        if (!signal.entry || !signal.stopLoss) continue;
 
-      for (let i = 0; i < numTrades; i++) {
-        const symbol = symbolsToUse[Math.floor(Math.random() * symbolsToUse.length)];
-        const isBuy = Math.random() > 0.5;
-        const entryPrice = Math.random() * 50000 + 1000; // Random price between 1000-51000
-        const profitPct = (Math.random() - 0.4) * 10; // Random profit/loss between -40% to +60%
-        const exitPrice = entryPrice * (1 + profitPct / 100);
-        const positionSize = (currentBalance * riskPerTrade / 100) / (entryPrice * 0.01); // Risk-based position sizing
-        const riskAmount = currentBalance * riskPerTrade / 100;
-        const profit = positionSize * (exitPrice - entryPrice);
+        // Calculate position size based on risk
+        const riskAmount = (currentBalance * riskPerTrade) / 100;
+        const riskPerUnit = Math.abs(signal.entry - signal.stopLoss);
+        const positionSize = riskAmount / riskPerUnit;
 
-        // Generate random dates within the range
-        const randomDays = Math.floor(Math.random() * totalDays);
-        const entryTime = new Date(startDate.getTime() + randomDays * 24 * 60 * 60 * 1000);
-        const exitTime = new Date(entryTime.getTime() + Math.random() * 7 * 24 * 60 * 60 * 1000); // Exit within 7 days
+        // Determine exit based on take profit or stop loss
+        let exitPrice = signal.entry;
+        let exitReason = 'Signal closed';
+        let profit = 0;
+
+        if (signal.direction === 'BUY') {
+          if (signal.tp1 && signal.entry < signal.tp1) {
+            exitPrice = signal.tp1;
+            exitReason = 'Take Profit';
+          } else if (signal.stopLoss && signal.entry > signal.stopLoss) {
+            exitPrice = signal.stopLoss;
+            exitReason = 'Stop Loss';
+          }
+        } else if (signal.direction === 'SELL') {
+          if (signal.tp1 && signal.entry > signal.tp1) {
+            exitPrice = signal.tp1;
+            exitReason = 'Take Profit';
+          } else if (signal.stopLoss && signal.entry < signal.stopLoss) {
+            exitPrice = signal.stopLoss;
+            exitReason = 'Stop Loss';
+          }
+        }
+
+        profit = positionSize * (exitPrice - signal.entry);
+        const profitPct = (profit / (positionSize * signal.entry)) * 100;
 
         const trade: Trade = {
-          symbol,
-          entry_time: entryTime.toISOString(),
-          entry_price: entryPrice,
-          stop_loss: entryPrice * (isBuy ? 0.95 : 1.05),
-          take_profit: entryPrice * (isBuy ? 1.1 : 0.9),
-          direction: isBuy ? 'BUY' : 'SELL',
-          exit_time: exitTime.toISOString(),
+          symbol: signal.symbol || 'UNKNOWN',
+          entry_time: signal.timestamp || new Date().toISOString(),
+          entry_price: signal.entry,
+          stop_loss: signal.stopLoss,
+          take_profit: signal.tp1,
+          direction: signal.direction === 'BUY' ? 'BUY' : 'SELL',
+          exit_time: signal.timestamp || new Date().toISOString(), // Use same time for simplicity
           exit_price: exitPrice,
-          exit_reason: profit > 0 ? 'Take Profit' : 'Stop Loss',
-          reason: profit > 0 ? 'Target reached' : 'Risk management',
+          exit_reason: exitReason,
+          reason: exitReason,
           profit_pct: profitPct,
           profit: profit,
           balance_after: currentBalance + profit,
-          position_notional: positionSize * entryPrice,
+          position_notional: positionSize * signal.entry,
           risk_fraction: riskPerTrade / 100,
-          duration_hours: (exitTime.getTime() - entryTime.getTime()) / (1000 * 60 * 60)
+          duration_hours: signal.signal_age_hours || 1
         };
 
-        mockTrades.push(trade);
+        trades.push(trade);
         currentBalance += profit;
       }
 
       // Calculate totals
       const finalBalance = currentBalance;
       const totalReturn = finalBalance - initialBalance;
-      const totalReturnPct = (totalReturn / initialBalance) * 100;
+      const totalReturnPct = initialBalance > 0 ? (totalReturn / initialBalance) * 100 : 0;
 
-      const mockResult: BacktestResult = {
-        trades: mockTrades,
+      const backtestResult: BacktestResult = {
+        trades: trades,
         initial_balance: initialBalance,
         final_balance: finalBalance,
         total_return: totalReturn,
-        total_return_pct: totalReturnPct
+        total_return_pct: totalReturnPct,
+        _fallback: json._mock || false,
+        _message: json._message || undefined
       };
 
-      setResult(mockResult);
+      setResult(backtestResult);
       setLoadingMessage('Backtest completed successfully');
 
     } catch (err) {
       console.error('Backtest error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred while running the backtest');
+
+      // Fallback to mock data if API fails
+      console.log('[BACKTEST] API failed, using mock data fallback');
+      const initialBalance = parseFloat(formData.initial_balance);
+      const riskPerTrade = parseFloat(formData.risk_per_trade);
+
+      const mockTrades: Trade[] = [
+        {
+          symbol: 'BTC/USDT',
+          entry_time: new Date().toISOString(),
+          entry_price: 45000,
+          stop_loss: 44000,
+          take_profit: 46000,
+          direction: 'BUY',
+          exit_time: new Date().toISOString(),
+          exit_price: 45500,
+          exit_reason: 'Take Profit',
+          reason: 'Target reached',
+          profit_pct: 1.11,
+          profit: 111.11,
+          balance_after: initialBalance + 111.11,
+          position_notional: 10000,
+          risk_fraction: riskPerTrade / 100,
+          duration_hours: 2
+        }
+      ];
+
+      const mockResult: BacktestResult = {
+        trades: mockTrades,
+        initial_balance: initialBalance,
+        final_balance: initialBalance + 111.11,
+        total_return: 111.11,
+        total_return_pct: (111.11 / initialBalance) * 100,
+        _fallback: true,
+        _message: 'API unavailable, showing sample data'
+      };
+
+      setResult(mockResult);
+      setError(`API Error: ${err instanceof Error ? err.message : 'Unknown error'} - Using mock data`);
     } finally {
       setLoading(false);
       setLoadingMessage('Initializing...');
