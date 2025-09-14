@@ -61,10 +61,13 @@ export default function BacktestPage({ params }: PageProps) {
     symbol: [] as string[],
     timeframe: '4h',
     start_date: (() => {
-      const date = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      // Use 5 days ago as start date for meaningful backtest period
+      const date = new Date();
+      date.setDate(date.getDate() - 5); // 5 days ago
       return date.toISOString().split('T')[0]; // Ensure YYYY-MM-DD format
     })(),
     end_date: (() => {
+      // Use current date for end date (today with current time)
       const date = new Date();
       return date.toISOString().split('T')[0]; // Ensure YYYY-MM-DD format
     })(),
@@ -593,6 +596,10 @@ export default function BacktestPage({ params }: PageProps) {
                     name="end_date"
                     value={formData.end_date}
                     onChange={handleChange}
+                    max={(() => {
+                      const date = new Date();
+                      return date.toISOString(); // Today
+                    })()}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
                     required
                   />
