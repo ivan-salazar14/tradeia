@@ -25,12 +25,60 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  // Setup Supabase client for session validation
+  const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          if (name === `sb-${projectRef}-auth-token`) {
+            return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
+          }
+          if (name === `sb-${projectRef}-refresh-token`) {
+            return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
+          }
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set(name, value, options);
+          } catch {
+            // Ignore in server context
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set(name, '', { ...options, maxAge: 0 });
+          } catch {
+            // Ignore in server context
+          }
+        },
+      },
+    }
+  );
+
+  // Validate user session
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session) {
+    return NextResponse.json({ error: 'Usuario no autenticado' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
+  }
+
   const { searchParams } = new URL(request.url);
   const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100); // Cap at 100, default 20
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  console.log('[STRATEGIES API] ===== RETURNING MOCK STRATEGIES WITH BEARER TOKEN =====');
-  console.log('[STRATEGIES API] Token received and validated');
+  console.log('[STRATEGIES API] ===== RETURNING MOCK STRATEGIES WITH AUTHENTICATION =====');
+  console.log('[STRATEGIES API] User authenticated:', session.user?.email);
 
   // Return strategies in the format expected by the API documentation
   const mockStrategies = {
@@ -85,8 +133,56 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  console.log('[STRATEGIES API POST] ===== RETURNING MOCK RESPONSE WITH BEARER TOKEN =====');
-  console.log('[STRATEGIES API POST] Token received and validated');
+  // Setup Supabase client for session validation
+  const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          if (name === `sb-${projectRef}-auth-token`) {
+            return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
+          }
+          if (name === `sb-${projectRef}-refresh-token`) {
+            return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
+          }
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set(name, value, options);
+          } catch {
+            // Ignore in server context
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set(name, '', { ...options, maxAge: 0 });
+          } catch {
+            // Ignore in server context
+          }
+        },
+      },
+    }
+  );
+
+  // Validate user session
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session) {
+    return NextResponse.json({ error: 'Usuario no autenticado' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
+  }
+
+  console.log('[STRATEGIES API POST] ===== RETURNING MOCK RESPONSE WITH AUTHENTICATION =====');
+  console.log('[STRATEGIES API POST] User authenticated:', session.user?.email);
 
   try {
     const body = await request.json();

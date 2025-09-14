@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
@@ -26,9 +28,57 @@ export async function GET(
     });
   }
 
+  // Setup Supabase client for session validation
+  const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          if (name === `sb-${projectRef}-auth-token`) {
+            return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
+          }
+          if (name === `sb-${projectRef}-refresh-token`) {
+            return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
+          }
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set(name, value, options);
+          } catch {
+            // Ignore in server context
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set(name, '', { ...options, maxAge: 0 });
+          } catch {
+            // Ignore in server context
+          }
+        },
+      },
+    }
+  );
+
+  // Validate user session
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session) {
+    return NextResponse.json({ error: 'Usuario no autenticado' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
+  }
+
   const strategyId = params.id;
   console.log(`[STRATEGIES API] ===== GETTING STRATEGY DETAILS FOR: ${strategyId} =====`);
-  console.log('[STRATEGIES API] Token received and validated');
+  console.log('[STRATEGIES API] User authenticated:', session.user?.email);
 
   // Mock strategy details based on the API documentation
   const strategyDetails: Record<string, any> = {
@@ -125,9 +175,57 @@ export async function PUT(
     });
   }
 
+  // Setup Supabase client for session validation
+  const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          if (name === `sb-${projectRef}-auth-token`) {
+            return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
+          }
+          if (name === `sb-${projectRef}-refresh-token`) {
+            return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
+          }
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set(name, value, options);
+          } catch {
+            // Ignore in server context
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set(name, '', { ...options, maxAge: 0 });
+          } catch {
+            // Ignore in server context
+          }
+        },
+      },
+    }
+  );
+
+  // Validate user session
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session) {
+    return NextResponse.json({ error: 'Usuario no autenticado' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
+  }
+
   const strategyId = params.id;
   console.log(`[STRATEGIES UPDATE API] ===== UPDATING STRATEGY: ${strategyId} =====`);
-  console.log('[STRATEGIES UPDATE API] Token received and validated');
+  console.log('[STRATEGIES UPDATE API] User authenticated:', session.user?.email);
 
   try {
     const body = await request.json();
