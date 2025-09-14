@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { format, subDays } from "date-fns";
+import { useAuth } from "@/contexts/auth-context";
 
 type Signal = {
   id: string;
@@ -43,6 +44,7 @@ type SignalsResponse = {
 };
 
 export default function SignalsPage() {
+  const { session } = useAuth();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [portfolioMetrics, setPortfolioMetrics] = useState<PortfolioMetrics | null>(null);
   const [riskParameters, setRiskParameters] = useState<RiskParameters | null>(null);
@@ -94,6 +96,11 @@ export default function SignalsPage() {
       // For multi-select, send header to let backend filter locally by all
       if (Array.isArray(activeStrategies) && activeStrategies.length > 1) {
         headers["X-Active-Strategies"] = activeStrategies.join(",");
+      }
+
+      // Add Authorization header if user is authenticated
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
       }
 
       console.log('[SIGNALS] Making GET request to /api/signals');
@@ -188,7 +195,7 @@ export default function SignalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [timeframe, symbol, selectedStrategies, dateRange, includeLiveSignals]);
+  }, [timeframe, symbol, selectedStrategies, dateRange, includeLiveSignals, session]);
 
   const generateNewSignals = useMemo(() => async () => {
     try {
@@ -211,15 +218,22 @@ export default function SignalsPage() {
 
       // Use POST request to generate new signals as per API documentation
       let res: Response;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'identity',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      };
+
+      // Add Authorization header if user is authenticated
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
       try {
         res = await fetch(`/api/signals/generate`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept-Encoding': 'identity',
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-          },
+          headers,
           body: JSON.stringify(requestBody),
           mode: 'cors',
           credentials: 'same-origin'
@@ -300,7 +314,7 @@ export default function SignalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [timeframe, symbol, selectedStrategies, dateRange, initialBalance, riskPerTrade]);
+  }, [timeframe, symbol, selectedStrategies, dateRange, initialBalance, riskPerTrade, session]);
 
   useEffect(() => {
     fetchSignals();
