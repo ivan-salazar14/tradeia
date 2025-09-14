@@ -316,8 +316,21 @@ export async function GET(req: NextRequest) {
   const qs = new URLSearchParams();
   if (symbol) qs.set('symbol', symbol);
   qs.set('timeframe', timeframe);
-  if (startDate) qs.set('start_date', startDate);
-  if (endDate) qs.set('end_date', endDate);
+
+  // Ensure dates are properly formatted with timezone information
+  if (startDate) {
+    // If startDate doesn't have timezone info, add UTC timezone
+    const startDateTime = startDate.includes('T') ? startDate : `${startDate}T00:00:00`;
+    const formattedStartDate = startDateTime.includes('+') || startDateTime.includes('Z') ? startDateTime : `${startDateTime}Z`;
+    qs.set('start_date', formattedStartDate);
+  }
+  if (endDate) {
+    // If endDate doesn't have timezone info, add UTC timezone
+    const endDateTime = endDate.includes('T') ? endDate : `${endDate}T23:59:59`;
+    const formattedEndDate = endDateTime.includes('+') || endDateTime.includes('Z') ? endDateTime : `${endDateTime}Z`;
+    qs.set('end_date', formattedEndDate);
+  }
+
   qs.set('limit', limit.toString());
   qs.set('offset', offset.toString());
   if (includeLiveSignals) qs.set('include_live_signals', 'true');
@@ -713,8 +726,20 @@ export async function POST(req: NextRequest) {
     const qs = new URLSearchParams();
     if (symbol) qs.set('symbol', symbol);
     qs.set('timeframe', timeframe);
-    if (start_date) qs.set('start_date', start_date);
-    if (end_date) qs.set('end_date', end_date);
+
+    // Ensure dates are properly formatted with timezone information
+    if (start_date) {
+      // If start_date doesn't have timezone info, add UTC timezone
+      const startDateTime = start_date.includes('T') ? start_date : `${start_date}T00:00:00`;
+      const formattedStartDate = startDateTime.includes('+') || startDateTime.includes('Z') ? startDateTime : `${startDateTime}Z`;
+      qs.set('start_date', formattedStartDate);
+    }
+    if (end_date) {
+      // If end_date doesn't have timezone info, add UTC timezone
+      const endDateTime = end_date.includes('T') ? end_date : `${end_date}T23:59:59`;
+      const formattedEndDate = endDateTime.includes('+') || endDateTime.includes('Z') ? endDateTime : `${endDateTime}Z`;
+      qs.set('end_date', formattedEndDate);
+    }
 
     try {
       // Use POST to /strategies/signals/generate endpoint as per API specification
