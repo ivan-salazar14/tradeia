@@ -138,8 +138,8 @@ export default function MobileHeader({ pathname }: MobileHeaderProps) {
 
   return (
     <>
-      {/* Mobile Header */}
-      <header className="md:hidden flex items-center justify-between p-4 bg-white border-b shadow-sm">
+      {/* Header */}
+      <header className="flex items-center justify-between p-4 bg-white border-b shadow-sm">
         <div className="flex items-center">
           <button
             onClick={toggleMenu}
@@ -169,7 +169,7 @@ export default function MobileHeader({ pathname }: MobileHeaderProps) {
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setIsMenuOpen(false)}>
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setIsMenuOpen(false)}>
           <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
             {/* Mobile Menu Header */}
             <div className="flex items-center justify-between p-4 border-b">
