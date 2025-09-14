@@ -278,6 +278,12 @@ export async function GET(req: NextRequest) {
     console.log('[SIGNALS] No user strategies found, using default moderate strategy');
   }
 
+  // Ensure we have at least one strategy for mock data generation
+  if (activeStrategyIds.length === 0) {
+    activeStrategyIds = ['moderate'];
+    console.log('[SIGNALS] Forcing default moderate strategy for mock generation');
+  }
+
   // Basic input validation
   if (symbol && !/^[A-Z0-9]+\/[A-Z0-9]+$/.test(symbol)) {
     return NextResponse.json({ error: 'Invalid symbol format. Use BASE/QUOTE e.g., BTC/USDT' }, {
@@ -327,7 +333,7 @@ export async function GET(req: NextRequest) {
       qsSignals.set('strategy_ids', activeStrategyIds.join(','));
     }
 
-    // Try to connect to external API, but fallback to mock data if not available
+    // Try to connect to external API
     try {
       // Always use POST to /strategies/signals/generate endpoint as per API specification
       const postUrl = `${API_BASE}/strategies/signals/generate?${qs.toString()}`;
@@ -347,82 +353,14 @@ export async function GET(req: NextRequest) {
         signal: AbortSignal.timeout(10000), // Increased timeout to 10 seconds
       });
     } catch (networkError) {
-      console.warn('[SIGNALS] External API not available, using mock data:', networkError);
-      // Generate mock signals based on active strategies
-      const mockSignals: UnifiedSignal[] = [];
-      const symbols = ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT', 'DOT/USDT'];
-
-      for (let i = 0; i < Math.min(activeStrategyIds.length * 2, 6); i++) {
-        const strategyId = activeStrategyIds[i % activeStrategyIds.length];
-        const mockSymbol = symbol || symbols[Math.floor(Math.random() * symbols.length)];
-        const isBuy = Math.random() > 0.5;
-        const basePrice = mockSymbol.includes('BTC') ? 45000 : mockSymbol.includes('ETH') ? 2800 : 1;
-
-        mockSignals.push({
-          id: `mock-signal-${i + 1}`,
-          symbol: mockSymbol,
-          timeframe: timeframe,
-          timestamp: new Date(Date.now() - (i * 3600000)).toISOString(),
-          execution_timestamp: new Date(Date.now() - (i * 3600000)).toISOString(),
-          signal_age_hours: i * 0.5 + 0.5,
-          signal_source: 'mock_strategy',
-          type: 'entry',
-          direction: isBuy ? 'BUY' : 'SELL',
-          strategyId: strategyId,
-          entry: basePrice + Math.random() * (basePrice * 0.1),
-          tp1: basePrice * (isBuy ? 1.05 : 0.95) + Math.random() * (basePrice * 0.02),
-          tp2: basePrice * (isBuy ? 1.10 : 0.90) + Math.random() * (basePrice * 0.02),
-          stopLoss: basePrice * (isBuy ? 0.95 : 1.05) + Math.random() * (basePrice * 0.02),
-          source: { provider: 'mock_provider' },
-          marketScenario: isBuy ? 'bullish_trend' : 'bearish_correction'
-        });
-      }
-
-      console.log('[SIGNALS] Generated mock signals:', mockSignals.length, 'for strategies:', activeStrategyIds);
-
-      const portfolioMetrics = calculatePortfolioMetrics(mockSignals, initialBalance, riskPerTrade);
-      const riskParameters: RiskParameters = {
-        initial_balance: initialBalance,
-        risk_per_trade_pct: riskPerTrade
-      };
-
-      // Apply pagination to mock signals
-      const totalSignals = mockSignals.length;
-      const paginatedMockSignals = mockSignals.slice(offset, offset + limit);
-      const totalPages = Math.ceil(totalSignals / limit);
-      const currentPage = Math.floor(offset / limit) + 1;
-      const hasNextPage = offset + limit < totalSignals;
-      const hasPrevPage = offset > 0;
-
-      console.log('[SIGNALS API] ===== SENDING MOCK RESPONSE (NETWORK ERROR) =====');
-      console.log('[SIGNALS API] Mock signals count:', paginatedMockSignals.length);
-      console.log('[SIGNALS API] Response headers:', {
-        'Cache-Control': 'public, max-age=300'
-      });
-
+      console.warn('[SIGNALS] External API not available:', networkError);
       return NextResponse.json({
-        signals: paginatedMockSignals,
-        strategies: mockStrategies,
-        portfolio_metrics: portfolioMetrics,
-        risk_parameters: riskParameters,
-        pagination: {
-          total: totalSignals,
-          limit,
-          offset,
-          current_page: currentPage,
-          total_pages: totalPages,
-          has_next: hasNextPage,
-          has_prev: hasPrevPage
-        },
-        _mock: true,
-        _message: 'External signals API not available, showing mock data'
+        error: 'Signals API is currently unavailable',
+        details: 'Unable to connect to external signals provider'
       }, {
+        status: 503,
         headers: {
-          'Cache-Control': 'public, max-age=300',
-          'Accept-Encoding': 'identity',
-          'Content-Encoding': 'identity',
-          'Content-Type': 'application/json; charset=utf-8',
-          'Vary': 'Accept-Encoding'
+          'Accept-Encoding': 'identity'
         }
       });
     }
@@ -435,137 +373,13 @@ export async function GET(req: NextRequest) {
       }
       console.warn('[SIGNALS] External API failed with status:', resp.status);
       console.warn('[SIGNALS] External API response text:', text);
-      console.warn('[SIGNALS] External API failed, using mock data fallback');
-      // Return mock signals data instead of error
-      const mockSignals: UnifiedSignal[] = [
-        {
-          id: 'mock-signal-1',
-          symbol: symbol || 'BTC/USDT',
-          timeframe: timeframe,
-          timestamp: new Date().toISOString(),
-          execution_timestamp: new Date().toISOString(),
-          signal_age_hours: 2.5,
-          signal_source: 'mock_strategy',
-          type: 'entry',
-          direction: 'BUY',
-          strategyId: 'conservative', // Use mock strategy IDs that match frontend
-          entry: 45000 + Math.random() * 5000,
-          tp1: 47000 + Math.random() * 3000,
-          tp2: 49000 + Math.random() * 2000,
-          stopLoss: 43000 + Math.random() * 2000,
-          source: { provider: 'mock_provider' },
-          marketScenario: 'bullish_trend'
-        },
-        {
-          id: 'mock-signal-2',
-          symbol: symbol || 'ETH/USDT',
-          timeframe: timeframe,
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          execution_timestamp: new Date(Date.now() - 3600000).toISOString(),
-          signal_age_hours: 1.0,
-          signal_source: 'mock_strategy',
-          type: 'entry',
-          direction: 'SELL',
-          strategyId: 'moderate', // Use mock strategy IDs that match frontend
-          entry: 2800 + Math.random() * 200,
-          tp1: 2600 + Math.random() * 100,
-          tp2: 2400 + Math.random() * 100,
-          stopLoss: 3000 + Math.random() * 100,
-          source: { provider: 'mock_provider' },
-          marketScenario: 'bearish_correction'
-        },
-        {
-          id: 'mock-signal-3',
-          symbol: symbol || 'ADA/USDT',
-          timeframe: timeframe,
-          timestamp: new Date(Date.now() - 7200000).toISOString(),
-          execution_timestamp: new Date(Date.now() - 7200000).toISOString(),
-          signal_age_hours: 2.0,
-          signal_source: 'mock_strategy',
-          type: 'entry',
-          direction: 'BUY',
-          strategyId: 'sqzmom_adx', // Use mock strategy IDs that match frontend
-          entry: 0.45 + Math.random() * 0.1,
-          tp1: 0.48 + Math.random() * 0.05,
-          tp2: 0.51 + Math.random() * 0.05,
-          stopLoss: 0.42 + Math.random() * 0.03,
-          source: { provider: 'mock_provider' },
-          marketScenario: 'sideways_consolidation'
-        },
-        {
-          id: 'mock-signal-4',
-          symbol: symbol || 'SOL/USDT',
-          timeframe: timeframe,
-          timestamp: new Date(Date.now() - 10800000).toISOString(),
-          execution_timestamp: new Date(Date.now() - 10800000).toISOString(),
-          signal_age_hours: 3.0,
-          signal_source: 'mock_strategy',
-          type: 'entry',
-          direction: 'SELL',
-          strategyId: 'aggressive', // Use mock strategy IDs that match frontend
-          entry: 140 + Math.random() * 20,
-          tp1: 130 + Math.random() * 10,
-          tp2: 120 + Math.random() * 10,
-          stopLoss: 150 + Math.random() * 5,
-          source: { provider: 'mock_provider' },
-          marketScenario: 'overbought_condition'
-        },
-        {
-          id: 'mock-signal-5',
-          symbol: symbol || 'DOT/USDT',
-          timeframe: timeframe,
-          timestamp: new Date(Date.now() - 14400000).toISOString(),
-          execution_timestamp: new Date(Date.now() - 14400000).toISOString(),
-          signal_age_hours: 4.0,
-          signal_source: 'mock_strategy',
-          type: 'entry',
-          direction: 'BUY',
-          strategyId: 'scalping', // Use mock strategy IDs that match frontend
-          entry: 5.2 + Math.random() * 0.8,
-          tp1: 5.4 + Math.random() * 0.3,
-          tp2: 5.6 + Math.random() * 0.3,
-          stopLoss: 5.0 + Math.random() * 0.2,
-          source: { provider: 'mock_provider' },
-          marketScenario: 'breakout_up'
-        }
-      ];
-
-      const portfolioMetrics = calculatePortfolioMetrics(mockSignals, initialBalance, riskPerTrade);
-      const riskParameters: RiskParameters = {
-        initial_balance: initialBalance,
-        risk_per_trade_pct: riskPerTrade
-      };
-
-      // Apply pagination to mock signals
-      const totalSignals = mockSignals.length;
-      const paginatedMockSignals = mockSignals.slice(offset, offset + limit);
-      const totalPages = Math.ceil(totalSignals / limit);
-      const currentPage = Math.floor(offset / limit) + 1;
-      const hasNextPage = offset + limit < totalSignals;
-      const hasPrevPage = offset > 0;
-
       return NextResponse.json({
-        signals: paginatedMockSignals,
-        strategies: mockStrategies,
-        portfolio_metrics: portfolioMetrics,
-        risk_parameters: riskParameters,
-        pagination: {
-          total: totalSignals,
-          limit,
-          offset,
-          current_page: currentPage,
-          total_pages: totalPages,
-          has_next: hasNextPage,
-          has_prev: hasPrevPage
-        },
-        _mock: true // Indicate this is mock data
+        error: 'Signals API returned an error',
+        details: `External API responded with status ${resp.status}: ${text}`
       }, {
+        status: resp.status,
         headers: {
-          'Cache-Control': 'public, max-age=300',
-          'Accept-Encoding': 'identity',
-          'Content-Encoding': 'identity',
-          'Content-Type': 'application/json; charset=utf-8',
-          'Vary': 'Accept-Encoding'
+          'Accept-Encoding': 'identity'
         }
       });
     }
@@ -715,89 +529,15 @@ export async function GET(req: NextRequest) {
       openUntil = Date.now() + OPEN_MS;
     }
 
-    console.warn('[SIGNALS] Request failed with exception, using mock data fallback:', err?.message);
-
-    // Return mock signals data on any exception
-    const mockSignals: UnifiedSignal[] = [
-      {
-        id: 'mock-signal-exception-1',
-        symbol: symbol || 'BTC/USDT',
-        timeframe: timeframe,
-        timestamp: new Date().toISOString(),
-        execution_timestamp: new Date().toISOString(),
-        signal_age_hours: 1.5,
-        signal_source: 'mock_strategy_fallback',
-        type: 'entry',
-        direction: 'BUY',
-        strategyId: 'conservative', // Use mock strategy IDs that match frontend
-        entry: 46000 + Math.random() * 4000,
-        tp1: 48000 + Math.random() * 2000,
-        tp2: 50000 + Math.random() * 2000,
-        stopLoss: 44000 + Math.random() * 2000,
-        source: { provider: 'mock_provider_fallback' },
-        marketScenario: 'sideways_consolidation'
-      },
-      {
-        id: 'mock-signal-exception-2',
-        symbol: symbol || 'ETH/USDT',
-        timeframe: timeframe,
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        execution_timestamp: new Date(Date.now() - 3600000).toISOString(),
-        signal_age_hours: 1.0,
-        signal_source: 'mock_strategy_fallback',
-        type: 'entry',
-        direction: 'SELL',
-        strategyId: 'moderate', // Use mock strategy IDs that match frontend
-        entry: 2800 + Math.random() * 200,
-        tp1: 2600 + Math.random() * 100,
-        tp2: 2400 + Math.random() * 100,
-        stopLoss: 3000 + Math.random() * 100,
-        source: { provider: 'mock_provider_fallback' },
-        marketScenario: 'bearish_correction'
-      }
-    ];
-
-    const portfolioMetrics = calculatePortfolioMetrics(mockSignals, initialBalance, riskPerTrade);
-    const riskParameters: RiskParameters = {
-      initial_balance: initialBalance,
-      risk_per_trade_pct: riskPerTrade
-    };
-
-    // Apply pagination to exception mock signals
-    const totalSignals = mockSignals.length;
-    const paginatedMockSignals = mockSignals.slice(offset, offset + limit);
-    const totalPages = Math.ceil(totalSignals / limit);
-    const currentPage = Math.floor(offset / limit) + 1;
-    const hasNextPage = offset + limit < totalSignals;
-    const hasPrevPage = offset > 0;
-
-    console.log('[SIGNALS API] ===== SENDING EXCEPTION FALLBACK RESPONSE =====');
-    console.log('[SIGNALS API] Exception mock signals count:', paginatedMockSignals.length);
-    console.log('[SIGNALS API] Exception error:', err?.message ?? String(err));
-    console.log('[SIGNALS API] Response headers:', {
-      'Cache-Control': 'public, max-age=300'
-    });
+    console.warn('[SIGNALS] Request failed with exception:', err?.message);
 
     return NextResponse.json({
-      signals: paginatedMockSignals,
-      strategies: mockStrategies,
-      portfolio_metrics: portfolioMetrics,
-      risk_parameters: riskParameters,
-      pagination: {
-        total: totalSignals,
-        limit,
-        offset,
-        current_page: currentPage,
-        total_pages: totalPages,
-        has_next: hasNextPage,
-        has_prev: hasPrevPage
-      },
-      _mock: true,
-      _error: err?.message ?? String(err)
+      error: 'Signals API request failed',
+      details: err?.message ?? 'Unknown error occurred while fetching signals'
     }, {
+      status: 500,
       headers: {
-        'Cache-Control': 'public, max-age=300',
-        'Accept-Encoding': 'identity' // Disable gzip compression
+        'Accept-Encoding': 'identity'
       }
     });
   }
@@ -935,6 +675,12 @@ export async function POST(req: NextRequest) {
       console.log('[SIGNALS POST] No user strategies found, using default moderate strategy');
     }
 
+    // Ensure we have at least one strategy for mock data generation
+    if (activeStrategyIds.length === 0) {
+      activeStrategyIds = ['moderate'];
+      console.log('[SIGNALS POST] Forcing default moderate strategy for mock generation');
+    }
+
     // Basic input validation
     if (symbol && !/^[A-Z0-9]+\/[A-Z0-9]+$/.test(symbol)) {
       return NextResponse.json({ error: 'Invalid symbol format. Use BASE/QUOTE e.g., BTC/USDT' }, {
@@ -997,66 +743,13 @@ export async function POST(req: NextRequest) {
         }
         console.warn('[SIGNALS POST] External API failed with status:', resp.status);
         console.warn('[SIGNALS POST] External API response text:', text);
-        console.warn('[SIGNALS POST] External API failed, using mock data fallback');
-
-        // Generate mock signals based on active strategies
-        const mockSignals: UnifiedSignal[] = [];
-        const symbols = ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT', 'DOT/USDT'];
-
-        for (let i = 0; i < Math.min(activeStrategyIds.length * 2, 6); i++) {
-          const strategyId = activeStrategyIds[i % activeStrategyIds.length];
-          const mockSymbol = symbol || symbols[Math.floor(Math.random() * symbols.length)];
-          const isBuy = Math.random() > 0.5;
-          const basePrice = mockSymbol.includes('BTC') ? 45000 : mockSymbol.includes('ETH') ? 2800 : 1;
-
-          mockSignals.push({
-            id: `mock-generated-${i + 1}`,
-            symbol: mockSymbol,
-            timeframe: timeframe,
-            timestamp: new Date(Date.now() - (i * 1800000)).toISOString(), // Stagger timestamps
-            execution_timestamp: new Date(Date.now() - (i * 1800000)).toISOString(),
-            signal_age_hours: i * 0.25 + 0.1,
-            signal_source: 'generated_signal',
-            type: 'entry',
-            direction: isBuy ? 'BUY' : 'SELL',
-            strategyId: strategyId,
-            entry: basePrice + Math.random() * (basePrice * 0.1),
-            tp1: basePrice * (isBuy ? 1.05 : 0.95) + Math.random() * (basePrice * 0.02),
-            tp2: basePrice * (isBuy ? 1.10 : 0.90) + Math.random() * (basePrice * 0.02),
-            stopLoss: basePrice * (isBuy ? 0.95 : 1.05) + Math.random() * (basePrice * 0.02),
-            source: { provider: 'generated_provider' },
-            marketScenario: isBuy ? 'bullish_trend' : 'bearish_correction'
-          });
-        }
-
-        console.log('[SIGNALS POST] Generated mock signals:', mockSignals.length, 'for strategies:', activeStrategyIds);
-
-        const portfolioMetrics = calculatePortfolioMetrics(mockSignals, initial_balance, risk_per_trade);
-        const riskParameters: RiskParameters = {
-          initial_balance: initial_balance,
-          risk_per_trade_pct: risk_per_trade
-        };
-
-        console.log('[SIGNALS API POST] ===== SENDING MOCK GENERATED RESPONSE =====');
-        console.log('[SIGNALS API POST] Mock generated signals count:', mockSignals.length);
-        console.log('[SIGNALS API POST] Response headers:', {
-          'Cache-Control': 'public, max-age=300'
-        });
-
         return NextResponse.json({
-          signals: mockSignals,
-          strategies: mockStrategies,
-          portfolio_metrics: portfolioMetrics,
-          risk_parameters: riskParameters,
-          _mock: true,
-          _message: 'External signals generation API not available, showing mock generated data'
+          error: 'Signals generation API returned an error',
+          details: `External API responded with status ${resp.status}: ${text}`
         }, {
+          status: resp.status,
           headers: {
-            'Cache-Control': 'public, max-age=300',
-            'Accept-Encoding': 'identity',
-            'Content-Encoding': 'identity',
-            'Content-Type': 'application/json; charset=utf-8',
-            'Vary': 'Accept-Encoding'
+            'Accept-Encoding': 'identity'
           }
         });
       }
@@ -1165,61 +858,19 @@ export async function POST(req: NextRequest) {
         }
       });
     } catch (networkError) {
-      console.warn('[SIGNALS POST] External API not available, using mock data:', networkError);
+      console.warn('[SIGNALS POST] External API not available:', networkError);
       failCount += 1;
       if (failCount >= OPEN_THRESHOLD) {
         openUntil = Date.now() + OPEN_MS;
       }
 
-      // Return mock signals data when external API is not available
-      const mockSignals: UnifiedSignal[] = [
-        {
-          id: 'mock-post-fallback-1',
-          symbol: symbol || 'BTC/USDT',
-          timeframe: timeframe,
-          timestamp: new Date().toISOString(),
-          execution_timestamp: new Date().toISOString(),
-          signal_age_hours: 0.2,
-          signal_source: 'mock_generated_fallback',
-          type: 'entry',
-          direction: 'BUY',
-          strategyId: activeStrategyIds[0] || 'moderate',
-          entry: 45000 + Math.random() * 5000,
-          tp1: 47000 + Math.random() * 3000,
-          tp2: 49000 + Math.random() * 2000,
-          stopLoss: 43000 + Math.random() * 2000,
-          source: { provider: 'mock_provider_fallback' },
-          marketScenario: 'bullish_trend'
-        }
-      ];
-
-      const portfolioMetrics = calculatePortfolioMetrics(mockSignals, initial_balance, risk_per_trade);
-      const riskParameters: RiskParameters = {
-        initial_balance: initial_balance,
-        risk_per_trade_pct: risk_per_trade
-      };
-
-      console.log('[SIGNALS API POST] ===== SENDING EXCEPTION FALLBACK RESPONSE =====');
-      console.log('[SIGNALS API POST] Exception mock signals count:', mockSignals.length);
-      console.log('[SIGNALS API POST] Exception error:', networkError instanceof Error ? networkError.message : String(networkError));
-      console.log('[SIGNALS API POST] Response headers:', {
-        'Cache-Control': 'public, max-age=300'
-      });
-
       return NextResponse.json({
-        signals: mockSignals,
-        strategies: mockStrategies,
-        portfolio_metrics: portfolioMetrics,
-        risk_parameters: riskParameters,
-        _mock: true,
-        _error: networkError instanceof Error ? networkError.message : String(networkError)
+        error: 'Signals generation API is currently unavailable',
+        details: 'Unable to connect to external signals provider'
       }, {
+        status: 503,
         headers: {
-          'Cache-Control': 'public, max-age=300',
-          'Accept-Encoding': 'identity',
-          'Content-Encoding': 'identity',
-          'Content-Type': 'application/json; charset=utf-8',
-          'Vary': 'Accept-Encoding'
+          'Accept-Encoding': 'identity'
         }
       });
     }
@@ -1229,57 +880,15 @@ export async function POST(req: NextRequest) {
       openUntil = Date.now() + OPEN_MS;
     }
 
-    console.warn('[SIGNALS POST] Request failed with exception, using mock data fallback:', err?.message);
-
-    // Return mock signals data on any exception
-    const mockSignals: UnifiedSignal[] = [
-      {
-        id: 'mock-post-exception-1',
-        symbol: 'BTC/USDT',
-        timeframe: '4h',
-        timestamp: new Date().toISOString(),
-        execution_timestamp: new Date().toISOString(),
-        signal_age_hours: 0.1,
-        signal_source: 'mock_exception_fallback',
-        type: 'entry',
-        direction: 'BUY',
-        strategyId: 'conservative',
-        entry: 46000 + Math.random() * 4000,
-        tp1: 48000 + Math.random() * 2000,
-        tp2: 50000 + Math.random() * 2000,
-        stopLoss: 44000 + Math.random() * 2000,
-        source: { provider: 'mock_provider_exception' },
-        marketScenario: 'sideways_consolidation'
-      }
-    ];
-
-    const portfolioMetrics = calculatePortfolioMetrics(mockSignals, 10000, 1.0);
-    const riskParameters: RiskParameters = {
-      initial_balance: 10000,
-      risk_per_trade_pct: 1.0
-    };
-
-    console.log('[SIGNALS API POST] ===== SENDING FINAL FALLBACK RESPONSE =====');
-    console.log('[SIGNALS API POST] Final mock signals count:', mockSignals.length);
-    console.log('[SIGNALS API POST] Exception error:', err instanceof Error ? err.message : String(err));
-    console.log('[SIGNALS API POST] Response headers:', {
-      'Cache-Control': 'public, max-age=300'
-    });
+    console.warn('[SIGNALS POST] Request failed with exception:', err?.message);
 
     return NextResponse.json({
-      signals: mockSignals,
-      strategies: mockStrategies,
-      portfolio_metrics: portfolioMetrics,
-      risk_parameters: riskParameters,
-      _mock: true,
-      _error: err instanceof Error ? err.message : String(err)
+      error: 'Signals generation request failed',
+      details: err?.message ?? 'Unknown error occurred while generating signals'
     }, {
+      status: 500,
       headers: {
-        'Cache-Control': 'public, max-age=300',
-        'Accept-Encoding': 'identity',
-        'Content-Encoding': 'identity',
-        'Content-Type': 'application/json; charset=utf-8',
-        'Vary': 'Accept-Encoding'
+        'Accept-Encoding': 'identity'
       }
     });
   }
