@@ -314,11 +314,11 @@ export default function BacktestPage({ params }: PageProps) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       }
 
-      console.log('[BACKTEST] Making POST request to /api/signals/generate');
+      console.log('[BACKTEST] Making POST request to /api/signals');
       console.log('[BACKTEST] Request body:', requestBody);
 
       // Make API call to signals endpoint
-      const response = await fetch('/api/signals/generate', {
+      const response = await fetch('/api/signals', {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody),
