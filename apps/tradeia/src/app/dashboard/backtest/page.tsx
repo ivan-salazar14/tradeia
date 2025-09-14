@@ -175,79 +175,82 @@ export default function BacktestPage({ params }: PageProps) {
     setCurrentPage(1); // Reset to first page
   };
 
-  // Use static mock strategies instead of API call
+  // Load mock strategies immediately without API call
   useEffect(() => {
     console.log('[BACKTEST-PAGE] ===== LOADING MOCK STRATEGIES =====');
     setStrategiesLoading(true);
 
-    // Simulate loading delay for better UX
-    setTimeout(() => {
-      const mockStrategies = [
-        {
-          id: 'conservative',
-          name: 'Conservative Strategy',
-          description: 'Low-risk strategy with basic technical indicators like SMA and RSI'
-        },
-        {
-          id: 'moderate',
-          name: 'Moderate Strategy',
-          description: 'Balanced risk strategy with multiple indicators including MACD'
-        },
-        {
-          id: 'sqzmom_adx',
-          name: 'ADX Squeeze Momentum',
-          description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation'
-        },
-        {
-          id: 'aggressive',
-          name: 'Aggressive Strategy',
-          description: 'High-risk strategy for experienced traders with Bollinger Bands'
-        },
-        {
-          id: 'scalping',
-          name: 'Scalping Strategy',
-          description: 'Fast-paced strategy for quick profits using EMA and Stochastic'
-        },
-        {
-          id: 'swing',
-          name: 'Swing Trading',
-          description: 'Medium-term strategy for trend following with Volume analysis'
-        }
-      ];
+    // Load strategies immediately without delay
+    const mockStrategies = [
+      {
+        id: 'conservative',
+        name: 'Conservative Strategy',
+        description: 'Low-risk strategy with basic technical indicators like SMA and RSI'
+      },
+      {
+        id: 'moderate',
+        name: 'Moderate Strategy',
+        description: 'Balanced risk strategy with multiple indicators including MACD'
+      },
+      {
+        id: 'sqzmom_adx',
+        name: 'ADX Squeeze Momentum',
+        description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation'
+      },
+      {
+        id: 'aggressive',
+        name: 'Aggressive Strategy',
+        description: 'High-risk strategy for experienced traders with Bollinger Bands'
+      },
+      {
+        id: 'scalping',
+        name: 'Scalping Strategy',
+        description: 'Fast-paced strategy for quick profits using EMA and Stochastic'
+      },
+      {
+        id: 'swing',
+        name: 'Swing Trading',
+        description: 'Medium-term strategy for trend following with Volume analysis'
+      }
+    ];
 
-      console.log('[BACKTEST-PAGE] ✅ Mock strategies loaded successfully:', mockStrategies.length);
-      console.log('[BACKTEST-PAGE] Available strategies:', mockStrategies.map(s => `${s.id}: ${s.name}`));
+    console.log('[BACKTEST-PAGE] ✅ Mock strategies loaded successfully:', mockStrategies.length);
+    console.log('[BACKTEST-PAGE] Available strategies:', mockStrategies.map(s => `${s.id}: ${s.name}`));
 
-      setStrategies(mockStrategies);
-      setStrategiesLoading(false);
+    setStrategies(mockStrategies);
+    setStrategiesLoading(false);
 
-      // Set default strategy to moderate
-      const defaultStrategy = 'moderate';
-      setFormData(prev => ({
-        ...prev,
-        strategy: defaultStrategy
-      }));
+    // Set default strategy to moderate
+    const defaultStrategy = 'moderate';
+    setFormData(prev => ({
+      ...prev,
+      strategy: defaultStrategy
+    }));
 
-      console.log('[BACKTEST-PAGE] ✅ Default strategy set to:', defaultStrategy);
-      console.log('[BACKTEST-PAGE] ✅ Strategy dropdown should now show:', mockStrategies.find(s => s.id === defaultStrategy)?.name);
-      setLoading(false);
-    }, 500); // Small delay to show loading state
+    console.log('[BACKTEST-PAGE] ✅ Default strategy set to:', defaultStrategy);
+    console.log('[BACKTEST-PAGE] ✅ Strategy dropdown should now show:', mockStrategies.find(s => s.id === defaultStrategy)?.name);
   }, []);
-  
-  // Set loading state since we're using mock data
+
+  // Set loading to false after strategies are loaded
   useEffect(() => {
-    console.log('[BACKTEST-PAGE] ===== USING MOCK BACKTEST DATA =====');
-    setLoading(false);
-  }, []);
+    if (strategies.length > 0 && !strategiesLoading) {
+      setLoading(false);
+    }
+  }, [strategies, strategiesLoading]);
+  
 
   // Debug logging for strategy options
   useEffect(() => {
     console.log('[BACKTEST-PAGE] Strategy options updated:', strategies.length, 'strategies');
     console.log('[BACKTEST-PAGE] Strategies loading:', strategiesLoading);
+    console.log('[BACKTEST-PAGE] Loading state:', loading);
     if (strategies.length > 0) {
       console.log('[BACKTEST-PAGE] Available strategies:', strategies.map(s => `${s.id}: ${s.name}`));
+      console.log('[BACKTEST-PAGE] Current selected strategy:', formData.strategy);
+    } else {
+      console.log('[BACKTEST-PAGE] ⚠️ No strategies available - this will show "No strategies available" in dropdown');
     }
-  }, [strategies, strategiesLoading]);
+  }, [strategies, strategiesLoading, loading, formData.strategy]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

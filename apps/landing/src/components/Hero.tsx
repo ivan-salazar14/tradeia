@@ -73,8 +73,8 @@ const Hero = () => {
               <code className="text-green-400 text-sm">
                 <div className="mb-2"># Get trading signals from TradeIA API</div>
                 <div className="mb-2 text-blue-400">response = requests.post('https://api.tradeia.com/signals/generate',</div>
-                <div className="ml-4 mb-2 text-yellow-400">headers={&#123;'Authorization': 'Bearer YOUR_TOKEN'&#125;},</div>
-                <div className="ml-4 mb-2 text-purple-400">json={&#123;'symbol': 'BTC/USDT', 'timeframe': '4h'&#125;})</div>
+                <div className="ml-4 mb-2 text-yellow-400">headers={`{'Authorization': 'Bearer YOUR_TOKEN'}`},</div>
+                <div className="ml-4 mb-2 text-purple-400">json={`{'symbol': 'BTC/USDT', 'timeframe': '4h'}`})</div>
                 <div className="mb-2">&nbsp;</div>
                 <div className="text-green-400"># Response includes signals with entry/exit points</div>
                 <div className="text-blue-400">signals = response.json()['signals']</div>
