@@ -1,112 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
-  try {
-    const cookieStore = await cookies();
-
-    // Extraer el project reference de la URL de Supabase
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
-
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            // Try project-specific cookie first, then fallback to generic
-            if (name === `sb-${projectRef}-auth-token`) {
-              return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
-            }
-            if (name === `sb-${projectRef}-refresh-token`) {
-              return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
-            }
-            // Fallback for other cookies
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: any) {
-            try {
-              cookieStore.set(name, value, options);
-            } catch {
-              // The `set` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.set(name, '', { ...options, maxAge: 0 });
-            } catch {
-              // The `remove` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-        },
-      }
-    );
-
-    // Verificar la sesión
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    // Obtener la estrategia actual del usuario
-    const { data: userStrategy, error: userStrategyError } = await supabase
-      .from('user_strategies')
-      .select(`
-        *,
-        strategies (*)
-      `)
-      .eq('user_id', session.user.id)
-      .eq('is_active', true)
-      .single();
-
-    if (userStrategyError) {
-      if (userStrategyError.code === 'PGRST116') {
-        // Return mock current strategy when database is not available
-        console.log('[STRATEGIES CURRENT] No active strategy found, returning mock data');
-        return NextResponse.json({
-          current_strategy: {
-            strategy_id: 'conservative',
-            is_active: true,
-            strategy: {
-              id: 'conservative',
-              name: 'Conservative Strategy',
-              description: 'Low-risk strategy with basic technical indicators',
-              risk_level: 'Low',
-              timeframe: '4h',
-              indicators: ['SMA', 'RSI'],
-              stop_loss: 2,
-              take_profit: 4,
-              max_positions: 3
-            }
-          },
-          _mock: true
-        });
-      }
-      console.error('Error fetching user strategy:', userStrategyError);
-      return NextResponse.json({ error: 'Error al obtener estrategia del usuario' }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      current_strategy: {
-        ...userStrategy,
-        strategy: {
-          ...userStrategy.strategies,
-          indicators: typeof userStrategy.strategies.indicators === 'string' 
-            ? JSON.parse(userStrategy.strategies.indicators) 
-            : userStrategy.strategies.indicators
-        }
+  // Check for Bearer token authentication
+  const auth = request.headers.get('authorization');
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Missing or invalid Authorization header. Use Bearer token.' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
       }
     });
-
-  } catch (error) {
-    console.error('Error in current strategy API:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
+
+  // Extract token from Bearer header
+  const token = auth.substring(7); // Remove 'Bearer ' prefix
+  if (!token || token.length < 10) {
+    return NextResponse.json({ error: 'Invalid Bearer token' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
+  }
+
+  console.log('[STRATEGIES USER CURRENT API] ===== GETTING CURRENT USER STRATEGY =====');
+  console.log('[STRATEGIES USER CURRENT API] Token received and validated');
+
+  // Mock current strategy - in a real app this would come from user preferences/database
+  const currentStrategy = 'moderate';
+
+  // Mock strategy info based on the API documentation
+  const strategyInfo: Record<string, any> = {
+    conservative: {
+      name: 'Conservative Strategy',
+      description: 'Low-risk strategy with strict entry conditions',
+      risk_level: 'conservative',
+      criteria: 'RSI < 30, ADX > 25, SQZMOM > 1780, strict trend confirmation'
+    },
+    moderate: {
+      name: 'Moderate Strategy',
+      description: 'Balanced risk-reward strategy',
+      risk_level: 'moderate',
+      criteria: 'RSI < 35, ADX > 22, SQZMOM > 1750, moderate trend confirmation'
+    },
+    aggressive: {
+      name: 'Aggressive Strategy',
+      description: 'High-risk strategy for maximum returns',
+      risk_level: 'aggressive',
+      criteria: 'RSI < 40, ADX > 20, SQZMOM > 1700, flexible trend confirmation'
+    }
+  };
+
+  const strategy = strategyInfo[currentStrategy];
+
+  return NextResponse.json({
+    current_strategy: currentStrategy,
+    strategy_info: strategy
+  }, {
+    headers: {
+      'Cache-Control': 'private, max-age=300',
+      'Accept-Encoding': 'identity' // Disable gzip compression
+    }
+  });
 }

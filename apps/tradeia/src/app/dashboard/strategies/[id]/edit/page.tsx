@@ -71,8 +71,8 @@ export default function EditStrategyPage() {
       }
 
       const data = await response.json();
-      
-      // Mapear los datos de la API al formato del formulario
+
+      // The API now returns strategy data directly
       const mappedStrategy: StrategyForm = {
         name: data.strategy.name,
         description: data.strategy.description,
@@ -171,7 +171,7 @@ export default function EditStrategyPage() {
       if (response.ok) {
         const data = await response.json();
         console.log("Strategy updated:", data);
-        
+
         // Redirigir a los detalles de la estrategia
         router.push(`/dashboard/strategies/${strategyId}`);
       } else {

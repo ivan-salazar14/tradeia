@@ -47,8 +47,19 @@ export default function BotsPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       const json = await res.json();
-      const strategies: Strategy[] = Array.isArray(json?.strategies) ? json.strategies : [];
-      const currentId: string = typeof json?.current === 'string' ? json.current : '';
+
+      // Handle new API format (object with strategy keys)
+      let strategies: Strategy[] = [];
+      if (json?.strategies && typeof json.strategies === 'object') {
+        strategies = Object.entries(json.strategies).map(([key, strategy]: [string, any]) => ({
+          id: key,
+          name: strategy.name
+        }));
+      } else if (Array.isArray(json?.strategies)) {
+        strategies = json.strategies;
+      }
+
+      const currentId: string = typeof json?.current_strategy === 'string' ? json.current_strategy : '';
       setOptions(strategies);
       setCurrent(currentId);
       // cargar estrategias activas desde metadatos de usuario
@@ -85,7 +96,7 @@ export default function BotsPage() {
       // 2) Establecer estrategia actual (si hay alguna elegida)
       const toSet = active[0] || current; // fallback al current si no hay activo
       if (toSet) {
-        const res = await fetch('/api/strategies', {
+        const res = await fetch('/api/strategies/set', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

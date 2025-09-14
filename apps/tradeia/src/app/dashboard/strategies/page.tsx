@@ -45,27 +45,27 @@ export default function StrategiesPage() {
       if (response.ok && response.status==200) {
 
       const data = await response.json();
-      
-      // Mapear los datos de la API al formato esperado
-      const mappedStrategies: Strategy[] = data.strategies.map((strategy: any) => ({
-        id: strategy.id,
+
+      // Convert object format to array format for frontend compatibility
+      const strategiesArray = Object.entries(data.strategies).map(([key, strategy]: [string, any]) => ({
+        id: key,
         name: strategy.name,
         description: strategy.description,
         risk_level: strategy.risk_level,
-        timeframe: strategy.timeframe,
-        indicators: typeof strategy.indicators === 'string' 
-          ? JSON.parse(strategy.indicators) 
-          : strategy.indicators,
-        is_active: data.current_strategy?.strategy_id === strategy.id,
-        created_at: strategy.created_at,
+        timeframe: '4h', // Default timeframe since not provided in new format
+        indicators: ['SMA', 'RSI'], // Default indicators since not provided in new format
+        is_active: data.current_strategy === key,
+        created_at: new Date().toISOString(),
         performance: {
           win_rate: 0, // TODO: Obtener de strategy_performance
           total_trades: 0,
           profit_loss: 0
         }
       }));
+
+      setStrategies(strategiesArray);
       
-      setStrategies(mappedStrategies);
+      setStrategies(strategiesArray);
     }} catch (error) {
       console.error("Error fetching strategies:", error);
       // Fallback a datos de ejemplo si hay error
@@ -219,7 +219,7 @@ export default function StrategiesPage() {
                          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
                       },
                       body: JSON.stringify({
-                        strategy_name: strategy.name
+                        strategy_name: strategy.id
                       })
                     });
 

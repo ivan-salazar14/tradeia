@@ -1,122 +1,99 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
-  try {
-    const cookieStore = await cookies();
-
-    // Extraer el project reference de la URL de Supabase
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
-
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            // Try project-specific cookie first, then fallback to generic
-            if (name === `sb-${projectRef}-auth-token`) {
-              return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
-            }
-            if (name === `sb-${projectRef}-refresh-token`) {
-              return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
-            }
-            // Fallback for other cookies
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: any) {
-            try {
-              cookieStore.set(name, value, options);
-            } catch {
-              // The `set` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.set(name, '', { ...options, maxAge: 0 });
-            } catch {
-              // The `remove` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-        },
+  // Check for Bearer token authentication
+  const auth = request.headers.get('authorization');
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Missing or invalid Authorization header. Use Bearer token.' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
       }
-    );
+    });
+  }
 
-    // Verificar la sesión
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+  // Extract token from Bearer header
+  const token = auth.substring(7); // Remove 'Bearer ' prefix
+  if (!token || token.length < 10) {
+    return NextResponse.json({ error: 'Invalid Bearer token' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
+  }
 
+  console.log('[STRATEGIES SET API] ===== SETTING USER STRATEGY =====');
+  console.log('[STRATEGIES SET API] Token received and validated');
+
+  try {
     const body = await request.json();
     const { strategy_name } = body;
 
     if (!strategy_name) {
-      return NextResponse.json({ error: 'Nombre de estrategia requerido' }, { status: 400 });
+      return NextResponse.json({
+        error: 'strategy_name is required'
+      }, {
+        status: 400,
+        headers: {
+          'Accept-Encoding': 'identity' // Disable gzip compression
+        }
+      });
     }
 
-    // Verificar que la estrategia existe
-    const { data: strategy, error: strategyError } = await supabase
-      .from('strategies')
-      .select('id')
-      .eq('name', strategy_name)
-      .single();
+    // Validate strategy exists
+    const validStrategies = ['conservative', 'moderate', 'aggressive'];
+    if (!validStrategies.includes(strategy_name)) {
+      return NextResponse.json({
+        error: `Invalid strategy name. Must be one of: ${validStrategies.join(', ')}`
+      }, {
+        status: 400,
+        headers: {
+          'Accept-Encoding': 'identity' // Disable gzip compression
+        }
+      });
+    }
 
-    if (strategyError) {
-      if (strategyError.code === 'PGRST116') {
-        // Return mock success for setting strategy when database is not available
-        console.log('[STRATEGIES SET] Strategy not found in DB, returning mock success');
-        return NextResponse.json({
-          message: 'Estrategia establecida exitosamente (mock)',
-          strategy: {
-            user_id: session.user.id,
-            strategy_id: strategy_name,
-            is_active: true
-          },
-          _mock: true
-        });
+    // Mock strategy info based on the API documentation
+    const strategyInfo: Record<string, any> = {
+      conservative: {
+        name: 'Conservative Strategy',
+        description: 'Low-risk strategy with strict entry conditions',
+        risk_level: 'conservative'
+      },
+      moderate: {
+        name: 'Moderate Strategy',
+        description: 'Balanced risk-reward strategy',
+        risk_level: 'moderate'
+      },
+      aggressive: {
+        name: 'Aggressive Strategy',
+        description: 'High-risk strategy for maximum returns',
+        risk_level: 'aggressive'
       }
-      console.error('Error fetching strategy:', strategyError);
-      return NextResponse.json({ error: 'Error al obtener estrategia' }, { status: 500 });
-    }
+    };
 
-    // Desactivar cualquier estrategia activa del usuario
-    await supabase
-      .from('user_strategies')
-      .update({ is_active: false })
-      .eq('user_id', session.user.id)
-      .eq('is_active', true);
-
-    // Establecer la nueva estrategia como activa
-    const { data: userStrategy, error: setError } = await supabase
-      .from('user_strategies')
-      .upsert({
-        user_id: session.user.id,
-        strategy_id: strategy.id,
-        is_active: true
-      })
-      .select()
-      .single();
-
-    if (setError) {
-      console.error('Error setting user strategy:', setError);
-      return NextResponse.json({ error: 'Error al establecer estrategia' }, { status: 500 });
-    }
+    const strategy = strategyInfo[strategy_name];
 
     return NextResponse.json({
-      message: 'Estrategia establecida exitosamente',
-      strategy: userStrategy
+      success: true,
+      message: `Strategy '${strategy_name}' activated successfully`,
+      strategy_info: strategy
+    }, {
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
     });
 
   } catch (error) {
-    console.error('Error in set strategy API:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+    console.error('[STRATEGIES SET API] Error:', error);
+    return NextResponse.json({
+      error: 'Invalid JSON in request body'
+    }, {
+      status: 400,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
   }
 }

@@ -31,90 +31,29 @@ export async function GET(request: NextRequest) {
 
   console.log('[STRATEGIES API] ===== RETURNING MOCK STRATEGIES WITH BEARER TOKEN =====');
   console.log('[STRATEGIES API] Token received and validated');
-  const mockStrategies = [
-    {
-      id: 'conservative',
-      name: 'Conservative Strategy',
-      description: 'Low-risk strategy with basic technical indicators',
-      risk_level: 'Low',
-      timeframe: '4h',
-      indicators: ['SMA', 'RSI'],
-      created_at: new Date().toISOString(),
-      is_active: true
-    },
-    {
-      id: 'moderate',
-      name: 'Moderate Strategy',
-      description: 'Balanced risk strategy with multiple indicators',
-      risk_level: 'Medium',
-      timeframe: '1h',
-      indicators: ['SMA', 'RSI', 'MACD'],
-      created_at: new Date().toISOString(),
-      is_active: false
-    },
-    {
-      id: 'sqzmom_adx',
-      name: 'ADX Squeeze Momentum',
-      description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation',
-      risk_level: 'Medium',
-      timeframe: '4h',
-      indicators: ['ADX', 'Squeeze Momentum'],
-      created_at: new Date().toISOString(),
-      is_active: false
-    },
-    {
-      id: 'aggressive',
-      name: 'Aggressive Strategy',
-      description: 'High-risk strategy for experienced traders',
-      risk_level: 'High',
-      timeframe: '15m',
-      indicators: ['RSI', 'MACD', 'Bollinger Bands'],
-      created_at: new Date().toISOString(),
-      is_active: false
-    },
-    {
-      id: 'scalping',
-      name: 'Scalping Strategy',
-      description: 'Fast-paced strategy for quick profits',
-      risk_level: 'High',
-      timeframe: '5m',
-      indicators: ['EMA', 'Stochastic'],
-      created_at: new Date().toISOString(),
-      is_active: false
-    },
-    {
-      id: 'swing',
-      name: 'Swing Trading',
-      description: 'Medium-term strategy for trend following',
-      risk_level: 'Medium',
-      timeframe: '1d',
-      indicators: ['Moving Average', 'Volume'],
-      created_at: new Date().toISOString(),
-      is_active: false
-    }
-  ];
 
-  // Apply pagination to mock strategies
-  const totalStrategies = mockStrategies.length;
-  const paginatedStrategies = mockStrategies.slice(offset, offset + limit);
-  const totalPages = Math.ceil(totalStrategies / limit);
-  const currentPage = Math.floor(offset / limit) + 1;
-  const hasNextPage = offset + limit < totalStrategies;
-  const hasPrevPage = offset > 0;
+  // Return strategies in the format expected by the API documentation
+  const mockStrategies = {
+    conservative: {
+      name: 'Conservative Strategy',
+      description: 'Low-risk strategy with strict entry conditions',
+      risk_level: 'conservative'
+    },
+    moderate: {
+      name: 'Moderate Strategy',
+      description: 'Balanced risk-reward strategy',
+      risk_level: 'moderate'
+    },
+    aggressive: {
+      name: 'Aggressive Strategy',
+      description: 'High-risk strategy for maximum returns',
+      risk_level: 'aggressive'
+    }
+  };
 
   return NextResponse.json({
-    strategies: paginatedStrategies,
-    current_strategy: { strategy_id: 'conservative' },
-    pagination: {
-      total: totalStrategies,
-      limit,
-      offset,
-      current_page: currentPage,
-      total_pages: totalPages,
-      has_next: hasNextPage,
-      has_prev: hasPrevPage
-    },
-    _mock: true
+    strategies: mockStrategies,
+    current_strategy: 'moderate'
   }, {
     headers: {
       'Cache-Control': 'private, max-age=600',
