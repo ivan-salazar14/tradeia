@@ -94,6 +94,7 @@ export default function BacktestPage({ params }: PageProps) {
     maxProfit?: number;
   }>({});
   const [result, setResult] = useState<BacktestResult | null>(null);
+  const [resultKey, setResultKey] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState<string>('Initializing...');
   const [isLongRunning, setIsLongRunning] = useState(false);
 
@@ -444,6 +445,7 @@ export default function BacktestPage({ params }: PageProps) {
       };
 
       setResult(backtestResult);
+      setResultKey(prev => prev + 1);
       setLoadingMessage('Backtest completed successfully');
 
     } catch (err) {
@@ -486,6 +488,7 @@ export default function BacktestPage({ params }: PageProps) {
       };
 
       setResult(mockResult);
+      setResultKey(prev => prev + 1);
       setError(`API Error: ${err instanceof Error ? err.message : 'Unknown error'} - Using mock data`);
     } finally {
       setLoading(false);
@@ -1001,7 +1004,7 @@ export default function BacktestPage({ params }: PageProps) {
 
                   {/* Trades Table with Scrolling */}
                   <div className="overflow-x-auto overflow-y-auto max-h-96 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-                    <table className="min-w-full divide-y divide-gray-200 text-xs md:text-sm">
+                    <table key={`trades-${resultKey}`} className="min-w-full divide-y divide-gray-200 text-xs md:text-sm">
                       <thead className="bg-gray-50 sticky top-0">
                         <tr className="cursor-pointer">
                           <th
