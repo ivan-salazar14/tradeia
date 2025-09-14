@@ -320,7 +320,7 @@ export default function BacktestPage({ params }: PageProps) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       }
 
-      console.log('[BACKTEST] Making POST request to /api/signals');
+      console.log('[BACKTEST] Making POST request to /api/backtest');
       console.log('[BACKTEST] Request body:', requestBody);
       console.log('[BACKTEST] Form data dates:', {
         start_date: formData.start_date,
@@ -329,8 +329,8 @@ export default function BacktestPage({ params }: PageProps) {
         formatted_end: `${formData.end_date}T23:59:59Z`
       });
 
-      // Make API call to signals endpoint
-      const response = await fetch('/api/signals', {
+      // Make API call to backtest endpoint
+      const response = await fetch('/api/backtest', {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody),

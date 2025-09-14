@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { format, subDays } from "date-fns";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -70,6 +70,9 @@ export default function SignalsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [signalsPerPage, setSignalsPerPage] = useState(25);
   const signalsPerPageOptions = [10, 25, 50, 100];
+
+  // Track initial load to prevent duplicate API calls
+  const initialLoadRef = useRef(false);
 
   const fetchSignals = useMemo(() => async () => {
     try {
@@ -195,7 +198,7 @@ export default function SignalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [timeframe, symbol, selectedStrategies, dateRange, includeLiveSignals, session]);
+  }, [timeframe, symbol, selectedStrategies, dateRange.start, dateRange.end, includeLiveSignals, session?.access_token]);
 
   const generateNewSignals = useMemo(() => async () => {
     try {
@@ -314,11 +317,16 @@ export default function SignalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [timeframe, symbol, selectedStrategies, dateRange, initialBalance, riskPerTrade, session]);
+  }, [timeframe, symbol, selectedStrategies, dateRange.start, dateRange.end, initialBalance, riskPerTrade, session?.access_token]);
 
   useEffect(() => {
-    fetchSignals();
-  }, [fetchSignals]);
+    // Only fetch signals on initial load when all conditions are met
+    if (strategyOptions.length > 0 && !strategiesLoading && session !== undefined && !initialLoadRef.current) {
+      console.log('[SIGNALS-PAGE] Initial load: calling fetchSignals');
+      initialLoadRef.current = true;
+      fetchSignals();
+    }
+  }, [fetchSignals, strategyOptions.length, strategiesLoading, session]);
 
   // Use static mock strategies instead of API call
   useEffect(() => {
