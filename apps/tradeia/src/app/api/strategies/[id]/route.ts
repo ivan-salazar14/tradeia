@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Check for Bearer token authentication
   const auth = request.headers.get('authorization');
@@ -76,7 +76,7 @@ export async function GET(
     });
   }
 
-  const strategyId = params.id;
+  const strategyId = (await params).id;
   console.log(`[STRATEGIES API] ===== GETTING STRATEGY DETAILS FOR: ${strategyId} =====`);
   console.log('[STRATEGIES API] User authenticated:', session.user?.email);
 
@@ -151,7 +151,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Check for Bearer token authentication
   const auth = request.headers.get('authorization');
@@ -223,7 +223,7 @@ export async function PUT(
     });
   }
 
-  const strategyId = params.id;
+  const strategyId = (await params).id;
   console.log(`[STRATEGIES UPDATE API] ===== UPDATING STRATEGY: ${strategyId} =====`);
   console.log('[STRATEGIES UPDATE API] User authenticated:', session.user?.email);
 
