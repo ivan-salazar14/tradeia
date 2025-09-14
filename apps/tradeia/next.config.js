@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  compress: false, // Disable gzip compression globally
   async rewrites() {
     return [
       {
@@ -25,6 +26,14 @@ const nextConfig = {
           {
             key: 'Access-Control-Allow-Headers',
             value: 'Content-Type, Authorization',
+          },
+          {
+            key: 'Accept-Encoding',
+            value: 'identity',
+          },
+          {
+            key: 'Content-Encoding',
+            value: 'identity',
           },
         ],
       },
