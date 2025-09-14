@@ -317,32 +317,18 @@ export async function GET(req: NextRequest) {
   if (symbol) qs.set('symbol', symbol);
   qs.set('timeframe', timeframe);
 
-  // Ensure dates are properly formatted with explicit UTC timezone
+  // Send dates in simple format without timezone to avoid comparison issues
   if (startDate) {
-    // Parse and format date to ensure consistent UTC timezone format
-    let formattedStartDate = startDate;
-    if (!startDate.includes('T')) {
-      formattedStartDate = `${startDate}T00:00:00+00:00`;
-    } else if (!startDate.includes('+') && !startDate.includes('Z')) {
-      formattedStartDate = `${startDate}+00:00`;
-    } else if (startDate.includes('Z')) {
-      formattedStartDate = startDate.replace('Z', '+00:00');
-    }
-    console.log('[SIGNALS] Formatted start_date:', formattedStartDate, 'from:', startDate);
-    qs.set('start_date', formattedStartDate);
+    // Extract just the date part if it includes time
+    const dateOnly = startDate.split('T')[0];
+    console.log('[SIGNALS] Sending start_date as date-only:', dateOnly, 'from:', startDate);
+    qs.set('start_date', dateOnly);
   }
   if (endDate) {
-    // Parse and format date to ensure consistent UTC timezone format
-    let formattedEndDate = endDate;
-    if (!endDate.includes('T')) {
-      formattedEndDate = `${endDate}T23:59:59+00:00`;
-    } else if (!endDate.includes('+') && !endDate.includes('Z')) {
-      formattedEndDate = `${endDate}+00:00`;
-    } else if (endDate.includes('Z')) {
-      formattedEndDate = endDate.replace('Z', '+00:00');
-    }
-    console.log('[SIGNALS] Formatted end_date:', formattedEndDate, 'from:', endDate);
-    qs.set('end_date', formattedEndDate);
+    // Extract just the date part if it includes time
+    const dateOnly = endDate.split('T')[0];
+    console.log('[SIGNALS] Sending end_date as date-only:', dateOnly, 'from:', endDate);
+    qs.set('end_date', dateOnly);
   }
 
   qs.set('limit', limit.toString());
@@ -741,32 +727,18 @@ export async function POST(req: NextRequest) {
     if (symbol) qs.set('symbol', symbol);
     qs.set('timeframe', timeframe);
 
-    // Ensure dates are properly formatted with explicit UTC timezone
+    // Send dates in simple format without timezone to avoid comparison issues
     if (start_date) {
-      // Parse and format date to ensure consistent UTC timezone format
-      let formattedStartDate = start_date;
-      if (!start_date.includes('T')) {
-        formattedStartDate = `${start_date}T00:00:00+00:00`;
-      } else if (!start_date.includes('+') && !start_date.includes('Z')) {
-        formattedStartDate = `${start_date}+00:00`;
-      } else if (start_date.includes('Z')) {
-        formattedStartDate = start_date.replace('Z', '+00:00');
-      }
-      console.log('[SIGNALS POST] Formatted start_date:', formattedStartDate, 'from:', start_date);
-      qs.set('start_date', formattedStartDate);
+      // Extract just the date part if it includes time
+      const dateOnly = start_date.split('T')[0];
+      console.log('[SIGNALS POST] Sending start_date as date-only:', dateOnly, 'from:', start_date);
+      qs.set('start_date', dateOnly);
     }
     if (end_date) {
-      // Parse and format date to ensure consistent UTC timezone format
-      let formattedEndDate = end_date;
-      if (!end_date.includes('T')) {
-        formattedEndDate = `${end_date}T23:59:59+00:00`;
-      } else if (!end_date.includes('+') && !end_date.includes('Z')) {
-        formattedEndDate = `${end_date}+00:00`;
-      } else if (end_date.includes('Z')) {
-        formattedEndDate = end_date.replace('Z', '+00:00');
-      }
-      console.log('[SIGNALS POST] Formatted end_date:', formattedEndDate, 'from:', end_date);
-      qs.set('end_date', formattedEndDate);
+      // Extract just the date part if it includes time
+      const dateOnly = end_date.split('T')[0];
+      console.log('[SIGNALS POST] Sending end_date as date-only:', dateOnly, 'from:', end_date);
+      qs.set('end_date', dateOnly);
     }
 
     try {
