@@ -79,6 +79,12 @@ export async function POST(request: Request) {
 
     console.log('[BACKTEST-PROXY] Received token:', token ? 'Present' : 'NULL/MISSING');
     console.log('[BACKTEST-PROXY] Request params:', params);
+    console.log('[BACKTEST-PROXY] Symbol parameter:', params.symbol);
+    console.log('[BACKTEST-PROXY] Symbol type:', Array.isArray(params.symbol) ? 'array' : typeof params.symbol);
+    if (Array.isArray(params.symbol)) {
+      console.log('[BACKTEST-PROXY] Symbol array length:', params.symbol.length);
+      console.log('[BACKTEST-PROXY] Symbol array contents:', params.symbol);
+    }
 
     if (!token) {
       console.error('[BACKTEST-PROXY] No token provided in request');
@@ -99,6 +105,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate symbol parameter (can be string, array, or undefined)
+    if (params.symbol !== undefined && !Array.isArray(params.symbol) && typeof params.symbol !== 'string') {
+      return NextResponse.json(
+        { error: 'Symbol parameter must be a string, array of strings, or undefined' },
+        { status: 400 }
+      );
+    }
+
     const apiBase = process.env.SIGNALS_API_BASE || 'http://localhost:8000';
     const url = `${apiBase}/backtest/run`;
 
@@ -112,6 +126,7 @@ export async function POST(request: Request) {
         ...params,
         strategy: params.strategy_id, // Map strategy_id to strategy for external API
         end_date: new Date().toISOString(), // Use current date/time for end_date
+        symbol: Array.isArray(params.symbol) ? params.symbol : (params.symbol ? [params.symbol] : undefined), // Ensure symbol is an array
         debug: true // Add debug field as shown in curl example
       };
 
@@ -123,6 +138,8 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${token.substring(0, 20)}...` // Log partial token for security
       });
       console.log('[BACKTEST-PROXY] - Request body:', JSON.stringify(requestBody, null, 2));
+      console.log('[BACKTEST-PROXY] - Final symbol in request:', requestBody.symbol);
+      console.log('[BACKTEST-PROXY] - Symbol is array:', Array.isArray(requestBody.symbol));
       console.log('[BACKTEST-PROXY] - Sending JSON body to external API');
 
       // Create AbortController for timeout handling (5 minutes = 300000ms)

@@ -359,7 +359,7 @@ export default function BacktestPage({ params }: PageProps) {
         end_date: formData.end_date, // Send just the date, API will set to current time
         initial_balance: parseFloat(formData.initial_balance),
         risk_per_trade: parseFloat(formData.risk_per_trade),
-        symbol: formData.symbol.length > 0 ? formData.symbol[0] : undefined, // Use first symbol if multiple selected
+        symbol: formData.symbol.length > 0 ? formData.symbol : undefined, // Send all selected symbols
         strategy_id: formData.strategy || 'moderate' // Ensure we always have a strategy
       };
 
@@ -378,6 +378,8 @@ export default function BacktestPage({ params }: PageProps) {
 
       console.log('[BACKTEST] Making POST request to /api/backtest');
       console.log('[BACKTEST] Request body:', requestBody);
+      console.log('[BACKTEST] Selected symbols:', formData.symbol);
+      console.log('[BACKTEST] Symbol count:', formData.symbol.length);
       console.log('[BACKTEST] Form data dates:', {
         start_date: formData.start_date,
         end_date: formData.end_date,

@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 type BacktestParams = {
-  symbol?: string;
+  symbol?: string | string[];
   timeframe: string;
   start_date: string;
   end_date: string;
@@ -143,6 +143,12 @@ export async function POST(request: Request) {
       risk_per_trade
     };
     console.log('[BACKTEST] Request params:', params);
+    console.log('[BACKTEST] Symbol parameter:', symbol);
+    console.log('[BACKTEST] Symbol type:', Array.isArray(symbol) ? 'array' : typeof symbol);
+    if (Array.isArray(symbol)) {
+      console.log('[BACKTEST] Symbol array length:', symbol.length);
+      console.log('[BACKTEST] Symbol array contents:', symbol);
+    }
 
     // Validate required parameters (symbol can be empty for all symbols)
     const requiredParams = ['timeframe', 'start_date', 'end_date', 'strategy_id'];
@@ -160,6 +166,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate symbol parameter (can be string, array, or undefined)
+    if (params.symbol !== undefined && !Array.isArray(params.symbol) && typeof params.symbol !== 'string') {
+      return NextResponse.json(
+        { error: 'Symbol parameter must be a string, array of strings, or undefined' },
+        {
+          status: 400,
+          headers: {
+            'Accept-Encoding': 'identity'
+          }
+        }
+      );
+    }
+
     // Call the backtest service
     const apiUrl = `${process.env.SIGNALS_API_BASE}/backtest/run`;
 
@@ -168,6 +187,7 @@ export async function POST(request: Request) {
       ...params,
       strategy: params.strategy_id, // Map strategy_id to strategy for external API
       end_date: new Date().toISOString(), // Use current date/time for end_date
+      symbol: Array.isArray(params.symbol) ? params.symbol : (params.symbol ? [params.symbol] : undefined), // Ensure symbol is an array
       debug: true // Add debug field
     };
 
@@ -177,6 +197,8 @@ export async function POST(request: Request) {
       'Authorization': `Bearer ${token.substring(0, 20)}...` // Log partial token for security
     });
     console.log('[BACKTEST] Request body:', JSON.stringify(requestBody, null, 2));
+    console.log('[BACKTEST] Final symbol in request:', requestBody.symbol);
+    console.log('[BACKTEST] Symbol is array:', Array.isArray(requestBody.symbol));
 
     // Try to run backtest via external API
     try {
