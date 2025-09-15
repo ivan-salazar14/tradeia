@@ -33,6 +33,52 @@ interface Trade {
   duration_hours?: number;
 }
 
+interface Metrics {
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  win_rate: number;
+  avg_win: number;
+  avg_loss: number;
+  profit_factor: number;
+  total_return_pct: number;
+  max_drawdown: number;
+  exit_counts: {
+    stop_loss: number;
+    take_profit: number;
+  };
+}
+
+interface EquityPoint {
+  timestamp: string;
+  balance: number;
+  position?: any;
+}
+
+interface DebugInfo {
+  signals_trace?: any[];
+  data_summary?: any;
+}
+
+interface PerformanceMetrics {
+  total_time_seconds: number;
+  data_check_time_seconds: number;
+  repopulation_time_seconds: number;
+  ohlcv_fetch_time_seconds: number;
+  indicators_fetch_time_seconds: number;
+  processing_time_seconds: number;
+  data_completeness_ratio: number;
+  should_repopulate: boolean;
+  optimization_mode: string;
+  historical_candles_processed: number;
+  recent_candles_processed: number;
+  signal_generation_window_minutes: number;
+  saved_signals_loaded: number;
+  signals_attempted: number;
+  trades_generated: number;
+  performance_boost: string;
+}
+
 interface BacktestResult {
   trades: Trade[];
   initial_balance: number;
@@ -41,6 +87,12 @@ interface BacktestResult {
   total_return_pct: number;
   _fallback?: boolean;
   _message?: string;
+  metrics?: Metrics;
+  equity_curve?: EquityPoint[];
+  debug?: DebugInfo;
+  performance_metrics?: PerformanceMetrics;
+  strategies?: any[];
+  pagination?: any;
 }
 
 interface PageProps {
@@ -362,75 +414,140 @@ export default function BacktestPage({ params }: PageProps) {
       }
 
       console.log('[BACKTEST] API response received:', json);
+      console.log('[BACKTEST] Response keys:', Object.keys(json));
+      console.log('[BACKTEST] Has signals:', !!json.signals);
+      console.log('[BACKTEST] Has trades:', !!json.trades);
+      console.log('[BACKTEST] Has symbol_results:', !!json.symbol_results);
 
-      // Process the signals into backtest format
-      const signals = json.signals || [];
+      // Handle different response formats: signals, trades, or direct response
+      let trades: Trade[] = [];
       const initialBalance = parseFloat(formData.initial_balance);
       const riskPerTrade = parseFloat(formData.risk_per_trade);
 
-      // Convert signals to trades format
-      const trades: Trade[] = [];
-      let currentBalance = initialBalance;
+      // Check if response has trades directly
+      if (json.trades && Array.isArray(json.trades) && json.trades.length > 0) {
+        console.log('[BACKTEST] Using trades directly from API response');
+        trades = json.trades.map((trade: any) => ({
+          symbol: trade.symbol || 'UNKNOWN',
+          entry_time: trade.entry_time || trade.timestamp || new Date().toISOString(),
+          entry_price: trade.entry_price || trade.entry,
+          stop_loss: trade.stop_loss || trade.stopLoss,
+          take_profit: trade.take_profit || trade.tp1,
+          direction: trade.direction,
+          exit_time: trade.exit_time || trade.timestamp || new Date().toISOString(),
+          exit_price: trade.exit_price || trade.entry,
+          exit_reason: trade.exit_reason || 'Completed',
+          reason: trade.reason || trade.exit_reason || 'Completed',
+          profit_pct: trade.profit_pct || 0,
+          profit: trade.profit || 0,
+          balance_after: trade.balance_after || initialBalance,
+          position_notional: trade.position_notional || (trade.entry_price * 10000),
+          risk_fraction: trade.risk_fraction || (riskPerTrade / 100),
+          opened_at_candle_index: trade.opened_at_candle_index,
+          exit_type: trade.exit_type,
+          duration_hours: trade.duration_hours || 1
+        }));
+      }
+      // Check if response has signals to convert
+      else if (json.signals && Array.isArray(json.signals) && json.signals.length > 0) {
+        console.log('[BACKTEST] Converting signals to trades');
+        let currentBalance = initialBalance;
 
-      for (const signal of signals) {
-        if (!signal.entry || !signal.stopLoss) continue;
+        for (const signal of json.signals) {
+          if (!signal.entry || !signal.stopLoss) continue;
 
-        // Calculate position size based on risk
-        const riskAmount = (currentBalance * riskPerTrade) / 100;
-        const riskPerUnit = Math.abs(signal.entry - signal.stopLoss);
-        const positionSize = riskAmount / riskPerUnit;
+          // Calculate position size based on risk
+          const riskAmount = (currentBalance * riskPerTrade) / 100;
+          const riskPerUnit = Math.abs(signal.entry - signal.stopLoss);
+          const positionSize = riskAmount / riskPerUnit;
 
-        // Determine exit based on take profit or stop loss
-        let exitPrice = signal.entry;
-        let exitReason = 'Signal closed';
-        let profit = 0;
+          // Determine exit based on take profit or stop loss
+          let exitPrice = signal.entry;
+          let exitReason = 'Signal closed';
+          let profit = 0;
 
-        if (signal.direction === 'BUY') {
-          if (signal.tp1 && signal.entry < signal.tp1) {
-            exitPrice = signal.tp1;
-            exitReason = 'Take Profit';
-          } else if (signal.stopLoss && signal.entry > signal.stopLoss) {
-            exitPrice = signal.stopLoss;
-            exitReason = 'Stop Loss';
+          if (signal.direction === 'BUY') {
+            if (signal.tp1 && signal.entry < signal.tp1) {
+              exitPrice = signal.tp1;
+              exitReason = 'Take Profit';
+            } else if (signal.stopLoss && signal.entry > signal.stopLoss) {
+              exitPrice = signal.stopLoss;
+              exitReason = 'Stop Loss';
+            }
+          } else if (signal.direction === 'SELL') {
+            if (signal.tp1 && signal.entry > signal.tp1) {
+              exitPrice = signal.tp1;
+              exitReason = 'Take Profit';
+            } else if (signal.stopLoss && signal.entry < signal.stopLoss) {
+              exitPrice = signal.stopLoss;
+              exitReason = 'Stop Loss';
+            }
           }
-        } else if (signal.direction === 'SELL') {
-          if (signal.tp1 && signal.entry > signal.tp1) {
-            exitPrice = signal.tp1;
-            exitReason = 'Take Profit';
-          } else if (signal.stopLoss && signal.entry < signal.stopLoss) {
-            exitPrice = signal.stopLoss;
-            exitReason = 'Stop Loss';
-          }
+
+          profit = positionSize * (exitPrice - signal.entry);
+          const profitPct = (profit / (positionSize * signal.entry)) * 100;
+
+          const trade: Trade = {
+            symbol: signal.symbol || 'UNKNOWN',
+            entry_time: signal.timestamp || new Date().toISOString(),
+            entry_price: signal.entry,
+            stop_loss: signal.stopLoss,
+            take_profit: signal.tp1,
+            direction: signal.direction === 'BUY' ? 'BUY' : 'SELL',
+            exit_time: signal.timestamp || new Date().toISOString(),
+            exit_price: exitPrice,
+            exit_reason: exitReason,
+            reason: exitReason,
+            profit_pct: profitPct,
+            profit: profit,
+            balance_after: currentBalance + profit,
+            position_notional: positionSize * signal.entry,
+            risk_fraction: riskPerTrade / 100,
+            duration_hours: signal.signal_age_hours || 1
+          };
+
+          trades.push(trade);
+          currentBalance += profit;
         }
-
-        profit = positionSize * (exitPrice - signal.entry);
-        const profitPct = (profit / (positionSize * signal.entry)) * 100;
-
-        const trade: Trade = {
-          symbol: signal.symbol || 'UNKNOWN',
-          entry_time: signal.timestamp || new Date().toISOString(),
-          entry_price: signal.entry,
-          stop_loss: signal.stopLoss,
-          take_profit: signal.tp1,
-          direction: signal.direction === 'BUY' ? 'BUY' : 'SELL',
-          exit_time: signal.timestamp || new Date().toISOString(), // Use same time for simplicity
-          exit_price: exitPrice,
-          exit_reason: exitReason,
-          reason: exitReason,
-          profit_pct: profitPct,
-          profit: profit,
-          balance_after: currentBalance + profit,
-          position_notional: positionSize * signal.entry,
-          risk_fraction: riskPerTrade / 100,
-          duration_hours: signal.signal_age_hours || 1
-        };
-
-        trades.push(trade);
-        currentBalance += profit;
+      }
+      // Handle nested response structure (e.g., from proxy)
+      else if (json.symbol_results) {
+        console.log('[BACKTEST] Processing nested symbol_results structure');
+        Object.keys(json.symbol_results).forEach(symbol => {
+          const symbolData = json.symbol_results[symbol];
+          if (symbolData.trades && Array.isArray(symbolData.trades)) {
+            trades.push(...symbolData.trades.map((trade: any) => ({
+              symbol: trade.symbol || symbol,
+              entry_time: trade.entry_time || trade.timestamp || new Date().toISOString(),
+              entry_price: trade.entry_price || trade.entry,
+              stop_loss: trade.stop_loss || trade.stopLoss,
+              take_profit: trade.take_profit || trade.tp1,
+              direction: trade.direction,
+              exit_time: trade.exit_time || trade.timestamp || new Date().toISOString(),
+              exit_price: trade.exit_price || trade.entry,
+              exit_reason: trade.exit_reason || 'Completed',
+              reason: trade.reason || trade.exit_reason || 'Completed',
+              profit_pct: trade.profit_pct || 0,
+              profit: trade.profit || 0,
+              balance_after: trade.balance_after || initialBalance,
+              position_notional: trade.position_notional || (trade.entry_price * 10000),
+              risk_fraction: trade.risk_fraction || (riskPerTrade / 100),
+              duration_hours: trade.duration_hours || 1
+            })));
+          }
+        });
+      }
+      else {
+        console.warn('[BACKTEST] No trades or signals found in API response');
+        console.log('[BACKTEST] Response structure:', Object.keys(json));
       }
 
-      // Calculate totals
-      const finalBalance = currentBalance;
+      console.log('[BACKTEST] Processed trades count:', trades.length);
+
+      // Calculate totals from processed trades
+      const finalBalance = trades.length > 0
+        ? trades[trades.length - 1].balance_after || initialBalance
+        : initialBalance;
       const totalReturn = finalBalance - initialBalance;
       const totalReturnPct = initialBalance > 0 ? (totalReturn / initialBalance) * 100 : 0;
 
@@ -441,7 +558,13 @@ export default function BacktestPage({ params }: PageProps) {
         total_return: totalReturn,
         total_return_pct: totalReturnPct,
         _fallback: json._mock || false,
-        _message: json._message || undefined
+        _message: json._message || undefined,
+        metrics: json.metrics,
+        equity_curve: json.equity_curve,
+        debug: json.debug,
+        performance_metrics: json.performance_metrics,
+        strategies: json.strategies,
+        pagination: json.pagination
       };
 
       setResult(backtestResult);
@@ -473,6 +596,8 @@ export default function BacktestPage({ params }: PageProps) {
           balance_after: initialBalance + 111.11,
           position_notional: 10000,
           risk_fraction: riskPerTrade / 100,
+          opened_at_candle_index: 0,
+          exit_type: 'take_profit',
           duration_hours: 2
         }
       ];
@@ -897,6 +1022,94 @@ export default function BacktestPage({ params }: PageProps) {
                     </p>
                   </div>
                 </div>
+
+                {/* Metrics Section */}
+                {result.metrics && (
+                  <div className="mt-6">
+                    <h3 className="text-md font-semibold mb-3">Performance Metrics</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Win Rate</p>
+                        <p className="text-lg font-semibold">{result.metrics.win_rate}%</p>
+                      </div>
+                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-green-600 dark:text-green-400">Profit Factor</p>
+                        <p className="text-lg font-semibold">{result.metrics.profit_factor?.toFixed(2) || 'N/A'}</p>
+                      </div>
+                      <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-purple-600 dark:text-purple-400">Total Trades</p>
+                        <p className="text-lg font-semibold">{result.metrics.total_trades}</p>
+                      </div>
+                      <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-orange-600 dark:text-orange-400">Max Drawdown</p>
+                        <p className="text-lg font-semibold">{result.metrics.max_drawdown?.toFixed(2) || 'N/A'}%</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Winning Trades</p>
+                        <p className="text-lg font-semibold text-green-600">{result.metrics.winning_trades}</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Losing Trades</p>
+                        <p className="text-lg font-semibold text-red-600">{result.metrics.losing_trades}</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Avg Win</p>
+                        <p className="text-lg font-semibold text-green-600">${result.metrics.avg_win?.toFixed(2) || 'N/A'}</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Avg Loss</p>
+                        <p className="text-lg font-semibold text-red-600">${result.metrics.avg_loss?.toFixed(2) || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Performance Metrics Section */}
+                {result.performance_metrics && (
+                  <div className="mt-6">
+                    <h3 className="text-md font-semibold mb-3">System Performance</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">Total Time</p>
+                        <p className="text-lg font-semibold">{result.performance_metrics.total_time_seconds?.toFixed(2) || 'N/A'}s</p>
+                      </div>
+                      <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-teal-600 dark:text-teal-400">Trades Generated</p>
+                        <p className="text-lg font-semibold">{result.performance_metrics.trades_generated || 'N/A'}</p>
+                      </div>
+                      <div className="bg-cyan-50 dark:bg-cyan-900/20 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-cyan-600 dark:text-cyan-400">Data Completeness</p>
+                        <p className="text-lg font-semibold">{result.performance_metrics.data_completeness_ratio?.toFixed(1) || 'N/A'}%</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Performance Boost</p>
+                      <p className="text-sm">{result.performance_metrics.performance_boost || 'N/A'}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Debug Information */}
+                {result.debug && result.debug.data_summary && (
+                  <div className="mt-6">
+                    <h3 className="text-md font-semibold mb-3">Debug Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Data Range</p>
+                        <p className="text-sm">
+                          {result.debug.data_summary.data_start_time ? new Date(result.debug.data_summary.data_start_time).toLocaleString() : 'N/A'} to<br/>
+                          {result.debug.data_summary.data_end_time ? new Date(result.debug.data_summary.data_end_time).toLocaleString() : 'N/A'}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Data Points</p>
+                        <p className="text-sm">{result.debug.data_summary.data_rows || 'N/A'} rows</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Trades Table */}
@@ -1128,12 +1341,24 @@ export default function BacktestPage({ params }: PageProps) {
                             <span className="hidden sm:inline">Balance After</span>
                             <span className="sm:hidden">Balance</span>
                           </th>
+                          <th scope="col" className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <span className="hidden sm:inline">Exit Type</span>
+                            <span className="sm:hidden">Type</span>
+                          </th>
+                          <th scope="col" className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <span className="hidden sm:inline">Duration (h)</span>
+                            <span className="sm:hidden">Hours</span>
+                          </th>
+                          <th scope="col" className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <span className="hidden sm:inline">Candle Index</span>
+                            <span className="sm:hidden">Index</span>
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {currentTrades.length === 0 && (
                           <tr>
-                            <td colSpan={11} className="px-6 py-4 text-center text-gray-500">
+                            <td colSpan={15} className="px-6 py-4 text-center text-gray-500">
                               No hay operaciones disponibles para mostrar.
                             </td>
                           </tr>
@@ -1180,6 +1405,15 @@ export default function BacktestPage({ params }: PageProps) {
                             </td>
                             <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
                               ${(trade.balance_after || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
+                              {trade.exit_type || 'N/A'}
+                            </td>
+                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
+                              {trade.duration_hours ? `${trade.duration_hours.toFixed(1)}h` : 'N/A'}
+                            </td>
+                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-900 dark:text-gray-100">
+                              {trade.opened_at_candle_index || 'N/A'}
                             </td>
                           </tr>
                         ))}
