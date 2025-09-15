@@ -304,7 +304,7 @@ export default function BacktestPage({ params }: PageProps) {
       const requestBody = {
         timeframe: formData.timeframe,
         start_date: `${formData.start_date}T00:00:00Z`,
-        end_date: `${formData.end_date}T23:59:59Z`,
+        end_date: formData.end_date, // Send just the date, API will set to current time
         initial_balance: parseFloat(formData.initial_balance),
         risk_per_trade: parseFloat(formData.risk_per_trade),
         symbol: formData.symbol.length > 0 ? formData.symbol[0] : undefined, // Use first symbol if multiple selected
@@ -330,7 +330,7 @@ export default function BacktestPage({ params }: PageProps) {
         start_date: formData.start_date,
         end_date: formData.end_date,
         formatted_start: `${formData.start_date}T00:00:00Z`,
-        formatted_end: `${formData.end_date}T23:59:59Z`
+        formatted_end: formData.end_date // API will set to current time
       });
 
       // Make API call to backtest endpoint

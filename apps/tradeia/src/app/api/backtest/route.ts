@@ -162,11 +162,21 @@ export async function POST(request: Request) {
 
     // Call the backtest service
     const apiUrl = `${process.env.SIGNALS_API_BASE}/backtest/run`;
+
+    // Prepare request body for external API with correct parameter mapping
+    const requestBody = {
+      ...params,
+      strategy: params.strategy_id, // Map strategy_id to strategy for external API
+      end_date: new Date().toISOString(), // Use current date/time for end_date
+      debug: true // Add debug field
+    };
+
     console.log('[BACKTEST] Calling external API:', apiUrl);
     console.log('[BACKTEST] Request headers:', {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token.substring(0, 20)}...` // Log partial token for security
     });
+    console.log('[BACKTEST] Request body:', JSON.stringify(requestBody, null, 2));
 
     // Try to run backtest via external API
     try {
@@ -177,7 +187,7 @@ export async function POST(request: Request) {
           'Authorization': `Bearer ${token}`,
           'Accept-Encoding': 'identity' // Disable gzip compression
         },
-        body: JSON.stringify(params)
+        body: JSON.stringify(requestBody)
       });
 
       console.log('[BACKTEST] External API response status:', response.status);

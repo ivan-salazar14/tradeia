@@ -107,9 +107,11 @@ export async function POST(request: Request) {
     
     // Try to run backtest via external API with timeout and better error handling
     try {
-      // Prepare request body for external API (JSON format as per curl example)
+      // Prepare request body for external API with correct parameter mapping
       const requestBody = {
         ...params,
+        strategy: params.strategy_id, // Map strategy_id to strategy for external API
+        end_date: new Date().toISOString(), // Use current date/time for end_date
         debug: true // Add debug field as shown in curl example
       };
 
@@ -121,7 +123,7 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${token.substring(0, 20)}...` // Log partial token for security
       });
       console.log('[BACKTEST-PROXY] - Request body:', JSON.stringify(requestBody, null, 2));
-      console.log('[BACKTEST-PROXY] - Sending JSON to external API (corrected)');
+      console.log('[BACKTEST-PROXY] - Sending JSON body to external API');
 
       // Create AbortController for timeout handling (5 minutes = 300000ms)
       const controller = new AbortController();
