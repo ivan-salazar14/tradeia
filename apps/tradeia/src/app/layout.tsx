@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/next"
 console.log('📜 Iniciando layout principal')
 
 export const metadata: Metadata = {
@@ -21,7 +22,8 @@ export default function RootLayout({
       <body className="bg-secondary text-textdark font-inter">
         <AuthProvider>
           {children}
-           <SpeedInsights />
+            <SpeedInsights />
+            <Analytics />
         </AuthProvider>
       </body>
     </html>

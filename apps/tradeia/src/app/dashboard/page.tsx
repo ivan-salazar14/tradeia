@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { getSupabaseClient } from "@/lib/supabase-singleton"
 import { Button } from "@/components/ui/button"
+import DashboardStats from "@/components/dashboard/dashboard-stats"
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth()
@@ -43,29 +44,12 @@ export default function DashboardPage() {
 
       {/* Main Dashboard Content */}
       <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-6">
-        <p className="text-gray-600 mb-6">Bienvenido a su panel de control. Aquí encontrará un resumen del rendimiento de sus bots, las señales activas y el estado general de su cuenta. Use esta vista para obtener una instantánea rápida de su actividad de trading.</p>
+        <p className="text-gray-600 mb-6">Bienvenido a su panel de control. Aquí encontrará un resumen del rendimiento de las estrategias y señales activas. Use esta vista para obtener una instantánea rápida.</p>
 
         {/* Onboarding section removed - no forced onboarding */}
 
         {/* Dashboard Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="stat-card">
-            <h3 className="text-gray-500 text-sm font-medium">Rendimiento (30d)</h3>
-            <p className="text-3xl font-semibold text-green-600">+12.5%</p>
-          </div>
-          <div className="stat-card">
-            <h3 className="text-gray-500 text-sm font-medium">Saldo de Cuenta</h3>
-            <p className="text-3xl font-semibold">$15,780.50</p>
-          </div>
-          <div className="stat-card">
-            <h3 className="text-gray-500 text-sm font-medium">P/L Abierto</h3>
-            <p className="text-3xl font-semibold text-red-500">-$210.15</p>
-          </div>
-          <div className="stat-card">
-            <h3 className="text-gray-500 text-sm font-medium">Señales Activas</h3>
-            <p className="text-3xl font-semibold">4</p>
-          </div>
-        </div>
+        <DashboardStats />
 
         {/* Charts Section */}
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -100,12 +84,18 @@ export default function DashboardPage() {
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-600">Señales Activas:</span>
-                <span className="font-medium text-gray-900">4</span>
+                <span className="text-gray-600">Estado del Sistema:</span>
+                <span className="font-medium text-green-600">Activo</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Suscripciones:</span>
-                <span className="font-medium text-gray-900">1</span>
+                <span className="text-gray-600">Última Actualización:</span>
+                <span className="font-medium text-gray-900">
+                  {new Date().toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Versión:</span>
+                <span className="font-medium text-gray-900">1.0.0</span>
               </div>
             </div>
           </div>
