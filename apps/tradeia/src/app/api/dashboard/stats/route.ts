@@ -98,47 +98,28 @@ export async function GET(req: NextRequest) {
       endDate: actualEndDate
     });
 
-    // Setup Supabase client
-    const cookieStore = await cookies();
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
-
+    // Setup Supabase client and authenticate with Bearer token
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            if (name === `sb-${projectRef}-auth-token`) {
-              return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
-            }
-            if (name === `sb-${projectRef}-refresh-token`) {
-              return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
-            }
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: any) {
-            try {
-              cookieStore.set(name, value, options);
-            } catch {
-              // Ignore in server context
-            }
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.set(name, '', { ...options, maxAge: 0 });
-            } catch {
-              // Ignore in server context
-            }
-          },
-        },
+          get() { return undefined; },
+          set() {},
+          remove() {}
+        }
       }
     );
 
-    // Get user session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'User not authenticated' }, {
+    // Set the session using the access token
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: token,
+      refresh_token: '' // We don't have refresh token, but this might work
+    });
+
+    if (sessionError) {
+      console.error('[DASHBOARD STATS] Session error:', sessionError);
+      return NextResponse.json({ error: 'Invalid or expired token' }, {
         status: 401,
         headers: {
           'Accept-Encoding': 'identity'
@@ -146,11 +127,25 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Verify the user is authenticated
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('[DASHBOARD STATS] User verification error:', userError);
+      return NextResponse.json({ error: 'Invalid or expired token' }, {
+        status: 401,
+        headers: {
+          'Accept-Encoding': 'identity'
+        }
+      });
+    }
+
+    console.log('[DASHBOARD STATS] User authenticated:', user.id);
+
     // Build query for signals
     let query = supabase
       .from('signals')
       .select('*')
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .gte('timestamp', `${actualStartDate}T00:00:00Z`)
       .lte('timestamp', `${actualEndDate}T23:59:59Z`);
 
