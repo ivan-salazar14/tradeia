@@ -98,47 +98,17 @@ export async function GET(req: NextRequest) {
       endDate: actualEndDate
     });
 
-    // Setup Supabase client
-    const cookieStore = await cookies();
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
-
+    // Setup Supabase client with Bearer token authentication
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            if (name === `sb-${projectRef}-auth-token`) {
-              return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
-            }
-            if (name === `sb-${projectRef}-refresh-token`) {
-              return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
-            }
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: any) {
-            try {
-              cookieStore.set(name, value, options);
-            } catch {
-              // Ignore in server context
-            }
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.set(name, '', { ...options, maxAge: 0 });
-            } catch {
-              // Ignore in server context
-            }
-          },
-        },
-      }
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Get user session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'User not authenticated' }, {
+    // Authenticate user with the Bearer token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.error('[DASHBOARD STATS] Authentication error:', authError);
+      return NextResponse.json({ error: 'Invalid or expired token' }, {
         status: 401,
         headers: {
           'Accept-Encoding': 'identity'
@@ -150,7 +120,7 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from('signals')
       .select('*')
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .gte('timestamp', `${actualStartDate}T00:00:00Z`)
       .lte('timestamp', `${actualEndDate}T23:59:59Z`);
 
