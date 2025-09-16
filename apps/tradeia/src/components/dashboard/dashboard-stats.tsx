@@ -70,6 +70,7 @@ export default function DashboardStats() {
       setError(null);
 
       const response = await fetch('/api/dashboard/stats', {
+        credentials: 'include',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
