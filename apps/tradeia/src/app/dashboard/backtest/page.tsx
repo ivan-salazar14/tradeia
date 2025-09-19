@@ -356,7 +356,7 @@ export default function BacktestPage({ params }: PageProps) {
       const requestBody = {
         timeframe: formData.timeframe,
         start_date: `${formData.start_date}T00:00:00Z`,
-        end_date: formData.end_date, // Send just the date, API will set to current time
+        end_date: `${formData.end_date}T${new Date().getHours().toString().padStart(2, '0')}:00:00Z`, // Send date with current hour
         initial_balance: parseFloat(formData.initial_balance),
         risk_per_trade: parseFloat(formData.risk_per_trade),
         symbol: formData.symbol.length > 0 ? formData.symbol : undefined, // Send all selected symbols

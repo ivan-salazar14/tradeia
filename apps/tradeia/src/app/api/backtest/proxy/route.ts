@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       const requestBody = {
         ...params,
         strategy: params.strategy_id, // Map strategy_id to strategy for external API
-        end_date: new Date().toISOString(), // Use current date/time for end_date
+        end_date: params.end_date, // Use the end_date provided by frontend (already includes current hour)
         symbol: Array.isArray(params.symbol) ? params.symbol : (params.symbol ? [params.symbol] : undefined), // Ensure symbol is an array
         debug: true // Add debug field as shown in curl example
       };
