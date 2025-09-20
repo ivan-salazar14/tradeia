@@ -154,4 +154,12 @@ The project is configured for deployment on Vercel with the following routing:
 
 ## 📄 License
 
-MIT License - see individual app READMEs for details
+**Proprietary License - All Rights Reserved**
+
+This software and all associated intellectual property are proprietary and confidential. Unauthorized copying, modification, distribution, or use of this software is strictly prohibited.
+
+- Commercial use only
+- No redistribution or public sharing of source code
+- All rights reserved by the copyright holder
+
+For licensing inquiries or partnership opportunities, please contact the development team.

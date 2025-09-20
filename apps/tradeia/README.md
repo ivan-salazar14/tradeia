@@ -120,4 +120,12 @@ src/
 
 ## 📄 Licencia
 
-MIT
+**Licencia Propietaria - Todos los Derechos Reservados**
+
+Este software y toda la propiedad intelectual asociada son propietarios y confidenciales. La copia, modificación, distribución o uso no autorizado de este software está estrictamente prohibido.
+
+- Uso comercial únicamente
+- No se permite la redistribución o compartición pública del código fuente
+- Todos los derechos reservados por el titular de los derechos de autor
+
+Para consultas de licenciamiento u oportunidades de asociación, por favor contacte al equipo de desarrollo.
