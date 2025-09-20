@@ -107,31 +107,80 @@ export async function GET(req: NextRequest) {
           get() { return undefined; },
           set() {},
           remove() {}
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
       }
     );
 
-    // Set the session using the access token
-    const { error: sessionError } = await supabase.auth.setSession({
-      access_token: token,
-      refresh_token: '' // We don't have refresh token, but this might work
-    });
-
-    if (sessionError) {
-      console.error('[DASHBOARD STATS] Session error:', sessionError);
-      return NextResponse.json({ error: 'Invalid or expired token' }, {
-        status: 401,
-        headers: {
-          'Accept-Encoding': 'identity'
-        }
-      });
-    }
-
-    // Verify the user is authenticated
+    // Try to get user directly with the token
+    console.log('[DASHBOARD STATS] Getting user with token...');
     const { data: { user }, error: userError } = await supabase.auth.getUser();
+
     if (userError || !user) {
       console.error('[DASHBOARD STATS] User verification error:', userError);
-      return NextResponse.json({ error: 'Invalid or expired token' }, {
+
+      // Try alternative method: set session and then get user
+      console.log('[DASHBOARD STATS] Trying alternative session method...');
+      try {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: token,
+          refresh_token: ''
+        });
+
+        if (sessionError) {
+          console.error('[DASHBOARD STATS] Alternative session error:', sessionError);
+          return NextResponse.json({
+            error: 'Invalid or expired token',
+            details: sessionError.message
+          }, {
+            status: 401,
+            headers: {
+              'Accept-Encoding': 'identity'
+            }
+          });
+        }
+
+        // Try getting user again after setting session
+        const { data: { user: retryUser }, error: retryError } = await supabase.auth.getUser();
+        if (retryError || !retryUser) {
+          console.error('[DASHBOARD STATS] Retry user verification error:', retryError);
+          return NextResponse.json({
+            error: 'Invalid or expired token',
+            details: retryError?.message || 'User verification failed'
+          }, {
+            status: 401,
+            headers: {
+              'Accept-Encoding': 'identity'
+            }
+          });
+        }
+
+        console.log('[DASHBOARD STATS] User authenticated via retry:', retryUser.id);
+      } catch (retryErr) {
+        console.error('[DASHBOARD STATS] Retry authentication failed:', retryErr);
+        return NextResponse.json({
+          error: 'Authentication failed',
+          details: 'Unable to authenticate user'
+        }, {
+          status: 401,
+          headers: {
+            'Accept-Encoding': 'identity'
+          }
+        });
+      }
+    } else {
+      console.log('[DASHBOARD STATS] User authenticated directly:', user.id);
+    }
+
+    // At this point, user should be available either from direct getUser or from retry
+    const authenticatedUser = user || (await supabase.auth.getUser()).data.user;
+    if (!authenticatedUser) {
+      console.error('[DASHBOARD STATS] No authenticated user available');
+      return NextResponse.json({ error: 'Authentication failed' }, {
         status: 401,
         headers: {
           'Accept-Encoding': 'identity'
@@ -139,13 +188,13 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    console.log('[DASHBOARD STATS] User authenticated:', user.id);
+    console.log('[DASHBOARD STATS] User authenticated:', authenticatedUser.id);
 
     // Build query for signals
     let query = supabase
       .from('signals')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', authenticatedUser.id)
       .gte('timestamp', `${actualStartDate}T00:00:00Z`)
       .lte('timestamp', `${actualEndDate}T23:59:59Z`);
 

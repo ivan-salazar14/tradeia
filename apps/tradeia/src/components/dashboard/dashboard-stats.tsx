@@ -50,17 +50,24 @@ interface DashboardStatsData {
 }
 
 export default function DashboardStats() {
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
   const [stats, setStats] = useState<DashboardStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchDashboardStats();
-  }, [session]);
+    console.log('[DASHBOARD-STATS] useEffect triggered, session:', !!session, 'authLoading:', authLoading);
+    if (!authLoading) {
+      fetchDashboardStats();
+    }
+  }, [session, authLoading]);
 
   const fetchDashboardStats = async () => {
+    console.log('[DASHBOARD-STATS] Starting fetch, session:', !!session);
+    console.log('[DASHBOARD-STATS] Access token available:', !!session?.access_token);
+
     if (!session?.access_token) {
+      console.log('[DASHBOARD-STATS] No access token available, skipping fetch');
       setLoading(false);
       return;
     }
@@ -69,6 +76,7 @@ export default function DashboardStats() {
       setLoading(true);
       setError(null);
 
+      console.log('[DASHBOARD-STATS] Making API call to /api/dashboard/stats');
       const response = await fetch('/api/dashboard/stats', {
         credentials: 'include',
         headers: {
@@ -77,14 +85,20 @@ export default function DashboardStats() {
         },
       });
 
+      console.log('[DASHBOARD-STATS] Response status:', response.status);
+      console.log('[DASHBOARD-STATS] Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch dashboard stats: ${response.status}`);
+        const errorText = await response.text();
+        console.error('[DASHBOARD-STATS] API error response:', errorText);
+        throw new Error(`Failed to fetch dashboard stats: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('[DASHBOARD-STATS] API success response:', data);
       setStats(data);
     } catch (err) {
-      console.error('Error fetching dashboard stats:', err);
+      console.error('[DASHBOARD-STATS] Error fetching dashboard stats:', err);
       setError(err instanceof Error ? err.message : 'Failed to load dashboard statistics');
     } finally {
       setLoading(false);
