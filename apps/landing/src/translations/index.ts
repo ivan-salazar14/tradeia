@@ -16,8 +16,8 @@ export const translations = {
 
     // Hero Section
     hero: {
-      title: 'Welcome to TradeIA:',
-      subtitle: 'AI-Trading Strategies',
+      title: 'Welcome to TradeIA',
+      subtitle: 'Make your decisions based on precise technical analysis',
       description: 'a platform specializing in strategies for trading cryptocurrencies. Using advanced technical analysis, we generate precise buy/sell signals based on real-time market data. Our system is built for reliability, with optimized cronjobs, a secure API, and customizable strategies.',
       benefits: {
         signals: {
@@ -34,7 +34,7 @@ export const translations = {
         }
       },
       buttons: {
-        signup: 'Sign Up Free',
+        signup: 'Sign Up',
         login: 'Login',
         demo: 'Demo Dashboard'
       }
@@ -42,7 +42,7 @@ export const translations = {
 
     // Features Section
     features: {
-      title: 'Our Core Features (Facilities)',
+      title: 'Our Features',
       description: 'TradeIA offers a suite of tools to make trading seamless. We\'ve enhanced user facilities with intuitive dashboards, real-time alerts, and integrations for better usability.',
       items: {
         dashboard: {
@@ -78,7 +78,7 @@ export const translations = {
 
     // Strategies Section
     strategies: {
-      title: 'Trading Strategies: Customizable and Proven',
+      title: 'Trading Strategies: Customizable & Proven',
       description: 'Our strategies follow the Strategy Pattern for flexibility. We\'ve expanded this section with examples, pros/cons, and customization tips to help users choose wisely.',
       conservative: {
         title: 'Conservative',
@@ -87,7 +87,7 @@ export const translations = {
         riskReward: '1:1+'
       },
       moderate: {
-        title: 'Moderate (Default)',
+        title: 'Moderate',
         description: 'Criteria: 4/5 conditions (RSI <40/>60, ADX >15, SQZMOM ≠0, DMI diff >3, ATR >50). Frequency: Balanced. Best For: Everyday traders on mid-priority pairs like XRP/USDT.',
         winRate: 'Good',
         riskReward: '1:1 min'
@@ -99,7 +99,7 @@ export const translations = {
         riskReward: 'Higher Risk'
       },
       specialized: {
-        title: 'SQZMOM_ADX Specialized',
+        title: 'SQZMOM + ADX Specialized',
         description: 'Criteria: Focus on squeeze momentum with ADX for breakout detection. Best For: Volatility plays in low-priority pairs like ADA/USDT.',
         winRate: 'Excellent',
         riskReward: '3x ATR'
@@ -258,7 +258,7 @@ export const translations = {
     // Hero Section
     hero: {
       title: 'Bienvenido a TradeIA',
-      subtitle: 'Servicio de señales basado en estrategias de Trading',
+      subtitle: 'Has tus decisiones basadas en análisis técnico preciso',
       description: 'Una plataforma especializada en estrategias de trading para criptomonedas. Utilizando análisis técnico avanzado, generamos señales precisas de compra/venta basadas en datos de mercado en tiempo real. Con backtesting y cronjobs optimizados, una API segura y estrategias personalizables.',
       benefits: {
         signals: {
@@ -340,7 +340,7 @@ export const translations = {
         riskReward: 'Riesgo Mayor'
       },
       specialized: {
-        title: 'SQZMOM_ADX Especializada',
+        title: 'SQZMOM + ADX Especializada',
         description: 'Criterios: Enfoque en momentum de squeeze con ADX para detección de rupturas. Mejor Para: Jugadas de volatilidad en pares de baja prioridad como ADA/USDT.',
         winRate: 'Excelente',
         riskReward: '3x ATR'
