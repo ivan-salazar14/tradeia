@@ -33,6 +33,17 @@ export class NotificationService {
   private constructor() {
     this.notificationApiKey = process.env.NOTIFICATION_API_KEY || '';
     this.notificationApiUrl = process.env.NOTIFICATION_API_URL || 'https://api.notificationapi.com';
+
+    // Log NotificationAPI configuration on initialization
+    console.log('[NotificationService] Initialized with:');
+    console.log(`[NotificationService] - API URL: ${this.notificationApiUrl}`);
+    console.log(`[NotificationService] - Has API Key: ${!!this.notificationApiKey}`);
+    console.log(`[NotificationService] - API Key Length: ${this.notificationApiKey.length}`);
+
+    if (!this.notificationApiKey) {
+      console.warn('[NotificationService] ⚠️  NOTIFICATION_API_KEY environment variable not set!');
+      console.warn('[NotificationService] ⚠️  Email and push notifications will be skipped');
+    }
   }
 
   public static getInstance(): NotificationService {
@@ -191,27 +202,47 @@ export class NotificationService {
    */
   private async sendEmailNotification(payload: NotificationPayload): Promise<void> {
     try {
+      console.log(`[NotificationService] Sending email notification via NotificationAPI to user ${payload.userId}`);
+      console.log(`[NotificationService] NotificationAPI URL: ${this.notificationApiUrl}`);
+      console.log(`[NotificationService] Has API key: ${!!this.notificationApiKey}`);
+
+      if (!this.notificationApiKey) {
+        console.warn('[NotificationService] NotificationAPI key not configured, skipping email notification');
+        return;
+      }
+
+      const requestBody = {
+        notificationId: 'new_signal',
+        userId: payload.userId,
+        email: true, // Send email
+        data: {
+          title: payload.title,
+          message: payload.message,
+          signalData: payload.data
+        }
+      };
+
+      console.log('[NotificationService] NotificationAPI request body:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch(`${this.notificationApiUrl}/sender`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.notificationApiKey}`
         },
-        body: JSON.stringify({
-          notificationId: 'new_signal',
-          userId: payload.userId,
-          email: true, // Send email
-          data: {
-            title: payload.title,
-            message: payload.message,
-            signalData: payload.data
-          }
-        })
+        body: JSON.stringify(requestBody)
       });
 
+      console.log(`[NotificationService] NotificationAPI response status: ${response.status}`);
+
       if (!response.ok) {
-        throw new Error(`NotificationAPI responded with ${response.status}`);
+        const responseText = await response.text();
+        console.error(`[NotificationService] NotificationAPI error response: ${responseText}`);
+        throw new Error(`NotificationAPI responded with ${response.status}: ${responseText}`);
       }
+
+      const responseData = await response.json();
+      console.log('[NotificationService] NotificationAPI success response:', responseData);
 
       // Record successful notification
       await this.recordNotificationHistory({
@@ -219,13 +250,14 @@ export class NotificationService {
         signal_id: payload.signalId,
         notification_type: 'email',
         status: 'sent',
-        sent_at: new Date().toISOString()
+        sent_at: new Date().toISOString(),
+        provider_response: responseData
       });
 
-      console.log(`[NotificationService] Email notification sent to user ${payload.userId}`);
+      console.log(`[NotificationService] ✅ Email notification sent successfully to user ${payload.userId}`);
 
     } catch (error) {
-      console.error('[NotificationService] Error sending email notification:', error);
+      console.error('[NotificationService] ❌ Error sending email notification:', error);
       throw error;
     }
   }
@@ -235,27 +267,45 @@ export class NotificationService {
    */
   private async sendPushNotification(payload: NotificationPayload): Promise<void> {
     try {
+      console.log(`[NotificationService] Sending push notification via NotificationAPI to user ${payload.userId}`);
+
+      if (!this.notificationApiKey) {
+        console.warn('[NotificationService] NotificationAPI key not configured, skipping push notification');
+        return;
+      }
+
+      const requestBody = {
+        notificationId: 'new_signal_push',
+        userId: payload.userId,
+        push: true, // Send push notification
+        data: {
+          title: payload.title,
+          message: payload.message,
+          signalData: payload.data
+        }
+      };
+
+      console.log('[NotificationService] Push notification request body:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch(`${this.notificationApiUrl}/sender`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.notificationApiKey}`
         },
-        body: JSON.stringify({
-          notificationId: 'new_signal_push',
-          userId: payload.userId,
-          push: true, // Send push notification
-          data: {
-            title: payload.title,
-            message: payload.message,
-            signalData: payload.data
-          }
-        })
+        body: JSON.stringify(requestBody)
       });
 
+      console.log(`[NotificationService] Push NotificationAPI response status: ${response.status}`);
+
       if (!response.ok) {
-        throw new Error(`NotificationAPI responded with ${response.status}`);
+        const responseText = await response.text();
+        console.error(`[NotificationService] Push NotificationAPI error response: ${responseText}`);
+        throw new Error(`NotificationAPI responded with ${response.status}: ${responseText}`);
       }
+
+      const responseData = await response.json();
+      console.log('[NotificationService] Push NotificationAPI success response:', responseData);
 
       // Record successful notification
       await this.recordNotificationHistory({
@@ -263,13 +313,14 @@ export class NotificationService {
         signal_id: payload.signalId,
         notification_type: 'push',
         status: 'sent',
-        sent_at: new Date().toISOString()
+        sent_at: new Date().toISOString(),
+        provider_response: responseData
       });
 
-      console.log(`[NotificationService] Push notification sent to user ${payload.userId}`);
+      console.log(`[NotificationService] ✅ Push notification sent successfully to user ${payload.userId}`);
 
     } catch (error) {
-      console.error('[NotificationService] Error sending push notification:', error);
+      console.error('[NotificationService] ❌ Error sending push notification:', error);
       throw error;
     }
   }
@@ -331,6 +382,86 @@ export class NotificationService {
       }
     } catch (error) {
       console.error('[NotificationService] Error initializing user preferences:', error);
+    }
+  }
+
+  /**
+   * Test NotificationAPI integration
+   */
+  async testNotificationAPI(): Promise<{success: boolean, message: string, details?: any}> {
+    try {
+      console.log('[NotificationService] Testing NotificationAPI integration...');
+
+      if (!this.notificationApiKey) {
+        return {
+          success: false,
+          message: 'NOTIFICATION_API_KEY environment variable not set',
+          details: { apiKeyConfigured: false }
+        };
+      }
+
+      // Test with a simple ping or status check
+      const testPayload = {
+        notificationId: 'test_notification',
+        userId: 'test-user',
+        email: true,
+        data: {
+          title: 'Test Notification',
+          message: 'This is a test notification from TradeIA',
+          testData: { timestamp: new Date().toISOString() }
+        }
+      };
+
+      console.log('[NotificationService] Sending test notification...');
+
+      const response = await fetch(`${this.notificationApiUrl}/sender`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.notificationApiKey}`
+        },
+        body: JSON.stringify(testPayload)
+      });
+
+      const responseData = await response.json();
+
+      if (response.ok) {
+        console.log('[NotificationService] ✅ NotificationAPI test successful');
+        return {
+          success: true,
+          message: 'NotificationAPI integration working correctly',
+          details: {
+            status: response.status,
+            response: responseData,
+            apiUrl: this.notificationApiUrl,
+            hasApiKey: true
+          }
+        };
+      } else {
+        console.error('[NotificationService] ❌ NotificationAPI test failed');
+        return {
+          success: false,
+          message: `NotificationAPI test failed with status ${response.status}`,
+          details: {
+            status: response.status,
+            response: responseData,
+            apiUrl: this.notificationApiUrl,
+            hasApiKey: true
+          }
+        };
+      }
+
+    } catch (error) {
+      console.error('[NotificationService] ❌ NotificationAPI test error:', error);
+      return {
+        success: false,
+        message: `NotificationAPI test error: ${error instanceof Error ? error.message : String(error)}`,
+        details: {
+          error: error instanceof Error ? error.message : String(error),
+          apiUrl: this.notificationApiUrl,
+          hasApiKey: !!this.notificationApiKey
+        }
+      };
     }
   }
 }

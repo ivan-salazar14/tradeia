@@ -46,6 +46,8 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('history');
+  const [testingNotificationAPI, setTestingNotificationAPI] = useState(false);
+  const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
 
   // Available options for preferences
   const availableStrategies = ['moderate', 'conservative', 'aggressive', 'scalping', 'swing'];
@@ -150,6 +152,24 @@ export default function NotificationsPage() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const testNotificationAPI = async () => {
+    setTestingNotificationAPI(true);
+    setTestResult(null);
+
+    try {
+      const response = await fetch('/api/notifications/test');
+      const result = await response.json();
+      setTestResult(result);
+    } catch (error) {
+      setTestResult({
+        success: false,
+        message: `Error testing NotificationAPI: ${error instanceof Error ? error.message : String(error)}`
+      });
+    } finally {
+      setTestingNotificationAPI(false);
+    }
   };
 
   if (loading) {
@@ -388,6 +408,44 @@ export default function NotificationsPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* NotificationAPI Test */}
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-lg font-medium">Prueba de NotificationAPI</h3>
+                <p className="text-sm text-gray-600">
+                  Verifica que la integración con NotificationAPI esté funcionando correctamente
+                </p>
+
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={testNotificationAPI}
+                    disabled={testingNotificationAPI}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {testingNotificationAPI ? 'Probando...' : 'Probar NotificationAPI'}
+                  </button>
+
+                  {testResult && (
+                    <div className={`px-3 py-1 rounded text-sm ${
+                      testResult.success
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {testResult.success ? '✅ Éxito' : '❌ Error'}
+                    </div>
+                  )}
+                </div>
+
+                {testResult && (
+                  <div className={`p-3 rounded text-sm ${
+                    testResult.success
+                      ? 'bg-green-50 border border-green-200'
+                      : 'bg-red-50 border border-red-200'
+                  }`}>
+                    <p className="font-medium">{testResult.message}</p>
+                  </div>
+                )}
               </div>
 
               {/* Save Button */}
