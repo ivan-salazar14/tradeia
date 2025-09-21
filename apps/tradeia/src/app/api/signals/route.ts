@@ -155,7 +155,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const symbol = (searchParams.get('symbol') || '').toUpperCase();
+  const symbol = (searchParams.get('symbol') || 'BTC/USDT').toUpperCase();
   const timeframe = (searchParams.get('timeframe') || '4h').toLowerCase();
   const strategyIdParam = searchParams.get('strategy_id')?.trim() || '';
   const strategyIdsParam = searchParams.get('strategy_ids')?.split(',').map(id => id.trim()).filter(Boolean) || null;
@@ -314,7 +314,7 @@ export async function GET(req: NextRequest) {
   }
 
   const qs = new URLSearchParams();
-  if (symbol) qs.set('symbol', symbol);
+  qs.set('symbol', symbol); // Symbol is now always provided (defaults to BTC/USDT)
   qs.set('timeframe', timeframe);
 
   // Send dates in simple format without timezone to avoid comparison issues
@@ -608,7 +608,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      symbol,
+      symbol = 'BTC/USDT', // Default symbol for external API requirement
       timeframe = '4h',
       start_date,
       end_date,
@@ -732,7 +732,7 @@ export async function POST(req: NextRequest) {
     }
 
     const qs = new URLSearchParams();
-    if (symbol) qs.set('symbol', symbol);
+    qs.set('symbol', symbol); // Symbol is now always provided (defaults to BTC/USDT)
     qs.set('timeframe', timeframe);
 
     // Send dates in simple format without timezone to avoid comparison issues
