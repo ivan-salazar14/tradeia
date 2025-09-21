@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase';
 
 interface SignalData {
   signal_id: string;
-  user_id: string;
   symbol: string;
   direction: string;
   strategy_id: string;

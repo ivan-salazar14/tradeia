@@ -46,7 +46,6 @@ export async function GET(request: NextRequest) {
             // Extract signal data from the payload
             const signalData = {
               signal_id: payload.new.id,
-              user_id: payload.new.user_id,
               symbol: payload.new.symbol,
               direction: payload.new.direction,
               strategy_id: payload.new.strategy_id,
