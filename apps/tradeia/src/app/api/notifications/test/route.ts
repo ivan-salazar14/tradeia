@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const testSignalData = {
       signal_id: 'test-signal-' + Date.now(),
       symbol: 'BTC/USDT',
-      direction: 'BUY',
+      signal_direction: 'BUY',
       strategy_id: 'moderate',
       timestamp: new Date().toISOString()
     };

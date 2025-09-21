@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 interface SignalData {
   signal_id: string;
   symbol: string;
-  direction: string;
+  signal_direction: string;
   strategy_id: string;
   timestamp: string;
 }
@@ -162,12 +162,12 @@ export class NotificationService {
         userId,
         signalId: signalData.signal_id,
         type: 'email', // Default to email, could be expanded
-        title: `Nueva señal: ${signalData.direction} ${signalData.symbol}`,
-        message: `Se ha generado una señal ${signalData.direction} para ${signalData.symbol} usando la estrategia ${signalData.strategy_id}`,
+        title: `Nueva señal: ${signalData.signal_direction} ${signalData.symbol}`,
+        message: `Se ha generado una señal ${signalData.signal_direction} para ${signalData.symbol} usando la estrategia ${signalData.strategy_id}`,
         data: {
           signalId: signalData.signal_id,
           symbol: signalData.symbol,
-          direction: signalData.direction,
+          direction: signalData.signal_direction,
           strategyId: signalData.strategy_id,
           timestamp: signalData.timestamp
         }

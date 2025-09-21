@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
             const signalData = {
               signal_id: payload.new.id,
               symbol: payload.new.symbol,
-              direction: payload.new.direction,
+              signal_direction: payload.new.signal_direction,
               strategy_id: payload.new.strategy_id,
               timestamp: payload.new.timestamp
             };
