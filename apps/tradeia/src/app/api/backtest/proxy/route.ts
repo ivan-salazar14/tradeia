@@ -1,22 +1,51 @@
 import { NextResponse } from 'next/server';
 
+interface Trade {
+  symbol: string;
+  entry_time: string;
+  exit_time?: string;
+  entry_price: number;
+  exit_price?: number;
+  direction: string;
+  stop_loss?: number;
+  take_profit?: number;
+  exit_reason?: string;
+  reason?: string;
+  profit_pct?: number;
+  profit?: number;
+  balance_after?: number;
+}
+
 // Transform external API response to match frontend expectations
 function transformBacktestResponse(data: any, params: any) {
   console.log('[BACKTEST-PROXY] Transforming response data...');
 
   // Flatten all trades from symbol_results into a single array
-  const allTrades: any[] = [];
+  const allTrades: Trade[] = [];
 
   if (data.symbol_results) {
     Object.keys(data.symbol_results).forEach(symbol => {
       const symbolData = data.symbol_results[symbol];
       if (symbolData.trades && Array.isArray(symbolData.trades)) {
         // Add symbol to each trade if not present
-        const tradesWithSymbol = symbolData.trades.map((trade: any) => ({
+        const tradesWithSymbol = symbolData.trades.map((trade: Trade) => ({
           ...trade,
           symbol: trade.symbol || symbol
         }));
-        allTrades.push(...tradesWithSymbol);
+
+        // Deduplicate trades based on unique characteristics
+        const uniqueTrades = tradesWithSymbol.filter((trade: Trade, index: number, self: Trade[]) => {
+          return index === self.findIndex((t: Trade) =>
+            t.symbol === trade.symbol &&
+            t.entry_time === trade.entry_time &&
+            t.exit_time === trade.exit_time &&
+            t.entry_price === trade.entry_price &&
+            t.exit_price === trade.exit_price &&
+            t.direction === trade.direction
+          );
+        });
+
+        allTrades.push(...uniqueTrades);
       }
     });
   }

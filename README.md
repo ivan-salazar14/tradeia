@@ -152,6 +152,19 @@ The project is configured for deployment on Vercel with the following routing:
 4. Add tests if applicable
 5. Submit a pull request
 
+## 👥 Hiring & Contributions
+
+**This repository is public for hiring purposes only.** We welcome talented developers to review our codebase during the recruitment process.
+
+### For Candidates
+- **NDA Required**: All candidates must sign a Non-Disclosure Agreement before accessing the repository
+- **Code Review Only**: This code is for evaluation purposes only
+- **No Commercial Use**: Candidates may not use, copy, or distribute this code for any commercial purposes
+- **Contact**: Reach out to our HR team for NDA and access procedures
+
+### For Contributors
+We currently do not accept external contributions to maintain code quality and protect our proprietary algorithms. However, we value community feedback and may consider strategic partnerships.
+
 ## 📄 License
 
 **Proprietary License - All Rights Reserved**

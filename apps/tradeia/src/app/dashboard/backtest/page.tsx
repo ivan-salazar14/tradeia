@@ -518,7 +518,7 @@ export default function BacktestPage({ params }: PageProps) {
         Object.keys(json.symbol_results).forEach(symbol => {
           const symbolData = json.symbol_results[symbol];
           if (symbolData.trades && Array.isArray(symbolData.trades)) {
-            trades.push(...symbolData.trades.map((trade: any) => ({
+            const symbolTrades = symbolData.trades.map((trade: any) => ({
               symbol: trade.symbol || symbol,
               entry_time: trade.entry_time || trade.timestamp || new Date().toISOString(),
               entry_price: trade.entry_price || trade.entry,
@@ -535,7 +535,21 @@ export default function BacktestPage({ params }: PageProps) {
               position_notional: trade.position_notional || (trade.entry_price * 10000),
               risk_fraction: trade.risk_fraction || (riskPerTrade / 100),
               duration_hours: trade.duration_hours || 1
-            })));
+            }));
+
+            // Deduplicate trades based on unique characteristics
+            const uniqueSymbolTrades = symbolTrades.filter((trade: any, index: number, self: any[]) => {
+              return index === self.findIndex((t: any) =>
+                t.symbol === trade.symbol &&
+                t.entry_time === trade.entry_time &&
+                t.exit_time === trade.exit_time &&
+                t.entry_price === trade.entry_price &&
+                t.exit_price === trade.exit_price &&
+                t.direction === trade.direction
+              );
+            });
+
+            trades.push(...uniqueSymbolTrades);
           }
         });
       }

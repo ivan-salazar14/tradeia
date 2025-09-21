@@ -41,6 +41,9 @@ type SignalsResponse = {
   signals: Signal[];
   portfolio_metrics?: PortfolioMetrics;
   risk_parameters?: RiskParameters;
+  _fallback?: boolean;
+  _message?: string;
+  debug_info?: any;
 };
 
 export default function SignalsPage() {
@@ -61,6 +64,8 @@ export default function SignalsPage() {
     end: format(new Date(), 'yyyy-MM-dd')
   });
   const [includeLiveSignals, setIncludeLiveSignals] = useState(false);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
+  const [fallbackMessage, setFallbackMessage] = useState<string>('');
 
   // Risk analysis parameters
   const [initialBalance, setInitialBalance] = useState<string>('10000');
@@ -208,13 +213,17 @@ export default function SignalsPage() {
       // Use mock strategies - no need for Supabase client
       const activeStrategies: string[] = selectedStrategies.length > 0 ? selectedStrategies : ['moderate'];
 
+      // Use the first selected strategy for generation, or default to moderate
+      const strategyToUse = selectedStrategies.length > 0 ? selectedStrategies[0] : 'moderate';
+
       const requestBody = {
         timeframe,
         start_date: `${dateRange.start}T00:00:00`,
         end_date: `${dateRange.end}T23:59:59`,
         initial_balance: parseFloat(initialBalance),
         risk_per_trade: parseFloat(riskPerTrade),
-        symbol: symbol.trim() || undefined
+        symbol: symbol.trim() || undefined,
+        strategy_id: strategyToUse
       };
 
       console.log('[SIGNALS] Making POST request to /api/signals/generate');
@@ -270,6 +279,10 @@ export default function SignalsPage() {
       setSignals(json.signals || []);
       setPortfolioMetrics(json.portfolio_metrics || null);
       setRiskParameters(json.risk_parameters || null);
+      setIsUsingFallback(json._fallback || false);
+      setFallbackMessage(json._message || '');
+      setIsUsingFallback(json._fallback || false);
+      setFallbackMessage(json._message || '');
     } catch (e: any) {
       console.error('[SIGNALS] Error in generateNewSignals:', e);
 

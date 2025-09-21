@@ -313,33 +313,268 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // If include_live_signals is true, redirect to backtest endpoint
+  if (includeLiveSignals) {
+    console.log('[SIGNALS] include_live_signals=true detected, redirecting to backtest endpoint');
+
+    const backtestParams = new URLSearchParams();
+    if (symbol) backtestParams.set('symbol', symbol);
+    backtestParams.set('timeframe', timeframe);
+
+    // Convert local dates to UTC before sending to external API
+    if (startDate) {
+      try {
+        // Parse the date string (handles timezone offsets automatically)
+        const date = new Date(startDate);
+
+        // Convert to UTC and format as YYYY-MM-DD
+        const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        const utcString = utcDate.toISOString().split('T')[0];
+
+        console.log('[SIGNALS] Converting start_date:', startDate, 'to UTC:', utcString);
+        backtestParams.set('start_date', utcString);
+      } catch (error) {
+        console.warn('[SIGNALS] Invalid start_date format:', startDate);
+        // Fallback to original processing
+        let dateOnly = startDate.split('T')[0];
+        dateOnly = dateOnly.split('+')[0];
+        dateOnly = dateOnly.split('Z')[0];
+        dateOnly = dateOnly.split(' ')[0];
+        backtestParams.set('start_date', dateOnly);
+      }
+    }
+    if (endDate) {
+      try {
+        // Parse the date string (handles timezone offsets automatically)
+        const date = new Date(endDate);
+
+        // Convert to UTC and format as YYYY-MM-DD
+        const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        const utcString = utcDate.toISOString().split('T')[0];
+
+        console.log('[SIGNALS] Converting end_date:', endDate, 'to UTC:', utcString);
+        backtestParams.set('end_date', utcString);
+      } catch (error) {
+        console.warn('[SIGNALS] Invalid end_date format:', endDate);
+        // Fallback to original processing
+        let dateOnly = endDate.split('T')[0];
+        dateOnly = dateOnly.split('+')[0];
+        dateOnly = dateOnly.split('Z')[0];
+        dateOnly = dateOnly.split(' ')[0];
+        backtestParams.set('end_date', dateOnly);
+      }
+    }
+
+    backtestParams.set('limit', limit.toString());
+    backtestParams.set('offset', offset.toString());
+    backtestParams.set('include_live_signals', 'true');
+    if (forceFresh) backtestParams.set('force_fresh', 'true');
+
+    // Add strategy_ids parameter for database filtering
+    if (activeStrategyIds.length > 0) {
+      backtestParams.set('strategy_ids', activeStrategyIds.join(','));
+    }
+
+    try {
+      const backtestUrl = `${API_BASE}/backtest/signals?${backtestParams.toString()}`;
+      console.log('[SIGNALS] Calling backtest endpoint:', backtestUrl.replace(/Authorization=[^&]*/, 'Authorization=***'));
+
+      const resp = await fetch(backtestUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': auth,
+          'Accept-Encoding': 'identity',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'User-Agent': 'TradeIA-Backend/1.0',
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        failCount += 1;
+        if (failCount >= OPEN_THRESHOLD) {
+          openUntil = Date.now() + OPEN_MS;
+        }
+        console.warn('[SIGNALS] Backtest API failed with status:', resp.status);
+        console.warn('[SIGNALS] Backtest API response text:', text);
+        return NextResponse.json({
+          error: 'Backtest API returned an error',
+          details: `Backtest API responded with status ${resp.status}: ${text}`
+        }, {
+          status: resp.status,
+          headers: {
+            'Accept-Encoding': 'identity'
+          }
+        });
+      }
+
+      const data = await resp.json();
+      console.log('[SIGNALS] Backtest API response data:', JSON.stringify(data, null, 2));
+
+      // Process the backtest response similar to regular signals
+      const normalizeOne = (p: any): UnifiedSignal => {
+        const signal = normalizeExampleProvider(p);
+        if (p.strategy_id) {
+          signal.strategyId = p.strategy_id;
+        }
+        return signal;
+      };
+
+      const pickArray = (d: any): any[] | null => {
+        if (!d) return null;
+        if (Array.isArray(d)) return d;
+        if (Array.isArray(d.signals)) return d.signals;
+        if (Array.isArray(d.results)) return d.results;
+        if (Array.isArray(d.items)) return d.items;
+        if (d.data) return pickArray(d.data);
+        return null;
+      };
+
+      const payloadArr = pickArray(data);
+      const signals: UnifiedSignal[] = Array.isArray(payloadArr)
+        ? payloadArr.map(normalizeOne)
+        : [normalizeOne(data)];
+
+      const quality = signals.filter((s) => {
+        if (!s.id || !s.symbol || !s.timeframe || !s.timestamp || !s.direction) return false;
+        if (s.entry !== undefined && typeof s.entry !== 'number') return false;
+        if (s.tp1 !== undefined && typeof s.tp1 !== 'number') return false;
+        if (s.tp2 !== undefined && typeof s.tp2 !== 'number') return false;
+        if (s.stopLoss !== undefined && typeof s.stopLoss !== 'number') return false;
+        if (s.reason === 'No signal generated' || s.reason === 'no signal generated') return false;
+        if (s.marketScenario === null && !s.entry) return false;
+        return true;
+      });
+
+      let filtered = quality;
+      if (activeStrategyIds.length > 0) {
+        const activeSet = new Set(activeStrategyIds);
+        filtered = quality.filter((s) => !s.strategyId || activeSet.has(s.strategyId));
+      }
+
+      failCount = 0;
+      openUntil = 0;
+
+      const portfolioMetrics = calculatePortfolioMetrics(filtered, initialBalance, riskPerTrade);
+      const riskParameters: RiskParameters = {
+        initial_balance: initialBalance,
+        risk_per_trade_pct: riskPerTrade
+      };
+
+      const totalSignals = filtered.length;
+      const paginatedSignals = filtered.slice(offset, offset + limit);
+
+      const transformedSignals = paginatedSignals.map(signal => ({
+        id: signal.id,
+        symbol: signal.symbol,
+        timeframe: signal.timeframe,
+        timestamp: signal.timestamp,
+        execution_timestamp: signal.execution_timestamp,
+        signal_age_hours: signal.signal_age_hours,
+        signal_source: signal.signal_source,
+        type: signal.type,
+        direction: signal.direction,
+        strategyId: signal.strategyId,
+        entry: signal.entry,
+        tp1: signal.tp1,
+        tp2: signal.tp2,
+        stopLoss: signal.stopLoss,
+        source: signal.source,
+        position_size: signal.entry ? (initialBalance * riskPerTrade / 100) / Math.abs(signal.entry - (signal.stopLoss || signal.entry)) * signal.entry : undefined,
+        risk_amount: signal.entry ? (initialBalance * riskPerTrade / 100) : undefined,
+        reward_to_risk: signal.entry && signal.tp1 && signal.stopLoss ? Math.abs(signal.tp1 - signal.entry) / Math.abs(signal.entry - signal.stopLoss) : undefined
+      }));
+
+      const totalPages = Math.ceil(totalSignals / limit);
+      const currentPage = Math.floor(offset / limit) + 1;
+      const hasNextPage = offset + limit < totalSignals;
+      const hasPrevPage = offset > 0;
+
+      console.log('[SIGNALS] ===== SENDING BACKTEST RESPONSE =====');
+      console.log('[SIGNALS] Response signals count:', transformedSignals.length);
+
+      return NextResponse.json({
+        signals: transformedSignals,
+        strategies: mockStrategies,
+        portfolio_metrics: portfolioMetrics,
+        risk_parameters: riskParameters,
+        pagination: {
+          total: totalSignals,
+          limit,
+          offset,
+          current_page: currentPage,
+          total_pages: totalPages,
+          has_next: hasNextPage,
+          has_prev: hasPrevPage
+        }
+      }, {
+        headers: {
+          'Cache-Control': 'public, max-age=300',
+          'Accept-Encoding': 'identity',
+          'Content-Encoding': 'identity',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Vary': 'Accept-Encoding'
+        }
+      });
+    } catch (backtestError) {
+      console.warn('[SIGNALS] Backtest endpoint failed, falling back to regular signals endpoint');
+      // Fall through to regular signals logic
+    }
+  }
+
   const qs = new URLSearchParams();
   if (symbol) qs.set('symbol', symbol);
   qs.set('timeframe', timeframe);
 
-  // Send dates in simple format without timezone to avoid comparison issues
+  // Convert local dates to UTC before sending to external API
   if (startDate) {
-    // Aggressively strip timezone info and extract just the date part
-    let dateOnly = startDate.split('T')[0]; // Remove time part
-    dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
-    dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
-    dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
-    console.log('[SIGNALS] Sending start_date as date-only:', dateOnly, 'from:', startDate);
-    qs.set('start_date', dateOnly);
+    try {
+      // Parse the date string (handles timezone offsets automatically)
+      const date = new Date(startDate);
+
+      // Convert to UTC and format as YYYY-MM-DD
+      const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+      const utcString = utcDate.toISOString().split('T')[0];
+
+      console.log('[SIGNALS] Converting start_date:', startDate, 'to UTC:', utcString);
+      qs.set('start_date', utcString);
+    } catch (error) {
+      console.warn('[SIGNALS] Invalid start_date format:', startDate);
+      // Fallback to original processing
+      let dateOnly = startDate.split('T')[0];
+      dateOnly = dateOnly.split('+')[0];
+      dateOnly = dateOnly.split('Z')[0];
+      dateOnly = dateOnly.split(' ')[0];
+      qs.set('start_date', dateOnly);
+    }
   }
   if (endDate) {
-    // Aggressively strip timezone info and extract just the date part
-    let dateOnly = endDate.split('T')[0]; // Remove time part
-    dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
-    dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
-    dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
-    console.log('[SIGNALS] Sending end_date as date-only:', dateOnly, 'from:', endDate);
-    qs.set('end_date', dateOnly);
+    try {
+      // Parse the date string (handles timezone offsets automatically)
+      const date = new Date(endDate);
+
+      // Convert to UTC and format as YYYY-MM-DD
+      const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+      const utcString = utcDate.toISOString().split('T')[0];
+
+      console.log('[SIGNALS] Converting end_date:', endDate, 'to UTC:', utcString);
+      qs.set('end_date', utcString);
+    } catch (error) {
+      console.warn('[SIGNALS] Invalid end_date format:', endDate);
+      // Fallback to original processing
+      let dateOnly = endDate.split('T')[0];
+      dateOnly = dateOnly.split('+')[0];
+      dateOnly = dateOnly.split('Z')[0];
+      dateOnly = dateOnly.split(' ')[0];
+      qs.set('end_date', dateOnly);
+    }
   }
 
   qs.set('limit', limit.toString());
   qs.set('offset', offset.toString());
-  if (includeLiveSignals) qs.set('include_live_signals', 'true');
   if (forceFresh) qs.set('force_fresh', 'true');
 
   try {
@@ -355,7 +590,7 @@ export async function GET(req: NextRequest) {
     // Try to connect to external API
     try {
       // Always use POST to /strategies/signals/generate endpoint as per API specification
-      const postUrl = `${API_BASE}/strategies/signals/generate?${qs.toString()}`;
+      const postUrl = `${API_BASE}/signals/generate?${qs.toString()}`;
       console.log('[SIGNALS] Generating signals from:', postUrl.replace(/Authorization=[^&]*/, 'Authorization=***'));
 
       resp = await fetch(postUrl, {
@@ -373,13 +608,86 @@ export async function GET(req: NextRequest) {
       });
     } catch (networkError) {
       console.warn('[SIGNALS] External API not available:', networkError);
+      console.warn('[SIGNALS] Network error details:', {
+        message: networkError instanceof Error ? networkError.message : String(networkError),
+        name: networkError instanceof Error ? networkError.name : 'Unknown',
+        stack: networkError instanceof Error ? networkError.stack : 'No stack trace'
+      });
+
+      // Provide mock signals as fallback
+      console.log('[SIGNALS] Using mock signals as fallback for GET request');
+
+      const mockSignals = [
+        {
+          id: 'mock-signal-1',
+          symbol: symbol || 'BTC/USDT',
+          timeframe: timeframe,
+          timestamp: new Date().toISOString(),
+          execution_timestamp: new Date().toISOString(),
+          signal_age_hours: 0,
+          signal_source: 'mock',
+          type: 'entry' as const,
+          direction: 'BUY' as const,
+          strategyId: activeStrategyIds[0] || 'moderate',
+          entry: 50000,
+          tp1: 51000,
+          tp2: 52000,
+          stopLoss: 49000,
+          source: { provider: 'mock_provider' },
+          position_size: (initialBalance * riskPerTrade / 100) / Math.abs(50000 - 49000) * 50000,
+          risk_amount: initialBalance * riskPerTrade / 100,
+          reward_to_risk: Math.abs(51000 - 50000) / Math.abs(50000 - 49000)
+        },
+        {
+          id: 'mock-signal-2',
+          symbol: symbol || 'ETH/USDT',
+          timeframe: timeframe,
+          timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+          execution_timestamp: new Date(Date.now() - 3600000).toISOString(),
+          signal_age_hours: 1,
+          signal_source: 'mock',
+          type: 'entry' as const,
+          direction: 'SELL' as const,
+          strategyId: activeStrategyIds[0] || 'moderate',
+          entry: 3000,
+          tp1: 2900,
+          tp2: 2800,
+          stopLoss: 3100,
+          source: { provider: 'mock_provider' },
+          position_size: (initialBalance * riskPerTrade / 100) / Math.abs(3000 - 3100) * 3000,
+          risk_amount: initialBalance * riskPerTrade / 100,
+          reward_to_risk: Math.abs(2900 - 3000) / Math.abs(3000 - 3100)
+        }
+      ];
+
+      const portfolioMetrics = calculatePortfolioMetrics(mockSignals, initialBalance, riskPerTrade);
+      const riskParameters: RiskParameters = {
+        initial_balance: initialBalance,
+        risk_per_trade_pct: riskPerTrade
+      };
+
       return NextResponse.json({
-        error: 'Signals API is currently unavailable',
-        details: 'Unable to connect to external signals provider'
+        signals: mockSignals,
+        strategies: mockStrategies,
+        portfolio_metrics: portfolioMetrics,
+        risk_parameters: riskParameters,
+        _fallback: true,
+        _message: 'External API unavailable - showing mock signals',
+        debug_info: {
+          external_api_url: API_BASE,
+          network_error: networkError instanceof Error ? networkError.message : String(networkError),
+          requested_params: {
+            symbol,
+            timeframe,
+            startDate,
+            endDate,
+            strategyIds: activeStrategyIds
+          }
+        }
       }, {
-        status: 503,
         headers: {
-          'Accept-Encoding': 'identity'
+          'Accept-Encoding': 'identity',
+          'Content-Type': 'application/json; charset=utf-8'
         }
       });
     }
@@ -735,24 +1043,48 @@ export async function POST(req: NextRequest) {
     if (symbol) qs.set('symbol', symbol);
     qs.set('timeframe', timeframe);
 
-    // Send dates in simple format without timezone to avoid comparison issues
+    // Convert local dates to UTC before sending to external API
     if (start_date) {
-      // Aggressively strip timezone info and extract just the date part
-      let dateOnly = start_date.split('T')[0]; // Remove time part
-      dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
-      dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
-      dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
-      console.log('[SIGNALS POST] Sending start_date as date-only:', dateOnly, 'from:', start_date);
-      qs.set('start_date', dateOnly);
+      try {
+        // Parse the date string (handles timezone offsets automatically)
+        const date = new Date(start_date);
+
+        // Convert to UTC and format as YYYY-MM-DD
+        const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        const utcString = utcDate.toISOString().split('T')[0];
+
+        console.log('[SIGNALS POST] Converting start_date:', start_date, 'to UTC:', utcString);
+        qs.set('start_date', utcString);
+      } catch (error) {
+        console.warn('[SIGNALS POST] Invalid start_date format:', start_date);
+        // Fallback to original processing
+        let dateOnly = start_date.split('T')[0];
+        dateOnly = dateOnly.split('+')[0];
+        dateOnly = dateOnly.split('Z')[0];
+        dateOnly = dateOnly.split(' ')[0];
+        qs.set('start_date', dateOnly);
+      }
     }
     if (end_date) {
-      // Aggressively strip timezone info and extract just the date part
-      let dateOnly = end_date.split('T')[0]; // Remove time part
-      dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
-      dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
-      dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
-      console.log('[SIGNALS POST] Sending end_date as date-only:', dateOnly, 'from:', end_date);
-      qs.set('end_date', dateOnly);
+      try {
+        // Parse the date string (handles timezone offsets automatically)
+        const date = new Date(end_date);
+
+        // Convert to UTC and format as YYYY-MM-DD
+        const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        const utcString = utcDate.toISOString().split('T')[0];
+
+        console.log('[SIGNALS POST] Converting end_date:', end_date, 'to UTC:', utcString);
+        qs.set('end_date', utcString);
+      } catch (error) {
+        console.warn('[SIGNALS POST] Invalid end_date format:', end_date);
+        // Fallback to original processing
+        let dateOnly = end_date.split('T')[0];
+        dateOnly = dateOnly.split('+')[0];
+        dateOnly = dateOnly.split('Z')[0];
+        dateOnly = dateOnly.split(' ')[0];
+        qs.set('end_date', dateOnly);
+      }
     }
 
     try {
@@ -963,6 +1295,11 @@ export async function POST(req: NextRequest) {
 
       // Try to provide mock signals as fallback
       console.log('[SIGNALS POST] Using mock signals as fallback');
+      console.log('[SIGNALS POST] Network error details:', {
+        message: networkError instanceof Error ? networkError.message : String(networkError),
+        name: networkError instanceof Error ? networkError.name : 'Unknown',
+        stack: networkError instanceof Error ? networkError.stack : 'No stack trace'
+      });
 
       const mockSignals = [
         {
@@ -984,6 +1321,46 @@ export async function POST(req: NextRequest) {
           position_size: (initial_balance * risk_per_trade / 100) / Math.abs(50000 - 49000) * 50000,
           risk_amount: initial_balance * risk_per_trade / 100,
           reward_to_risk: Math.abs(51000 - 50000) / Math.abs(50000 - 49000)
+        },
+        {
+          id: 'mock-signal-2',
+          symbol: symbol || 'ETH/USDT',
+          timeframe: timeframe,
+          timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+          execution_timestamp: new Date(Date.now() - 3600000).toISOString(),
+          signal_age_hours: 1,
+          signal_source: 'mock',
+          type: 'entry' as const,
+          direction: 'SELL' as const,
+          strategyId: activeStrategyIds[0] || 'moderate',
+          entry: 3000,
+          tp1: 2900,
+          tp2: 2800,
+          stopLoss: 3100,
+          source: { provider: 'mock_provider' },
+          position_size: (initial_balance * risk_per_trade / 100) / Math.abs(3000 - 3100) * 3000,
+          risk_amount: initial_balance * risk_per_trade / 100,
+          reward_to_risk: Math.abs(2900 - 3000) / Math.abs(3000 - 3100)
+        },
+        {
+          id: 'mock-signal-3',
+          symbol: symbol || 'SOL/USDT',
+          timeframe: timeframe,
+          timestamp: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+          execution_timestamp: new Date(Date.now() - 7200000).toISOString(),
+          signal_age_hours: 2,
+          signal_source: 'mock',
+          type: 'entry' as const,
+          direction: 'BUY' as const,
+          strategyId: activeStrategyIds[0] || 'moderate',
+          entry: 150,
+          tp1: 155,
+          tp2: 160,
+          stopLoss: 145,
+          source: { provider: 'mock_provider' },
+          position_size: (initial_balance * risk_per_trade / 100) / Math.abs(150 - 145) * 150,
+          risk_amount: initial_balance * risk_per_trade / 100,
+          reward_to_risk: Math.abs(155 - 150) / Math.abs(150 - 145)
         }
       ];
 
@@ -999,7 +1376,20 @@ export async function POST(req: NextRequest) {
         portfolio_metrics: portfolioMetrics,
         risk_parameters: riskParameters,
         _fallback: true,
-        _message: 'External API unavailable - showing mock signals'
+        _message: 'External API unavailable - showing mock signals',
+        debug_info: {
+          external_api_url: API_BASE,
+          network_error: networkError instanceof Error ? networkError.message : String(networkError),
+          requested_params: {
+            symbol,
+            timeframe,
+            start_date,
+            end_date,
+            initial_balance,
+            risk_per_trade,
+            strategy_ids: activeStrategyIds
+          }
+        }
       }, {
         headers: {
           'Accept-Encoding': 'identity',
