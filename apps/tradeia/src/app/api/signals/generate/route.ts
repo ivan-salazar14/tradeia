@@ -7,11 +7,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('[SIGNALS GENERATE] Request body:', body);
 
-    // Simple mock response for now
+    // Get strategy from request
+    const strategyId = body.strategy_id || 'moderate';
+    console.log('[SIGNALS GENERATE] Strategy:', strategyId);
+
+    // Mock response with strategy-specific signals
     const mockResponse = {
       signals: [
         {
-          id: 'generated-signal-1',
+          id: `generated-${strategyId}-1`,
           symbol: body.symbol || 'BTC/USDT',
           timeframe: body.timeframe || '4h',
           timestamp: new Date().toISOString(),
@@ -20,7 +24,7 @@ export async function POST(request: NextRequest) {
           signal_source: 'generated',
           type: 'entry',
           direction: 'BUY',
-          strategyId: body.strategy_id || 'moderate',
+          strategyId: strategyId,
           entry: 50000,
           tp1: 51000,
           tp2: 52000,
@@ -33,9 +37,9 @@ export async function POST(request: NextRequest) {
       ],
       strategies: [
         {
-          id: body.strategy_id || 'moderate',
-          name: 'Generated Strategy',
-          description: 'Generated signals'
+          id: strategyId,
+          name: `${strategyId.charAt(0).toUpperCase() + strategyId.slice(1)} Strategy`,
+          description: `Generated signals for ${strategyId} strategy`
         }
       ],
       portfolio_metrics: {
@@ -48,12 +52,13 @@ export async function POST(request: NextRequest) {
         initial_balance: body.initial_balance || 10000,
         risk_per_trade_pct: body.risk_per_trade || 1.0
       },
-      _message: `Generated signals for strategy: ${body.strategy_id || 'moderate'}`
+      _message: `Successfully generated signals for ${strategyId} strategy`
     };
 
     console.log('[SIGNALS GENERATE] ===== SENDING RESPONSE =====');
 
     return NextResponse.json(mockResponse, {
+      status: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache'
@@ -63,7 +68,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[SIGNALS GENERATE] Error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
