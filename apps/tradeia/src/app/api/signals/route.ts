@@ -321,22 +321,48 @@ export async function GET(req: NextRequest) {
     if (symbol) backtestParams.set('symbol', symbol);
     backtestParams.set('timeframe', timeframe);
 
-    // Send dates in simple format without timezone to avoid comparison issues
+    // Convert local dates to UTC before sending to external API
     if (startDate) {
-      let dateOnly = startDate.split('T')[0];
-      dateOnly = dateOnly.split('+')[0];
-      dateOnly = dateOnly.split('Z')[0];
-      dateOnly = dateOnly.split(' ')[0];
-      console.log('[SIGNALS] Sending start_date as date-only:', dateOnly, 'from:', startDate);
-      backtestParams.set('start_date', dateOnly);
+      try {
+        // Parse the date string (handles timezone offsets automatically)
+        const date = new Date(startDate);
+
+        // Convert to UTC and format as YYYY-MM-DD
+        const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        const utcString = utcDate.toISOString().split('T')[0];
+
+        console.log('[SIGNALS] Converting start_date:', startDate, 'to UTC:', utcString);
+        backtestParams.set('start_date', utcString);
+      } catch (error) {
+        console.warn('[SIGNALS] Invalid start_date format:', startDate);
+        // Fallback to original processing
+        let dateOnly = startDate.split('T')[0];
+        dateOnly = dateOnly.split('+')[0];
+        dateOnly = dateOnly.split('Z')[0];
+        dateOnly = dateOnly.split(' ')[0];
+        backtestParams.set('start_date', dateOnly);
+      }
     }
     if (endDate) {
-      let dateOnly = endDate.split('T')[0];
-      dateOnly = dateOnly.split('+')[0];
-      dateOnly = dateOnly.split('Z')[0];
-      dateOnly = dateOnly.split(' ')[0];
-      console.log('[SIGNALS] Sending end_date as date-only:', dateOnly, 'from:', endDate);
-      backtestParams.set('end_date', dateOnly);
+      try {
+        // Parse the date string (handles timezone offsets automatically)
+        const date = new Date(endDate);
+
+        // Convert to UTC and format as YYYY-MM-DD
+        const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        const utcString = utcDate.toISOString().split('T')[0];
+
+        console.log('[SIGNALS] Converting end_date:', endDate, 'to UTC:', utcString);
+        backtestParams.set('end_date', utcString);
+      } catch (error) {
+        console.warn('[SIGNALS] Invalid end_date format:', endDate);
+        // Fallback to original processing
+        let dateOnly = endDate.split('T')[0];
+        dateOnly = dateOnly.split('+')[0];
+        dateOnly = dateOnly.split('Z')[0];
+        dateOnly = dateOnly.split(' ')[0];
+        backtestParams.set('end_date', dateOnly);
+      }
     }
 
     backtestParams.set('limit', limit.toString());
@@ -503,24 +529,48 @@ export async function GET(req: NextRequest) {
   if (symbol) qs.set('symbol', symbol);
   qs.set('timeframe', timeframe);
 
-  // Send dates in simple format without timezone to avoid comparison issues
+  // Convert local dates to UTC before sending to external API
   if (startDate) {
-    // Aggressively strip timezone info and extract just the date part
-    let dateOnly = startDate.split('T')[0]; // Remove time part
-    dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
-    dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
-    dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
-    console.log('[SIGNALS] Sending start_date as date-only:', dateOnly, 'from:', startDate);
-    qs.set('start_date', dateOnly);
+    try {
+      // Parse the date string (handles timezone offsets automatically)
+      const date = new Date(startDate);
+
+      // Convert to UTC and format as YYYY-MM-DD
+      const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+      const utcString = utcDate.toISOString().split('T')[0];
+
+      console.log('[SIGNALS] Converting start_date:', startDate, 'to UTC:', utcString);
+      qs.set('start_date', utcString);
+    } catch (error) {
+      console.warn('[SIGNALS] Invalid start_date format:', startDate);
+      // Fallback to original processing
+      let dateOnly = startDate.split('T')[0];
+      dateOnly = dateOnly.split('+')[0];
+      dateOnly = dateOnly.split('Z')[0];
+      dateOnly = dateOnly.split(' ')[0];
+      qs.set('start_date', dateOnly);
+    }
   }
   if (endDate) {
-    // Aggressively strip timezone info and extract just the date part
-    let dateOnly = endDate.split('T')[0]; // Remove time part
-    dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
-    dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
-    dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
-    console.log('[SIGNALS] Sending end_date as date-only:', dateOnly, 'from:', endDate);
-    qs.set('end_date', dateOnly);
+    try {
+      // Parse the date string (handles timezone offsets automatically)
+      const date = new Date(endDate);
+
+      // Convert to UTC and format as YYYY-MM-DD
+      const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+      const utcString = utcDate.toISOString().split('T')[0];
+
+      console.log('[SIGNALS] Converting end_date:', endDate, 'to UTC:', utcString);
+      qs.set('end_date', utcString);
+    } catch (error) {
+      console.warn('[SIGNALS] Invalid end_date format:', endDate);
+      // Fallback to original processing
+      let dateOnly = endDate.split('T')[0];
+      dateOnly = dateOnly.split('+')[0];
+      dateOnly = dateOnly.split('Z')[0];
+      dateOnly = dateOnly.split(' ')[0];
+      qs.set('end_date', dateOnly);
+    }
   }
 
   qs.set('limit', limit.toString());
@@ -540,7 +590,7 @@ export async function GET(req: NextRequest) {
     // Try to connect to external API
     try {
       // Always use POST to /strategies/signals/generate endpoint as per API specification
-      const postUrl = `${API_BASE}/strategies/signals/generate?${qs.toString()}`;
+      const postUrl = `${API_BASE}/signals/generate?${qs.toString()}`;
       console.log('[SIGNALS] Generating signals from:', postUrl.replace(/Authorization=[^&]*/, 'Authorization=***'));
 
       resp = await fetch(postUrl, {
@@ -993,24 +1043,48 @@ export async function POST(req: NextRequest) {
     if (symbol) qs.set('symbol', symbol);
     qs.set('timeframe', timeframe);
 
-    // Send dates in simple format without timezone to avoid comparison issues
+    // Convert local dates to UTC before sending to external API
     if (start_date) {
-      // Aggressively strip timezone info and extract just the date part
-      let dateOnly = start_date.split('T')[0]; // Remove time part
-      dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
-      dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
-      dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
-      console.log('[SIGNALS POST] Sending start_date as date-only:', dateOnly, 'from:', start_date);
-      qs.set('start_date', dateOnly);
+      try {
+        // Parse the date string (handles timezone offsets automatically)
+        const date = new Date(start_date);
+
+        // Convert to UTC and format as YYYY-MM-DD
+        const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        const utcString = utcDate.toISOString().split('T')[0];
+
+        console.log('[SIGNALS POST] Converting start_date:', start_date, 'to UTC:', utcString);
+        qs.set('start_date', utcString);
+      } catch (error) {
+        console.warn('[SIGNALS POST] Invalid start_date format:', start_date);
+        // Fallback to original processing
+        let dateOnly = start_date.split('T')[0];
+        dateOnly = dateOnly.split('+')[0];
+        dateOnly = dateOnly.split('Z')[0];
+        dateOnly = dateOnly.split(' ')[0];
+        qs.set('start_date', dateOnly);
+      }
     }
     if (end_date) {
-      // Aggressively strip timezone info and extract just the date part
-      let dateOnly = end_date.split('T')[0]; // Remove time part
-      dateOnly = dateOnly.split('+')[0]; // Remove timezone offset
-      dateOnly = dateOnly.split('Z')[0]; // Remove Z timezone
-      dateOnly = dateOnly.split(' ')[0]; // Remove any spaces
-      console.log('[SIGNALS POST] Sending end_date as date-only:', dateOnly, 'from:', end_date);
-      qs.set('end_date', dateOnly);
+      try {
+        // Parse the date string (handles timezone offsets automatically)
+        const date = new Date(end_date);
+
+        // Convert to UTC and format as YYYY-MM-DD
+        const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        const utcString = utcDate.toISOString().split('T')[0];
+
+        console.log('[SIGNALS POST] Converting end_date:', end_date, 'to UTC:', utcString);
+        qs.set('end_date', utcString);
+      } catch (error) {
+        console.warn('[SIGNALS POST] Invalid end_date format:', end_date);
+        // Fallback to original processing
+        let dateOnly = end_date.split('T')[0];
+        dateOnly = dateOnly.split('+')[0];
+        dateOnly = dateOnly.split('Z')[0];
+        dateOnly = dateOnly.split(' ')[0];
+        qs.set('end_date', dateOnly);
+      }
     }
 
     try {

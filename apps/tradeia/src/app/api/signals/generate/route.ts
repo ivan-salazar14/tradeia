@@ -3,6 +3,28 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   console.log('[SIGNALS GENERATE] ===== STARTING REQUEST =====');
 
+  // Check for Bearer token authentication
+  const auth = request.headers.get('authorization');
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Missing or invalid Authorization header. Use Bearer token.' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
+  }
+
+  // Extract token from Bearer header
+  const token = auth.substring(7); // Remove 'Bearer ' prefix
+  if (!token || token.length < 10) {
+    return NextResponse.json({ error: 'Invalid Bearer token' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity' // Disable gzip compression
+      }
+    });
+  }
+
   try {
     const body = await request.json();
     console.log('[SIGNALS GENERATE] Request body:', body);
