@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   console.log('[SIGNALS GENERATE] ===== STARTING SIGNAL GENERATION =====');
+
 
   // Check for Bearer token authentication
   const auth = request.headers.get('authorization');
@@ -27,57 +27,31 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  // Setup Supabase client for authentication
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession: false
+      }
+    }
+  );
+
+  // Authenticate user with token
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Invalid or expired token' }, {
+      status: 401,
+      headers: {
+        'Accept-Encoding': 'identity'
+      }
+    });
+  }
+
   try {
     const body = await request.json();
     console.log('[SIGNALS GENERATE] Request body:', body);
-
-    // Setup Supabase client
-    const cookieStore = await cookies();
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
-
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            if (name === `sb-${projectRef}-auth-token`) {
-              return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
-            }
-            if (name === `sb-${projectRef}-refresh-token`) {
-              return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
-            }
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: any) {
-            try {
-              cookieStore.set(name, value, options);
-            } catch {
-              // Ignore in server context
-            }
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.set(name, '', { ...options, maxAge: 0 });
-            } catch {
-              // Ignore in server context
-            }
-          },
-        },
-      }
-    );
-
-    // Get authenticated user
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-    if (sessionError || !session?.user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
     // Get strategy from request
     const strategyId = body.strategy_id || 'moderate';
     console.log('[SIGNALS GENERATE] Strategy:', strategyId);
@@ -86,7 +60,7 @@ export async function POST(request: NextRequest) {
     const { data: userStrategy, error: strategyError } = await supabase
       .from('user_strategies')
       .select('strategy_id')
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .eq('strategy_id', strategyId)
       .eq('is_active', true)
       .single();
@@ -99,7 +73,7 @@ export async function POST(request: NextRequest) {
     // Generate mock signals (in production, this would use actual trading algorithms)
     const generatedSignals = [
       {
-        user_id: session.user.id,
+        user_id: user.id,
         symbol: body.symbol || 'BTC/USDT',
         timeframe: body.timeframe || '4h',
         timestamp: new Date().toISOString(),
@@ -119,7 +93,7 @@ export async function POST(request: NextRequest) {
         reward_to_risk: 2.0
       },
       {
-        user_id: session.user.id,
+        user_id: user.id,
         symbol: body.symbol || 'ETH/USDT',
         timeframe: body.timeframe || '4h',
         timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
@@ -207,7 +181,7 @@ export async function POST(request: NextRequest) {
       ],
       portfolio_metrics: portfolioMetrics,
       risk_parameters: riskParameters,
-      _message: `Successfully generated and stored ${transformedSignals.length} signals for ${strategyId} strategy`
+      _message: `Successfully generated signals for ${strategyId} strategy`
     }, {
       status: 200,
       headers: {
