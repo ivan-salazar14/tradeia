@@ -12,6 +12,7 @@ const menu = [
   { label: "Análisis", path: "/dashboard/analysis", icon: "analysis" },
   { label: "Backtesting", path: "/dashboard/backtest", icon: "backtest" },
   { label: "Cartera", path: "/dashboard/portfolio", icon: "portfolio" },
+  { label: "Notificaciones", path: "/dashboard/notifications", icon: "notifications" },
   { label: "Gestión de Bots", path: "/dashboard/bots", icon: "bots" },
   { label: "Soporte", path: "/dashboard/support", icon: "support" },
 ];
@@ -43,6 +44,11 @@ const icons: Record<string, React.ReactElement> = {
   strategies: (
     <svg xmlns="http://www.w3.org/2000/svg" className="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  ),
+  notifications: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-5 5v-5zM4.868 12.683A17.925 17.925 0 012 21h13.78a3 3 0 002.442-1.79l.816-5.823A6.001 6.001 0 0015.501 7h-.25A6.001 6.001 0 009 13.25V21H6.014a2 2 0 01-1.414-.586l-1.5-1.5A2 2 0 012.014 17H4v-4.317z" />
     </svg>
   ),
 };
