@@ -151,7 +151,7 @@ BEGIN
     PERFORM pg_notify('new_signal', json_build_object(
         'signal_id', NEW.id,
         'symbol', NEW.symbol,
-        'direction', NEW.direction,
+        'direction', NEW.signal_direction,
         'strategy_id', NEW.strategy_id,
         'timestamp', NEW.timestamp
     )::text);
