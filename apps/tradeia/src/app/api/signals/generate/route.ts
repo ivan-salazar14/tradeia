@@ -73,7 +73,6 @@ export async function POST(request: NextRequest) {
     // Generate mock signals (in production, this would use actual trading algorithms)
     const generatedSignals = [
       {
-        user_id: user.id,
         symbol: body.symbol || 'BTC/USDT',
         timeframe: body.timeframe || '4h',
         timestamp: new Date().toISOString(),
@@ -93,7 +92,6 @@ export async function POST(request: NextRequest) {
         reward_to_risk: 2.0
       },
       {
-        user_id: user.id,
         symbol: body.symbol || 'ETH/USDT',
         timeframe: body.timeframe || '4h',
         timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
