@@ -73,7 +73,6 @@ export async function POST(request: NextRequest) {
     // Generate mock signals (in production, this would use actual trading algorithms)
     const generatedSignals = [
       {
-        user_id: user.id,
         symbol: body.symbol || 'BTC/USDT',
         timeframe: body.timeframe || '4h',
         timestamp: new Date().toISOString(),
@@ -81,7 +80,7 @@ export async function POST(request: NextRequest) {
         signal_age_hours: 0.1,
         signal_source: 'generated',
         type: 'entry',
-        direction: 'BUY',
+        signal_direction: 'BUY',
         strategy_id: strategyId,
         entry: 50000 + Math.random() * 1000, // Random price around 50k
         tp1: 51000 + Math.random() * 1000,
@@ -93,7 +92,6 @@ export async function POST(request: NextRequest) {
         reward_to_risk: 2.0
       },
       {
-        user_id: user.id,
         symbol: body.symbol || 'ETH/USDT',
         timeframe: body.timeframe || '4h',
         timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
@@ -101,7 +99,7 @@ export async function POST(request: NextRequest) {
         signal_age_hours: 1.0,
         signal_source: 'generated',
         type: 'entry',
-        direction: 'SELL',
+        signal_direction: 'SELL',
         strategy_id: strategyId,
         entry: 3000 + Math.random() * 200,
         tp1: 2900 + Math.random() * 200,
@@ -156,7 +154,7 @@ export async function POST(request: NextRequest) {
       signal_age_hours: signal.signal_age_hours,
       signal_source: signal.signal_source,
       type: signal.type,
-      direction: signal.direction,
+      direction: signal.signal_direction,
       strategyId: signal.strategy_id,
       entry: signal.entry,
       tp1: signal.tp1,

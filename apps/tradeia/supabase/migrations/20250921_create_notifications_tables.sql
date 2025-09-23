@@ -22,6 +22,19 @@ CREATE TABLE IF NOT EXISTS public.signals (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Add direction column if it doesn't exist (for existing tables)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'signals'
+        AND column_name = 'direction'
+        AND table_schema = 'public'
+    ) THEN
+        ALTER TABLE public.signals ADD COLUMN direction TEXT NOT NULL DEFAULT 'BUY' CHECK (direction IN ('BUY', 'SELL'));
+    END IF;
+END $$;
+
 -- Create user_notification_preferences table
 CREATE TABLE public.user_notification_preferences (
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
