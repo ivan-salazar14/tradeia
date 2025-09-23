@@ -676,14 +676,14 @@ export default function BacktestPage({ params }: PageProps) {
                 >
                   <option value="BTC/USDT">BTC/USDT</option>
                   <option value="ETH/USDT">ETH/USDT</option>
-                  <option value="BNB/USDT">BNB/USDT</option>
-                  <option value="ADA/USDT">ADA/USDT</option>
-                  <option value="SOL/USDT">SOL/USDT</option>
-                  <option value="DOT/USDT">DOT/USDT</option>
                   <option value="LINK/USDT">LINK/USDT</option>
-                  <option value="LTC/USDT">LTC/USDT</option>
                   <option value="XRP/USDT">XRP/USDT</option>
+                  <option value="LTC/USDT">LTC/USDT</option>
+                  <option value="XLM/USDT">XLM/USDT</option>
                   <option value="DOGE/USDT">DOGE/USDT</option>
+                  <option value="MATIC/USDT">MATIC/USDT</option>
+                  <option value="AVAX/USDT">AVAX/USDT</option>
+                  <option value="ATOM/USDT">ATOM/USDT</option>
                 </select>
                 {formData.symbol.length > 0 && (
                   <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">

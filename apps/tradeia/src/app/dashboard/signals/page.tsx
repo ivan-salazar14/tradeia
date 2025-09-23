@@ -67,6 +67,9 @@ export default function SignalsPage() {
   const [isUsingFallback, setIsUsingFallback] = useState(false);
   const [fallbackMessage, setFallbackMessage] = useState<string>('');
 
+  // Trading pairs options
+  const tradingPairs = ["BTC/USDT", "ETH/USDT", "LINK/USDT", "XRP/USDT", "LTC/USDT","XLM/USDT","DOGE/USDT","MATIC/USDT","AVAX/USDT","ATOM/USDT"];
+
   // Risk analysis parameters
   const [initialBalance, setInitialBalance] = useState<string>('10000');
   const [riskPerTrade, setRiskPerTrade] = useState<string>('1.0');
@@ -488,12 +491,16 @@ export default function SignalsPage() {
 
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">Símbolo</label>
-              <input
+              <select
                 className="border rounded px-2 py-1 text-sm w-full"
-                placeholder="Ej: BTC/USDT"
                 value={symbol}
                 onChange={(e) => setSymbol(e.target.value)}
-              />
+              >
+                <option value="">Seleccionar par...</option>
+                {tradingPairs.map(pair => (
+                  <option key={pair} value={pair}>{pair}</option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-1">
