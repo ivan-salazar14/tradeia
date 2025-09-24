@@ -28,7 +28,7 @@
     "docker:run": "docker run -p 3000:3000 tradeia",
     "docker:compose": "docker-compose up --build",
     "docker:compose:down": "docker-compose down",
-    "prepare": "husky install"
+    "prepare": "husky install || true"
   },
   "dependencies": {
     "@headlessui/react": "^2.0.0",
@@ -76,6 +76,7 @@
     "cypress": "^13.10.0",
     "eslint": "^9.5.0",
     "eslint-config-next": "15.5.0",
+    "husky": "^9.1.6",
     "jest": "^30.1.2",
     "jest-environment-jsdom": "^30.1.2",
     "postcss": "^8.4.35",

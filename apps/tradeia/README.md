@@ -64,20 +64,51 @@ Una aplicación web moderna construida con Next.js 15, TypeScript, Tailwind CSS 
 
 ### Opción 1: Desarrollo Local
 
+#### **Instalación Automática (Recomendado)**
 ```bash
 # Clonar el repositorio
 git clone <repository-url>
 cd tradeia
 
+# Ejecutar script de instalación inteligente
+# Linux/macOS:
+./install.sh
+
+# Windows:
+.\install.ps1
+
+# El script automáticamente:
+# ✅ Verifica Node.js versión
+# ✅ Instala dependencias con el package manager disponible
+# ✅ Configura husky (opcional)
+# ✅ Valida instalación
+# ✅ Verifica build de TypeScript
+```
+
+#### **Instalación Manual**
+```bash
 # Instalar dependencias
-npm install
+npm install  # o pnpm install o yarn install
 
 # Configurar variables de entorno
-cp env.example .env.local
+cp vercel.env.example .env.local
 # Editar .env.local con tus credenciales
 
 # Ejecutar en modo desarrollo
 npm run dev
+```
+
+#### **Solución de Problemas de Instalación**
+Si encuentras errores durante la instalación:
+
+```bash
+# Limpiar cache y reinstalar
+npm cache clean --force  # o pnpm store prune o yarn cache clean
+rm -rf node_modules package-lock.json pnpm-lock.yaml yarn.lock
+npm install
+
+# Verificar Node.js versión
+node --version  # Debe ser 18+
 ```
 
 ### Opción 2: Vercel (Recomendado)
