@@ -9,6 +9,9 @@ import { applySecurityMiddleware } from '@/lib/middleware/security';
 import { CacheKeys, CacheUtils } from '@/lib/utils/cache';
 import { signalsAPIClient } from '@/lib/utils/circuit-breaker';
 import { formatVersionedResponse, detectAPIVersion, APIVersion } from '@/lib/utils/api-versioning';
+import { signalProcessorPool } from '@/lib/workers/signal-processor';
+import { dbConnectionPool, DatabaseHelpers } from '@/lib/database/connection-pool';
+import { AsyncUtils, DataStreamProcessor } from '@/lib/utils/async-patterns';
 
 interface PortfolioMetrics {
   total_position_size: number;
@@ -134,23 +137,24 @@ export class SignalsService {
     };
   }
 
-  // Get user strategies from database
-  private static async getUserStrategies(supabase: any, session: any): Promise<string[]> {
+  // Get user strategies from database with connection pooling and caching
+  private static async getUserStrategies(session: any): Promise<string[]> {
     if (!session?.user) return [];
 
+    const userId = session.user.id;
+
+    // Use cached version first
+    const cacheKey = CacheKeys.userStrategies(userId);
+    const cached = CacheUtils.getUserDataCache().get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Use connection pooling for database access
     try {
-      const { data: userStrategies, error } = await supabase
-        .from('user_strategies')
-        .select('strategy_id')
-        .eq('user_id', session.user.id)
-        .eq('is_active', true);
-
-      if (error) {
-        Logger.warn('Error fetching user strategies:', error);
-        return [];
-      }
-
-      return userStrategies?.map((us: any) => us.strategy_id) || [];
+      const strategyIds = await DatabaseHelpers.getUserStrategies(userId);
+      CacheUtils.getUserDataCache().set(cacheKey, strategyIds, 10 * 60 * 1000); // 10 minutes
+      return strategyIds;
     } catch (error) {
       Logger.warn('Failed to fetch user strategies:', error);
       return [];
@@ -392,7 +396,7 @@ export class SignalsService {
         const { data: { session } } = await supabase.auth.getSession();
 
         // Get user strategies
-        const userStrategyIds = await this.getUserStrategies(supabase, session);
+        const userStrategyIds = await this.getUserStrategies(session);
 
         // Determine active strategies
         let activeStrategyIds: string[] = [];
@@ -410,8 +414,12 @@ export class SignalsService {
           activeStrategyIds
         });
 
-        // Calculate metrics
-        const portfolioMetrics = this.calculatePortfolioMetrics(signals, params.initialBalance, params.riskPerTrade);
+        // Calculate metrics using worker threads for CPU-intensive operations
+        const portfolioMetrics = await signalProcessorPool.calculatePortfolioMetrics(
+          signals,
+          params.initialBalance,
+          params.riskPerTrade
+        );
         const riskParameters: RiskParameters = {
           initial_balance: params.initialBalance,
           risk_per_trade_pct: params.riskPerTrade
