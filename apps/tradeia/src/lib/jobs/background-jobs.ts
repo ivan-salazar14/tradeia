@@ -328,3 +328,6 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   Logger.info('Shutting down background job system...');
 });
+
+// Re-export queueManager for convenience
+export { queueManager } from '@/lib/queue/message-queue';
