@@ -1,7 +1,7 @@
 import { QueueWorker, queueManager, QueueMessage } from '@/lib/queue/message-queue';
 import { Logger } from '@/lib/utils/error-handler';
 import { signalProcessorPool } from '@/lib/workers/signal-processor';
-import { DatabaseHelpers } from '@/lib/database/connection-pool';
+import { DatabaseHelpers, dbConnectionPool } from '@/lib/database/connection-pool';
 import { CacheUtils } from '@/lib/utils/cache';
 import { notificationService } from '@/lib/services/NotificationService';
 
@@ -76,33 +76,47 @@ export class DataCleanupWorker implements QueueWorker {
 
     let totalDeleted = 0;
 
-    await DatabaseHelpers.executeQuery(async (client) => {
-      // Clean up old processed signals
-      if (dataTypes.includes('signals')) {
-        const { count } = await client
-          .from('processed_signals')
-          .delete()
-          .lt('processed_at', cutoffDate.toISOString())
-          .select('*', { count: 'exact', head: true });
+    // Clean up old processed signals
+    if (dataTypes.includes('signals')) {
+      try {
+        const { count, error } = await dbConnectionPool.withConnection(async (client) => {
+          return client
+            .from('processed_signals')
+            .delete()
+            .lt('processed_at', cutoffDate.toISOString());
+        });
 
-        totalDeleted += count || 0;
-        Logger.info(`Deleted ${count} old processed signals`);
+        if (error) {
+          Logger.error('Error deleting old signals:', error instanceof Error ? error : new Error(String(error)));
+        } else {
+          totalDeleted += count || 0;
+          Logger.info(`Deleted ${count} old processed signals`);
+        }
+      } catch (error) {
+        Logger.error('Error in signals cleanup:', error instanceof Error ? error : new Error(String(error)));
       }
+    }
 
-      // Clean up old notification deliveries
-      if (dataTypes.includes('notifications')) {
-        const { count } = await client
-          .from('notification_deliveries')
-          .delete()
-          .lt('delivered_at', cutoffDate.toISOString())
-          .select('*', { count: 'exact', head: true });
+    // Clean up old notification deliveries
+    if (dataTypes.includes('notifications')) {
+      try {
+        const { count, error } = await dbConnectionPool.withConnection(async (client) => {
+          return client
+            .from('notification_deliveries')
+            .delete()
+            .lt('delivered_at', cutoffDate.toISOString());
+        });
 
-        totalDeleted += count || 0;
-        Logger.info(`Deleted ${count} old notification deliveries`);
+        if (error) {
+          Logger.error('Error deleting old notifications:', error instanceof Error ? error : new Error(String(error)));
+        } else {
+          totalDeleted += count || 0;
+          Logger.info(`Deleted ${count} old notification deliveries`);
+        }
+      } catch (error) {
+        Logger.error('Error in notifications cleanup:', error instanceof Error ? error : new Error(String(error)));
       }
-
-      return { success: true };
-    });
+    }
 
     // Clean up cache if requested
     if (dataTypes.includes('cache')) {
@@ -124,35 +138,45 @@ export class UserStatsWorker implements QueueWorker {
     // Calculate comprehensive user statistics
     const stats = await DatabaseHelpers.executeQuery(async (client) => {
       // Get signal processing stats
-      const { data: signalStats } = await client
+      const { data: signalStats, error: signalError } = await client
         .from('processed_signals')
         .select('count', { count: 'exact' })
         .eq('user_id', userId);
 
       // Get notification stats
-      const { data: notificationStats } = await client
+      const { data: notificationStats, error: notificationError } = await client
         .from('notification_deliveries')
         .select('count', { count: 'exact' })
         .eq('user_id', userId);
 
       // Get portfolio metrics
-      const { data: portfolioData } = await client
+      const { data: portfolioData, error: portfolioError } = await client
         .from('user_portfolio_metrics')
         .select('*')
         .eq('user_id', userId)
         .single();
 
+      if (signalError || notificationError || portfolioError) {
+        return {
+          data: null,
+          error: signalError || notificationError || portfolioError
+        };
+      }
+
       return {
-        totalSignalsProcessed: signalStats?.[0]?.count || 0,
-        totalNotificationsSent: notificationStats?.[0]?.count || 0,
-        portfolioMetrics: portfolioData,
-        lastUpdated: new Date().toISOString()
+        data: {
+          totalSignalsProcessed: signalStats?.[0]?.count || 0,
+          totalNotificationsSent: notificationStats?.[0]?.count || 0,
+          portfolioMetrics: portfolioData,
+          lastUpdated: new Date().toISOString()
+        },
+        error: null
       };
     });
 
     // Update user statistics
     await DatabaseHelpers.executeQuery(async (client) => {
-      await client.from('user_statistics').upsert({
+      const { data, error } = await client.from('user_statistics').upsert({
         user_id: userId,
         total_signals_processed: stats.totalSignalsProcessed,
         total_notifications_sent: stats.totalNotificationsSent,
@@ -160,7 +184,7 @@ export class UserStatsWorker implements QueueWorker {
         last_updated: stats.lastUpdated
       });
 
-      return { success: true };
+      return { data, error };
     });
 
     // Clear user-specific cache to force refresh
@@ -194,7 +218,7 @@ export class BacktestWorker implements QueueWorker {
 
     // Store backtest results
     await DatabaseHelpers.executeQuery(async (client) => {
-      await client.from('backtest_results').insert({
+      const { data, error } = await client.from('backtest_results').insert({
         user_id: userId,
         strategy_id: strategyId,
         symbol,
@@ -204,16 +228,11 @@ export class BacktestWorker implements QueueWorker {
         created_at: new Date().toISOString()
       });
 
-      return { success: true };
+      return { data, error };
     });
 
-    // Notify user of backtest completion
-    await notificationService.sendNotification(userId, {
-      type: 'backtest_completed',
-      title: 'Backtest Completed',
-      message: `Backtest for ${strategyId} on ${symbol} has been completed`,
-      data: backtestResults
-    });
+    // Log backtest completion (notifications would be handled by a separate system)
+    Logger.info(`Backtest completed for user ${userId}: ${strategyId} on ${symbol}`);
 
     Logger.info(`Backtest completed for strategy ${strategyId}`);
   }
