@@ -43,11 +43,15 @@ jobs:
       env:
         CI: true
 
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
         fail_ci_if_error: false
+        verbose: true
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   e2e:
     runs-on: ubuntu-latest
