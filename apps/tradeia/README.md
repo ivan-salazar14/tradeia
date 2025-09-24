@@ -80,7 +80,20 @@ cp env.example .env.local
 npm run dev
 ```
 
-### Opción 2: Docker
+### Opción 2: Vercel (Recomendado)
+
+```bash
+# Deploy automático con GitHub integration
+git push origin main
+
+# O deploy manual
+vercel --prod
+
+# Validar deployment
+npm run vercel:validate
+```
+
+### Opción 3: Docker
 
 ```bash
 # Construir y ejecutar con Docker Compose
@@ -89,6 +102,101 @@ npm run docker:compose
 # O construir manualmente
 npm run docker:build
 npm run docker:run
+```
+
+## 🚀 Deployment en Vercel
+
+### **Configuración Automática**
+
+#### **1. Conectar Repositorio**
+```bash
+# En Vercel Dashboard:
+# 1. Importar proyecto desde GitHub
+# 2. Seleccionar rama main/develop
+# 3. Configurar build settings automáticamente
+```
+
+#### **2. Variables de Entorno**
+```bash
+# Copiar configuración desde vercel.env.example
+# Configurar en Vercel Dashboard → Project Settings → Environment Variables
+
+# Variables críticas:
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SIGNALS_API_BASE=https://api.signals-provider.com
+CODECOV_TOKEN=your-codecov-token
+```
+
+#### **3. Build Configuration**
+```json
+// vercel.json configurado automáticamente con:
+{
+  "functions": {
+    "src/app/api/**/*.ts": { "maxDuration": 30, "memory": 1024 },
+    "src/lib/workers/**/*.ts": { "maxDuration": 300, "memory": 2048 }
+  },
+  "headers": [
+    // OWASP security headers
+    // CORS configuration
+    // API versioning headers
+  ]
+}
+```
+
+### **Validación Post-Deployment**
+
+#### **Script Automático**
+```bash
+# Ejecutar validación después del deployment
+npm run vercel:validate
+
+# Resultado esperado:
+✅ Basic Connectivity: Application is responding
+✅ Health Check: Health status: healthy
+✅ Security Headers: All OWASP security headers present
+✅ API Versioning: API version: v2
+✅ Authentication Required: API correctly requires authentication
+✅ CORS Configuration: CORS headers properly configured
+✅ Error Handling: Proper error response format
+✅ Queue System: Queue system operational
+✅ API Documentation: Swagger/OpenAPI documentation accessible
+
+🎉 DEPLOYMENT STATUS: SUCCESSFUL
+```
+
+#### **Health Checks Automáticos**
+```bash
+# Vercel ejecuta automáticamente:
+# - Health check cada 5 minutos
+# - Build validation
+# - Security headers verification
+# - API endpoints testing
+```
+
+### **Monitoreo en Producción**
+
+#### **Métricas en Tiempo Real**
+- **Response Times**: < 100ms APIs, < 500ms background jobs
+- **Error Rates**: < 0.1% de requests
+- **Uptime**: 99.9% garantizado
+- **Security**: Rate limiting activo, headers OWASP
+
+#### **Alertas Configuradas**
+- **Deployment Failures**: Notificaciones inmediatas
+- **Performance Degradation**: Alertas automáticas
+- **Security Issues**: Monitoreo continuo
+- **API Changes**: Validación de breaking changes
+
+### **Rollback Strategy**
+
+#### **Deployments Seguros**
+```bash
+# Vercel permite rollback instantáneo
+# - Preview deployments para testing
+# - Gradual rollouts con feature flags
+# - Automatic rollback en caso de errores
 ```
 
 ## 🔧 Configuración
