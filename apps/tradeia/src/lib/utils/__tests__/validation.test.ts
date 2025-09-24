@@ -74,6 +74,64 @@ describe('Validation Utils', () => {
         expect(result.errors).toContain('symbol: Symbol must be in format BASE/QUOTE (e.g., BTC/USDT)');
       }
     });
+
+    it('should validate valid signal parameters with dates', () => {
+      const validData = {
+        symbol: 'BTC/USDT',
+        timeframe: '4h',
+        start_date: '2023-01-01',
+        end_date: '2023-12-31',
+        limit: 50,
+        offset: 0
+      };
+
+      const result = validateInput(validData, ValidationSchemas.signalsQuery);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.start_date).toBe('2023-01-01');
+        expect(result.data.end_date).toBe('2023-12-31');
+      }
+    });
+
+    it('should accept various date formats', () => {
+      const testCases = [
+        '2023-01-01',
+        '2023/01/01',
+        '01-01-2023',
+        '01/01/2023',
+        '2023-01-01T00:00:00.000Z',
+        '2023-01-01T12:30:45'
+      ];
+
+      testCases.forEach(dateStr => {
+        const validData = {
+          symbol: 'BTC/USDT',
+          timeframe: '4h',
+          start_date: dateStr,
+          end_date: dateStr
+        };
+
+        const result = validateInput(validData, ValidationSchemas.signalsQuery);
+        expect(result.success).toBe(true);
+      });
+    });
+
+    it('should reject invalid dates', () => {
+      const invalidData = {
+        symbol: 'BTC/USDT',
+        timeframe: '4h',
+        start_date: 'invalid-date',
+        end_date: '2023-12-31'
+      };
+
+      const result = validateInput(invalidData, ValidationSchemas.signalsQuery);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors).toContain('start_date: start_date must be a valid date');
+      }
+    });
   });
 
   describe('sanitizeString', () => {

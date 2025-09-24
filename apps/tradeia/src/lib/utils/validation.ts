@@ -35,8 +35,24 @@ export const ValidationSchemas = {
       }),
     strategy_id: Joi.string().trim(),
     strategy_ids: Joi.string(), // Will be split and validated separately
-    start_date: Joi.string().isoDate(),
-    end_date: Joi.string().isoDate(),
+    start_date: Joi.string().custom((value, helpers) => {
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        return helpers.error('date.invalid');
+      }
+      return date.toISOString().split('T')[0]; // Return YYYY-MM-DD format
+    }).messages({
+      'date.invalid': 'start_date must be a valid date'
+    }),
+    end_date: Joi.string().custom((value, helpers) => {
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        return helpers.error('date.invalid');
+      }
+      return date.toISOString().split('T')[0]; // Return YYYY-MM-DD format
+    }).messages({
+      'date.invalid': 'end_date must be a valid date'
+    }),
     limit: Joi.number().integer().min(1).max(200).default(50),
     offset: Joi.number().integer().min(0).default(0),
     initial_balance: Joi.number().positive().default(10000),
@@ -60,8 +76,24 @@ export const ValidationSchemas = {
       .messages({
         'string.pattern.base': 'Invalid timeframe format'
       }),
-    start_date: Joi.string().isoDate(),
-    end_date: Joi.string().isoDate(),
+    start_date: Joi.string().custom((value, helpers) => {
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        return helpers.error('date.invalid');
+      }
+      return date.toISOString().split('T')[0]; // Return YYYY-MM-DD format
+    }).messages({
+      'date.invalid': 'start_date must be a valid date'
+    }),
+    end_date: Joi.string().custom((value, helpers) => {
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        return helpers.error('date.invalid');
+      }
+      return date.toISOString().split('T')[0]; // Return YYYY-MM-DD format
+    }).messages({
+      'date.invalid': 'end_date must be a valid date'
+    }),
     initial_balance: Joi.number().positive().default(10000),
     risk_per_trade: Joi.number().positive().max(100).default(1.0)
   }),
