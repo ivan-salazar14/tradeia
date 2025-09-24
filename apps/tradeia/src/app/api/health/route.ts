@@ -1,6 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Health check
+ *     description: Check the health status of the API and its dependencies
+ *     tags:
+ *       - Health
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthStatus'
+ *       503:
+ *         description: Service is unhealthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthStatus'
+ *   post:
+ *     summary: Detailed health check
+ *     description: Perform a detailed health check with additional metrics
+ *     tags:
+ *       - Health
+ *     responses:
+ *       200:
+ *         description: Detailed health status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthStatus'
+ *       503:
+ *         description: Service is unhealthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthStatus'
+ */
+
 // Health check response interface
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
