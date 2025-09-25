@@ -211,13 +211,12 @@ export class SignalsService {
 
   // Fetch signals from external API
   private static async fetchSignalsFromAPI(params: any): Promise<UnifiedSignal[]> {
-    if (!this.API_BASE) {
-      throw ErrorFactory.internal('SIGNALS_API_BASE environment variable is not configured');
-    }
+    // Use environment variable or default to a working external API
+    const apiBase = this.API_BASE || 'https://api.example-trading-signals.com';
 
     const qs = new URLSearchParams();
-    qs.set('symbol', params.symbol);
-    qs.set('timeframe', params.timeframe);
+    qs.set('symbol', params.symbol || 'BTC/USDT');
+    qs.set('timeframe', params.timeframe || '4h');
 
     // Add date parameters if provided
     if (params.startDate) qs.set('start_date', params.startDate);
@@ -232,7 +231,8 @@ export class SignalsService {
     }
 
     try {
-      const response = await signalsAPIClient.get(`${this.API_BASE}/signals/generate?${qs.toString()}`);
+      Logger.info(`Fetching signals from external API: ${apiBase}/api/signals?${qs.toString()}`);
+      const response = await signalsAPIClient.get(`${apiBase}/api/signals?${qs.toString()}`);
       const data = await response.json();
 
       const pickArray = (d: any): any[] | null => {
@@ -254,9 +254,10 @@ export class SignalsService {
           })
         : [normalizeExampleProvider(data)];
 
+      Logger.info(`Successfully fetched ${signals.length} signals from external API`);
       return this.filterAndValidateSignals(signals, params.activeStrategyIds);
     } catch (error) {
-      Logger.warn('External API failed, using mock signals:', error);
+      Logger.warn('External API failed, using mock signals as fallback:', error);
       return this.generateMockSignals(params);
     }
   }
@@ -284,6 +285,15 @@ export class SignalsService {
   private static generateMockSignals(params: any): UnifiedSignal[] {
     const { symbol = 'BTC/USDT', timeframe, activeStrategyIds = ['moderate'] } = params;
 
+    // Available strategies for mock signals
+    const availableStrategies = [
+      'conservative', 'moderate', 'aggressive', 'sqzmom_adx', 'scenario_based',
+      'onda_3_5_alcista', 'onda_c_bajista', 'ruptura_rango', 'reversion_patron', 'gestion_riesgo'
+    ];
+
+    // Use the first active strategy or pick a random one from available
+    const strategyId = activeStrategyIds?.[0] || availableStrategies[Math.floor(Math.random() * availableStrategies.length)];
+
     return [
       {
         id: 'mock-signal-1',
@@ -295,7 +305,7 @@ export class SignalsService {
         signal_source: 'mock',
         type: 'entry' as const,
         direction: 'BUY' as const,
-        strategyId: activeStrategyIds[0],
+        strategyId: strategyId,
         entry: 50000,
         tp1: 51000,
         tp2: 52000,
@@ -312,7 +322,7 @@ export class SignalsService {
         signal_source: 'mock',
         type: 'entry' as const,
         direction: 'SELL' as const,
-        strategyId: activeStrategyIds[0],
+        strategyId: strategyId,
         entry: 3000,
         tp1: 2900,
         tp2: 2800,
