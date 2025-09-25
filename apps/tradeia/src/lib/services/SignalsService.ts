@@ -209,10 +209,10 @@ export class SignalsService {
     );
   }
 
-  // Fetch signals from external API
+  // Fetch signals from the internal signals API
   private static async fetchSignalsFromAPI(params: any): Promise<UnifiedSignal[]> {
-    // Use environment variable or default to a working external API
-    const apiBase = this.API_BASE || 'https://api.example-trading-signals.com';
+    // Use the internal signals API endpoint
+    const apiBase = this.API_BASE || 'http://localhost:8000';
 
     const qs = new URLSearchParams();
     qs.set('symbol', params.symbol || 'BTC/USDT');
@@ -231,7 +231,7 @@ export class SignalsService {
     }
 
     try {
-      Logger.info(`Fetching signals from external API: ${apiBase}/api/signals?${qs.toString()}`);
+      Logger.info(`Fetching signals from internal API: ${apiBase}/api/signals?${qs.toString()}`);
       const response = await signalsAPIClient.get(`${apiBase}/api/signals?${qs.toString()}`);
       const data = await response.json();
 
@@ -254,10 +254,10 @@ export class SignalsService {
           })
         : [normalizeExampleProvider(data)];
 
-      Logger.info(`Successfully fetched ${signals.length} signals from external API`);
+      Logger.info(`Successfully fetched ${signals.length} signals from internal signals API`);
       return this.filterAndValidateSignals(signals, params.activeStrategyIds);
     } catch (error) {
-      Logger.warn('External API failed, using mock signals as fallback:', error);
+      Logger.warn('Internal signals API failed, using mock signals as fallback:', error);
       return this.generateMockSignals(params);
     }
   }
