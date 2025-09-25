@@ -39,10 +39,12 @@ type RiskParameters = {
 
 type SignalsResponse = {
   signals: Signal[];
+  strategies?: Array<{ id: string; name: string; description?: string }>;
   portfolio_metrics?: PortfolioMetrics;
   risk_parameters?: RiskParameters;
   _fallback?: boolean;
   _message?: string;
+  _mock?: boolean;
   debug_info?: any;
 };
 
@@ -270,6 +272,21 @@ export default function SignalsPage() {
       let json: SignalsResponse;
       try {
         json = await res.json();
+        console.log('[SIGNALS] API call successful. Full response:', {
+          status: res.status,
+          statusText: res.statusText,
+          headers: Object.fromEntries(res.headers.entries()),
+          body: json
+        });
+        console.log('[SIGNALS] Response details:', {
+          signalsCount: json.signals?.length || 0,
+          strategies: json.strategies,
+          portfolioMetrics: json.portfolio_metrics,
+          riskParameters: json.risk_parameters,
+          message: json._message,
+          isMock: json._mock,
+          isFallback: json._fallback
+        });
       } catch (decodeError) {
         console.warn('[SIGNALS] Failed to decode JSON response:', decodeError);
         // Try to get response as text and parse manually

@@ -65,9 +65,23 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true)
       .single();
 
+    console.log('[SIGNALS GENERATE] Strategy access validation result:', {
+      userId: user.id,
+      requestedStrategy: strategyId,
+      hasAccess: !strategyError && !!userStrategy,
+      strategyError: strategyError ? {
+        message: strategyError.message,
+        code: strategyError.code,
+        details: strategyError.details
+      } : null,
+      userStrategy: userStrategy
+    });
+
     if (strategyError || !userStrategy) {
-      console.warn('[SIGNALS GENERATE] User does not have access to strategy:', strategyId);
+      console.warn('[SIGNALS GENERATE] User does not have access to strategy:', strategyId, '- Error details:', strategyError);
       // Default to moderate strategy
+    } else {
+      console.log('[SIGNALS GENERATE] User has access to strategy:', strategyId);
     }
 
     // Generate mock signals (in production, this would use actual trading algorithms)
