@@ -257,24 +257,44 @@ export default function BacktestPage({ params }: PageProps) {
         description: 'Balanced risk strategy with multiple indicators including MACD'
       },
       {
-        id: 'sqzmom_adx',
-        name: 'ADX Squeeze Momentum',
-        description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation'
-      },
-      {
         id: 'aggressive',
         name: 'Aggressive Strategy',
         description: 'High-risk strategy for experienced traders with Bollinger Bands'
       },
       {
-        id: 'scalping',
-        name: 'Scalping Strategy',
-        description: 'Fast-paced strategy for quick profits using EMA and Stochastic'
+        id: 'sqzmom_adx',
+        name: 'Squeeze Momentum ADX',
+        description: 'Advanced strategy using squeeze momentum and ADX indicators'
       },
       {
-        id: 'swing',
-        name: 'Swing Trading',
-        description: 'Medium-term strategy for trend following with Volume analysis'
+        id: 'scenario_based',
+        name: 'Scenario Based Strategy',
+        description: 'Dynamic strategy that adapts to market conditions'
+      },
+      {
+        id: 'onda_3_5_alcista',
+        name: 'Onda 3/5 Alcista',
+        description: 'Detecta oportunidades de compra en tendencias alcistas fuertes'
+      },
+      {
+        id: 'onda_c_bajista',
+        name: 'Onda C Bajista',
+        description: 'Detecta oportunidades de venta en tendencias bajistas fuertes'
+      },
+      {
+        id: 'ruptura_rango',
+        name: 'Ruptura de Rango',
+        description: 'Detecta rupturas de consolidación con momentum confirmado'
+      },
+      {
+        id: 'reversion_patron',
+        name: 'Reversión por Patrón',
+        description: 'Detecta patrones de reversión con confirmación técnica'
+      },
+      {
+        id: 'gestion_riesgo',
+        name: 'Gestión de Riesgo',
+        description: 'Gestión avanzada de riesgo con trailing stops dinámicos'
       }
     ];
 

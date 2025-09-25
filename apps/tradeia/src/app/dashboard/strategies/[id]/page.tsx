@@ -113,6 +113,68 @@ export default function StrategyDetailsPage() {
       // Fallback a datos de ejemplo si hay error
       // Create a more dynamic fallback based on the requested strategy ID
       const fallbackStrategies: Record<string, Strategy> = {
+        'conservative': {
+          id: 'conservative',
+          name: "Estrategia Conservadora",
+          description: "Estrategia de bajo riesgo con indicadores técnicos básicos",
+          risk_level: "Bajo",
+          timeframe: "4h",
+          indicators: ["SMA", "RSI"],
+          is_active: true,
+          created_at: "2024-01-15T10:30:00Z",
+          stop_loss: 2,
+          take_profit: 4,
+          max_positions: 3,
+          performance: {
+            win_rate: 65,
+            total_trades: 120,
+            profit_loss: 8.5,
+            sharpe_ratio: 1.2,
+            max_drawdown: -3.2,
+            avg_trade_duration: 18.5
+          },
+          recent_signals: [
+            {
+              timestamp: "2024-01-25T14:30:00Z",
+              type: "BUY",
+              price: 45000,
+              confidence: 0.85,
+              status: "CLOSED",
+              pnl: 2.1
+            }
+          ]
+        },
+        'moderate': {
+          id: 'moderate',
+          name: "Estrategia Moderada",
+          description: "Estrategia equilibrada de riesgo-recompensa",
+          risk_level: "Medio",
+          timeframe: "1h",
+          indicators: ["SMA", "RSI", "MACD"],
+          is_active: false,
+          created_at: "2024-01-15T10:30:00Z",
+          stop_loss: 2.5,
+          take_profit: 5,
+          max_positions: 4,
+          performance: {
+            win_rate: 58,
+            total_trades: 95,
+            profit_loss: 12.3,
+            sharpe_ratio: 1.5,
+            max_drawdown: -4.1,
+            avg_trade_duration: 12.2
+          },
+          recent_signals: [
+            {
+              timestamp: "2024-01-25T14:30:00Z",
+              type: "BUY",
+              price: 45000,
+              confidence: 0.85,
+              status: "CLOSED",
+              pnl: 2.1
+            }
+          ]
+        },
         'aggressive': {
           id: 'aggressive',
           name: "Estrategia Agresiva",
@@ -120,7 +182,7 @@ export default function StrategyDetailsPage() {
           risk_level: "Alto",
           timeframe: "15m",
           indicators: ["RSI", "MACD", "Bollinger Bands"],
-          is_active: true,
+          is_active: false,
           created_at: "2024-01-15T10:30:00Z",
           stop_loss: 1.5,
           take_profit: 3,
@@ -151,7 +213,7 @@ export default function StrategyDetailsPage() {
           risk_level: "Medio",
           timeframe: "4h",
           indicators: ["ADX", "Squeeze Momentum"],
-          is_active: true,
+          is_active: false,
           created_at: "2024-01-15T10:30:00Z",
           stop_loss: 3,
           take_profit: 6,
@@ -172,6 +234,192 @@ export default function StrategyDetailsPage() {
               confidence: 0.85,
               status: "CLOSED",
               pnl: 2.1
+            }
+          ]
+        },
+        'scenario_based': {
+          id: 'scenario_based',
+          name: "Basada en Escenarios",
+          description: "Estrategia dinámica que se adapta a las condiciones del mercado",
+          risk_level: "Medio",
+          timeframe: "4h",
+          indicators: ["SMA", "RSI", "MACD", "ADX"],
+          is_active: false,
+          created_at: "2024-01-15T10:30:00Z",
+          stop_loss: 2.5,
+          take_profit: 5.0,
+          max_positions: 5,
+          performance: {
+            win_rate: 61,
+            total_trades: 110,
+            profit_loss: 9.8,
+            sharpe_ratio: 1.3,
+            max_drawdown: -3.8,
+            avg_trade_duration: 16.7
+          },
+          recent_signals: [
+            {
+              timestamp: "2024-01-25T14:30:00Z",
+              type: "BUY",
+              price: 45000,
+              confidence: 0.85,
+              status: "CLOSED",
+              pnl: 2.1
+            }
+          ]
+        },
+        'onda_3_5_alcista': {
+          id: 'onda_3_5_alcista',
+          name: "Onda 3/5 Alcista",
+          description: "Detecta oportunidades de compra en tendencias alcistas fuertes",
+          risk_level: "Medio",
+          timeframe: "4h",
+          indicators: ["Elliott Wave", "RSI", "MACD"],
+          is_active: false,
+          created_at: "2024-01-15T10:30:00Z",
+          stop_loss: 2.0,
+          take_profit: 6.0,
+          max_positions: 3,
+          performance: {
+            win_rate: 62,
+            total_trades: 85,
+            profit_loss: 15.2,
+            sharpe_ratio: 1.8,
+            max_drawdown: -5.1,
+            avg_trade_duration: 24.3
+          },
+          recent_signals: [
+            {
+              timestamp: "2024-01-25T14:30:00Z",
+              type: "BUY",
+              price: 45000,
+              confidence: 0.85,
+              status: "CLOSED",
+              pnl: 2.1
+            }
+          ]
+        },
+        'onda_c_bajista': {
+          id: 'onda_c_bajista',
+          name: "Onda C Bajista",
+          description: "Detecta oportunidades de venta en tendencias bajistas fuertes",
+          risk_level: "Medio",
+          timeframe: "4h",
+          indicators: ["Elliott Wave", "RSI", "MACD"],
+          is_active: false,
+          created_at: "2024-01-15T10:30:00Z",
+          stop_loss: 2.0,
+          take_profit: 6.0,
+          max_positions: 3,
+          performance: {
+            win_rate: 60,
+            total_trades: 78,
+            profit_loss: 13.8,
+            sharpe_ratio: 1.6,
+            max_drawdown: -4.8,
+            avg_trade_duration: 22.1
+          },
+          recent_signals: [
+            {
+              timestamp: "2024-01-25T14:30:00Z",
+              type: "SELL",
+              price: 45000,
+              confidence: 0.82,
+              status: "CLOSED",
+              pnl: 3.2
+            }
+          ]
+        },
+        'ruptura_rango': {
+          id: 'ruptura_rango',
+          name: "Ruptura de Rango",
+          description: "Detecta rupturas de consolidación con momentum confirmado",
+          risk_level: "Medio",
+          timeframe: "1h",
+          indicators: ["Bollinger Bands", "Volume", "RSI"],
+          is_active: false,
+          created_at: "2024-01-15T10:30:00Z",
+          stop_loss: 1.5,
+          take_profit: 4.0,
+          max_positions: 4,
+          performance: {
+            win_rate: 55,
+            total_trades: 110,
+            profit_loss: 9.7,
+            sharpe_ratio: 1.3,
+            max_drawdown: -3.9,
+            avg_trade_duration: 8.5
+          },
+          recent_signals: [
+            {
+              timestamp: "2024-01-25T14:30:00Z",
+              type: "BUY",
+              price: 45000,
+              confidence: 0.78,
+              status: "CLOSED",
+              pnl: 1.8
+            }
+          ]
+        },
+        'reversion_patron': {
+          id: 'reversion_patron',
+          name: "Reversión por Patrón",
+          description: "Detecta patrones de reversión con confirmación técnica",
+          risk_level: "Medio",
+          timeframe: "4h",
+          indicators: ["Chart Patterns", "RSI", "Fibonacci"],
+          is_active: false,
+          created_at: "2024-01-15T10:30:00Z",
+          stop_loss: 1.0,
+          take_profit: 3.0,
+          max_positions: 5,
+          performance: {
+            win_rate: 52,
+            total_trades: 95,
+            profit_loss: 7.4,
+            sharpe_ratio: 1.1,
+            max_drawdown: -2.8,
+            avg_trade_duration: 16.2
+          },
+          recent_signals: [
+            {
+              timestamp: "2024-01-25T14:30:00Z",
+              type: "BUY",
+              price: 45000,
+              confidence: 0.75,
+              status: "CLOSED",
+              pnl: 1.2
+            }
+          ]
+        },
+        'gestion_riesgo': {
+          id: 'gestion_riesgo',
+          name: "Gestión de Riesgo",
+          description: "Gestión avanzada de riesgo con trailing stops dinámicos",
+          risk_level: "Bajo",
+          timeframe: "1h",
+          indicators: ["ATR", "Trailing Stop", "Risk Management"],
+          is_active: false,
+          created_at: "2024-01-15T10:30:00Z",
+          stop_loss: 1.0,
+          take_profit: 2.0,
+          max_positions: 2,
+          performance: {
+            win_rate: 68,
+            total_trades: 65,
+            profit_loss: 6.9,
+            sharpe_ratio: 1.4,
+            max_drawdown: -2.1,
+            avg_trade_duration: 14.7
+          },
+          recent_signals: [
+            {
+              timestamp: "2024-01-25T14:30:00Z",
+              type: "BUY",
+              price: 45000,
+              confidence: 0.88,
+              status: "CLOSED",
+              pnl: 0.9
             }
           ]
         }
@@ -217,8 +465,11 @@ export default function StrategyDetailsPage() {
   const getRiskColor = (risk: string) => {
     switch (risk) {
       case "Bajo": return "text-green-600 bg-green-100";
+      case "conservative": return "text-green-600 bg-green-100";
       case "Medio": return "text-yellow-600 bg-yellow-100";
+      case "moderate": return "text-yellow-600 bg-yellow-100";
       case "Alto": return "text-red-600 bg-red-100";
+      case "aggressive": return "text-red-600 bg-red-100";
       default: return "text-gray-600 bg-gray-100";
     }
   };

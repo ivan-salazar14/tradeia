@@ -99,9 +99,9 @@ export default function StrategiesPage() {
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
-      case "Bajo": return "text-green-600 bg-green-100";
-      case "Medio": return "text-yellow-600 bg-yellow-100";
-      case "Alto": return "text-red-600 bg-red-100";
+      case "conservative": return "text-green-600 bg-green-100";
+      case "moderate": return "text-yellow-600 bg-yellow-100";
+      case "aggressive": return "text-red-600 bg-red-100";
       default: return "text-gray-600 bg-gray-100";
     }
   };

@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate strategy exists
-    const validStrategies = ['conservative', 'moderate', 'aggressive'];
+    const validStrategies = ['conservative', 'moderate', 'aggressive', 'sqzmom_adx', 'scenario_based', 'onda_3_5_alcista', 'onda_c_bajista', 'ruptura_rango', 'reversion_patron', 'gestion_riesgo'];
     if (!validStrategies.includes(strategy_name)) {
       return NextResponse.json({
         error: `Invalid strategy name. Must be one of: ${validStrategies.join(', ')}`
@@ -120,6 +120,41 @@ export async function POST(request: NextRequest) {
         name: 'Aggressive Strategy',
         description: 'High-risk strategy for maximum returns',
         risk_level: 'aggressive'
+      },
+      sqzmom_adx: {
+        name: 'Squeeze Momentum ADX',
+        description: 'Advanced strategy using squeeze momentum and ADX indicators',
+        risk_level: 'moderate'
+      },
+      scenario_based: {
+        name: 'Scenario Based Strategy',
+        description: 'Dynamic strategy that adapts to market conditions',
+        risk_level: 'moderate'
+      },
+      onda_3_5_alcista: {
+        name: 'Onda 3/5 Alcista',
+        description: 'Detecta oportunidades de compra en tendencias alcistas fuertes',
+        risk_level: 'moderate'
+      },
+      onda_c_bajista: {
+        name: 'Onda C Bajista',
+        description: 'Detecta oportunidades de venta en tendencias bajistas fuertes',
+        risk_level: 'moderate'
+      },
+      ruptura_rango: {
+        name: 'Ruptura de Rango',
+        description: 'Detecta rupturas de consolidación con momentum confirmado',
+        risk_level: 'moderate'
+      },
+      reversion_patron: {
+        name: 'Reversión por Patrón',
+        description: 'Detecta patrones de reversión con confirmación técnica',
+        risk_level: 'moderate'
+      },
+      gestion_riesgo: {
+        name: 'Gestión de Riesgo',
+        description: 'Gestión avanzada de riesgo con trailing stops dinámicos',
+        risk_level: 'conservative'
       }
     };
 

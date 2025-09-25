@@ -123,6 +123,104 @@ export async function GET(
       take_profit: 3,
       max_positions: 5,
       criteria: 'RSI < 40, ADX > 20, SQZMOM > 1700, flexible trend confirmation'
+    },
+    sqzmom_adx: {
+      id: 'sqzmom_adx',
+      name: 'Squeeze Momentum ADX',
+      description: 'Advanced strategy using squeeze momentum and ADX indicators',
+      risk_level: 'moderate',
+      timeframe: '1h',
+      indicators: ['SQZMOM', 'ADX', 'RSI'],
+      is_active: false,
+      created_at: new Date().toISOString(),
+      stop_loss: 2.0,
+      take_profit: 4.5,
+      max_positions: 4,
+      criteria: 'SQZMOM > 1750, ADX > 25, RSI between 30-70, momentum confirmation'
+    },
+    scenario_based: {
+      id: 'scenario_based',
+      name: 'Scenario Based Strategy',
+      description: 'Dynamic strategy that adapts to market conditions',
+      risk_level: 'moderate',
+      timeframe: '4h',
+      indicators: ['SMA', 'RSI', 'MACD', 'ADX'],
+      is_active: false,
+      created_at: new Date().toISOString(),
+      stop_loss: 2.5,
+      take_profit: 5.0,
+      max_positions: 5,
+      criteria: 'Adaptive criteria based on market volatility and trend strength'
+    },
+    onda_3_5_alcista: {
+      id: 'onda_3_5_alcista',
+      name: 'Onda 3/5 Alcista',
+      description: 'Detecta oportunidades de compra en tendencias alcistas fuertes',
+      risk_level: 'moderate',
+      timeframe: '4h',
+      indicators: ['Elliott Wave', 'RSI', 'MACD'],
+      is_active: false,
+      created_at: new Date().toISOString(),
+      stop_loss: 2.0,
+      take_profit: 6.0,
+      max_positions: 3,
+      criteria: 'Wave 3/5 pattern, RSI > 50, MACD positive, strong uptrend confirmation'
+    },
+    onda_c_bajista: {
+      id: 'onda_c_bajista',
+      name: 'Onda C Bajista',
+      description: 'Detecta oportunidades de venta en tendencias bajistas fuertes',
+      risk_level: 'moderate',
+      timeframe: '4h',
+      indicators: ['Elliott Wave', 'RSI', 'MACD'],
+      is_active: false,
+      created_at: new Date().toISOString(),
+      stop_loss: 2.0,
+      take_profit: 6.0,
+      max_positions: 3,
+      criteria: 'Wave C pattern, RSI < 50, MACD negative, strong downtrend confirmation'
+    },
+    ruptura_rango: {
+      id: 'ruptura_rango',
+      name: 'Ruptura de Rango',
+      description: 'Detecta rupturas de consolidación con momentum confirmado',
+      risk_level: 'moderate',
+      timeframe: '1h',
+      indicators: ['Bollinger Bands', 'Volume', 'RSI'],
+      is_active: false,
+      created_at: new Date().toISOString(),
+      stop_loss: 1.5,
+      take_profit: 4.0,
+      max_positions: 4,
+      criteria: 'Price breakout from range, volume confirmation, RSI divergence'
+    },
+    reversion_patron: {
+      id: 'reversion_patron',
+      name: 'Reversión por Patrón',
+      description: 'Detecta patrones de reversión con confirmación técnica',
+      risk_level: 'moderate',
+      timeframe: '4h',
+      indicators: ['Chart Patterns', 'RSI', 'Fibonacci'],
+      is_active: false,
+      created_at: new Date().toISOString(),
+      stop_loss: 1.0,
+      take_profit: 3.0,
+      max_positions: 5,
+      criteria: 'Reversal patterns (head & shoulders, double top/bottom), RSI oversold/overbought'
+    },
+    gestion_riesgo: {
+      id: 'gestion_riesgo',
+      name: 'Gestión de Riesgo',
+      description: 'Gestión avanzada de riesgo con trailing stops dinámicos',
+      risk_level: 'conservative',
+      timeframe: '1h',
+      indicators: ['ATR', 'Trailing Stop', 'Risk Management'],
+      is_active: false,
+      created_at: new Date().toISOString(),
+      stop_loss: 1.0,
+      take_profit: 2.0,
+      max_positions: 2,
+      criteria: 'Dynamic trailing stops, position sizing based on volatility, strict risk limits'
     }
   };
 
@@ -244,7 +342,7 @@ export async function PUT(
     }
 
     // Validate strategy exists
-    const validStrategies = ['conservative', 'moderate', 'aggressive'];
+    const validStrategies = ['conservative', 'moderate', 'aggressive', 'sqzmom_adx', 'scenario_based', 'onda_3_5_alcista', 'onda_c_bajista', 'ruptura_rango', 'reversion_patron', 'gestion_riesgo'];
     if (!validStrategies.includes(strategyId)) {
       return NextResponse.json({
         error: `Strategy '${strategyId}' not found`
