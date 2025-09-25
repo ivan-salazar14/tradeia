@@ -174,7 +174,7 @@ export function sanitizeString(input: string): string {
     .replace(/<[^>]*>/g, '')
     .replace(/javascript:/gi, '')
     .replace(/on\w+\s*=/gi, '')
-    .replace(/[^\w\s@.-]/g, '') // Remove special characters except common ones
+    .replace(/[^\w\s@.:-]/g, '') // Remove special characters except common ones (added : for ISO dates)
     .trim();
 }
 
