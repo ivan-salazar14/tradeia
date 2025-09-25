@@ -115,6 +115,15 @@ const mockStrategies: MockStrategy[] = [
     timeframe: '1h',
     indicators: ['ATR', 'Trailing Stop', 'Risk Management'],
     is_active: false
+  },
+  {
+    id: 'advanced_ta',
+    name: 'Advanced TA Strategy',
+    description: 'Advanced technical analysis strategy with multiple indicators and sophisticated entry/exit rules',
+    risk_level: 'High',
+    timeframe: '4h',
+    indicators: ['RSI', 'MACD', 'Bollinger Bands', 'Stochastic', 'Fibonacci'],
+    is_active: true
   }
 ];
 
@@ -210,6 +219,18 @@ function getStrategyConfig(strategyId: string) {
       takeProfitPct: 0.02,
       holdPeriod: 60,
       trailingStopPct: 0.005
+    },
+    advanced_ta: {
+      minCandles: 50,
+      lookback: 30,
+      stopLossPct: 0.015,
+      takeProfitPct: 0.06,
+      holdPeriod: 240,
+      rsiOverbought: 75,
+      rsiOversold: 25,
+      macdSignal: true,
+      fibonacciLevels: true,
+      stochasticThreshold: 80
     }
   };
 
@@ -275,6 +296,26 @@ function generateBacktestSignal(strategyConfig: any, marketData: any) {
         return { direction: 'BUY', reason: 'Upper Bollinger Band breakout' };
       } else if (close < range.lower && close < prevClose) {
         return { direction: 'SELL', reason: 'Lower Bollinger Band breakout' };
+      }
+      break;
+
+    case 'advanced_ta':
+      // Advanced technical analysis strategy
+      const rsi_advanced = calculateRSI(candles.slice(-14));
+      const macd_advanced = calculateMACD(candles.slice(-26));
+      const stochastic = calculateStochastic(candles.slice(-14));
+
+      // Complex conditions: RSI oversold + MACD positive + Stochastic oversold + upward momentum
+      if (rsi_advanced < strategyConfig.rsiOversold &&
+          macd_advanced.histogram > 0 &&
+          stochastic.k < (100 - strategyConfig.stochasticThreshold) &&
+          close > prevClose) {
+        return { direction: 'BUY', reason: 'Advanced TA: RSI oversold + MACD positive + Stochastic oversold + momentum' };
+      } else if (rsi_advanced > strategyConfig.rsiOverbought &&
+                 macd_advanced.histogram < 0 &&
+                 stochastic.k > strategyConfig.stochasticThreshold &&
+                 close < prevClose) {
+        return { direction: 'SELL', reason: 'Advanced TA: RSI overbought + MACD negative + Stochastic overbought + momentum' };
       }
       break;
 
@@ -367,6 +408,40 @@ function calculateBollingerBands(prices: any[]) {
     middle: sma,
     lower: sma - (stdDev * 2)
   };
+}
+
+function calculateStochastic(prices: any[]) {
+  if (prices.length < 14) return { k: 50, d: 50 };
+
+  const highs = prices.map(p => p[2]);
+  const lows = prices.map(p => p[3]);
+  const closes = prices.map(p => p[4]);
+
+  const currentClose = closes[closes.length - 1];
+  const highestHigh = Math.max(...highs.slice(-14));
+  const lowestLow = Math.min(...lows.slice(-14));
+
+  const k = ((currentClose - lowestLow) / (highestHigh - lowestLow)) * 100;
+
+  // Simple moving average of K for D (3 period)
+  const kValues = [];
+  for (let i = Math.max(0, closes.length - 17); i < closes.length; i++) {
+    const sliceHighs = highs.slice(i, i + 14);
+    const sliceLows = lows.slice(i, i + 14);
+    const sliceCloses = closes.slice(i, i + 14);
+
+    if (sliceHighs.length >= 14) {
+      const hh = Math.max(...sliceHighs);
+      const ll = Math.min(...sliceLows);
+      const cc = sliceCloses[sliceCloses.length - 1];
+      const kk = ((cc - ll) / (hh - ll)) * 100;
+      kValues.push(kk);
+    }
+  }
+
+  const d = kValues.length >= 3 ? kValues.slice(-3).reduce((sum, val) => sum + val, 0) / 3 : k;
+
+  return { k, d };
 }
 
 export async function POST(request: Request) {
