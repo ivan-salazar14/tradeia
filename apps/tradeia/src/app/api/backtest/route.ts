@@ -45,15 +45,6 @@ const mockStrategies: MockStrategy[] = [
     is_active: false
   },
   {
-    id: 'sqzmom_adx',
-    name: 'ADX Squeeze Momentum',
-    description: 'Strategy using ADX and Squeeze Momentum indicators for trend confirmation',
-    risk_level: 'Medium',
-    timeframe: '4h',
-    indicators: ['ADX', 'Squeeze Momentum'],
-    is_active: false
-  },
-  {
     id: 'aggressive',
     name: 'Aggressive Strategy',
     description: 'High-risk strategy for experienced traders',
@@ -63,24 +54,320 @@ const mockStrategies: MockStrategy[] = [
     is_active: false
   },
   {
-    id: 'scalping',
-    name: 'Scalping Strategy',
-    description: 'Fast-paced strategy for quick profits',
-    risk_level: 'High',
-    timeframe: '5m',
-    indicators: ['EMA', 'Stochastic'],
+    id: 'sqzmom_adx',
+    name: 'Squeeze Momentum ADX',
+    description: 'Advanced strategy using squeeze momentum and ADX indicators',
+    risk_level: 'Medium',
+    timeframe: '1h',
+    indicators: ['SQZMOM', 'ADX', 'RSI'],
     is_active: false
   },
   {
-    id: 'swing',
-    name: 'Swing Trading',
-    description: 'Medium-term strategy for trend following',
-    risk_level: 'Medium',
-    timeframe: '1d',
-    indicators: ['Moving Average', 'Volume'],
+    id: 'scenario_based',
+    name: 'Scenario Based Strategy',
+    description: 'Dynamic strategy that adapts to market conditions',
+    risk_level: 'moderate',
+    timeframe: '4h',
+    indicators: ['SMA', 'RSI', 'MACD', 'ADX'],
+    is_active: false
+  },
+  {
+    id: 'onda_3_5_alcista',
+    name: 'Onda 3/5 Alcista',
+    description: 'Detecta oportunidades de compra en tendencias alcistas fuertes',
+    risk_level: 'moderate',
+    timeframe: '4h',
+    indicators: ['Elliott Wave', 'RSI', 'MACD'],
+    is_active: false
+  },
+  {
+    id: 'onda_c_bajista',
+    name: 'Onda C Bajista',
+    description: 'Detecta oportunidades de venta en tendencias bajistas fuertes',
+    risk_level: 'moderate',
+    timeframe: '4h',
+    indicators: ['Elliott Wave', 'RSI', 'MACD'],
+    is_active: false
+  },
+  {
+    id: 'ruptura_rango',
+    name: 'Ruptura de Rango',
+    description: 'Detecta rupturas de consolidación con momentum confirmado',
+    risk_level: 'moderate',
+    timeframe: '1h',
+    indicators: ['Bollinger Bands', 'Volume', 'RSI'],
+    is_active: false
+  },
+  {
+    id: 'reversion_patron',
+    name: 'Reversión por Patrón',
+    description: 'Detecta patrones de reversión con confirmación técnica',
+    risk_level: 'moderate',
+    timeframe: '4h',
+    indicators: ['Chart Patterns', 'RSI', 'Fibonacci'],
+    is_active: false
+  },
+  {
+    id: 'gestion_riesgo',
+    name: 'Gestión de Riesgo',
+    description: 'Gestión avanzada de riesgo con trailing stops dinámicos',
+    risk_level: 'conservative',
+    timeframe: '1h',
+    indicators: ['ATR', 'Trailing Stop', 'Risk Management'],
     is_active: false
   }
 ];
+
+// Strategy configuration for backtesting
+function getStrategyConfig(strategyId: string) {
+  const configs: Record<string, any> = {
+    conservative: {
+      minCandles: 20,
+      lookback: 14,
+      stopLossPct: 0.02, // 2%
+      takeProfitPct: 0.04, // 4%
+      holdPeriod: 240, // 4 hours in minutes
+      rsiOverbought: 70,
+      rsiOversold: 30
+    },
+    moderate: {
+      minCandles: 26,
+      lookback: 26,
+      stopLossPct: 0.025, // 2.5%
+      takeProfitPct: 0.05, // 5%
+      holdPeriod: 60, // 1 hour in minutes
+      rsiOverbought: 75,
+      rsiOversold: 25
+    },
+    aggressive: {
+      minCandles: 14,
+      lookback: 14,
+      stopLossPct: 0.015, // 1.5%
+      takeProfitPct: 0.03, // 3%
+      holdPeriod: 15, // 15 minutes
+      rsiOverbought: 80,
+      rsiOversold: 20
+    },
+    sqzmom_adx: {
+      minCandles: 20,
+      lookback: 14,
+      stopLossPct: 0.02,
+      takeProfitPct: 0.045,
+      holdPeriod: 60,
+      adxThreshold: 25,
+      squeezeThreshold: 1780
+    },
+    scenario_based: {
+      minCandles: 30,
+      lookback: 20,
+      stopLossPct: 0.025,
+      takeProfitPct: 0.05,
+      holdPeriod: 120,
+      rsiOverbought: 75,
+      rsiOversold: 25,
+      adxThreshold: 25
+    },
+    onda_3_5_alcista: {
+      minCandles: 50,
+      lookback: 30,
+      stopLossPct: 0.02,
+      takeProfitPct: 0.06,
+      holdPeriod: 240,
+      rsiThreshold: 50,
+      waveConfirmation: true
+    },
+    onda_c_bajista: {
+      minCandles: 50,
+      lookback: 30,
+      stopLossPct: 0.02,
+      takeProfitPct: 0.06,
+      holdPeriod: 240,
+      rsiThreshold: 50,
+      waveConfirmation: true
+    },
+    ruptura_rango: {
+      minCandles: 20,
+      lookback: 20,
+      stopLossPct: 0.015,
+      takeProfitPct: 0.04,
+      holdPeriod: 30,
+      volumeThreshold: 1.5,
+      breakoutPct: 0.02
+    },
+    reversion_patron: {
+      minCandles: 30,
+      lookback: 20,
+      stopLossPct: 0.01,
+      takeProfitPct: 0.03,
+      holdPeriod: 180,
+      rsiOverbought: 75,
+      rsiOversold: 25
+    },
+    gestion_riesgo: {
+      minCandles: 20,
+      lookback: 14,
+      stopLossPct: 0.01,
+      takeProfitPct: 0.02,
+      holdPeriod: 60,
+      trailingStopPct: 0.005
+    }
+  };
+
+  return configs[strategyId] || configs.moderate;
+}
+
+// Generate backtest signal based on strategy
+function generateBacktestSignal(strategyConfig: any, marketData: any) {
+  const { open, high, low, close, prevClose, candles } = marketData;
+
+  switch (strategyConfig.id || 'moderate') {
+    case 'conservative':
+      // RSI-based strategy
+      const rsi = calculateRSI(candles.slice(-14));
+      if (rsi < strategyConfig.rsiOversold && close > prevClose) {
+        return { direction: 'BUY', reason: 'RSI oversold + upward momentum' };
+      } else if (rsi > strategyConfig.rsiOverbought && close < prevClose) {
+        return { direction: 'SELL', reason: 'RSI overbought + downward momentum' };
+      }
+      break;
+
+    case 'moderate':
+      // RSI + MACD strategy
+      const rsi_mod = calculateRSI(candles.slice(-14));
+      const macd = calculateMACD(candles.slice(-26));
+      if (rsi_mod < strategyConfig.rsiOversold && macd.histogram > 0 && close > prevClose) {
+        return { direction: 'BUY', reason: 'RSI oversold + MACD positive + upward momentum' };
+      } else if (rsi_mod > strategyConfig.rsiOverbought && macd.histogram < 0 && close < prevClose) {
+        return { direction: 'SELL', reason: 'RSI overbought + MACD negative + downward momentum' };
+      }
+      break;
+
+    case 'aggressive':
+      // Quick momentum strategy
+      const priceChange = (close - prevClose) / prevClose;
+      if (priceChange > 0.005) { // 0.5% upward move
+        return { direction: 'BUY', reason: 'Strong upward momentum' };
+      } else if (priceChange < -0.005) { // 0.5% downward move
+        return { direction: 'SELL', reason: 'Strong downward momentum' };
+      }
+      break;
+
+    case 'onda_3_5_alcista':
+      // Elliott Wave bullish pattern
+      const trend = calculateTrend(candles.slice(-20));
+      if (trend === 'uptrend' && close > calculateSMA(candles.slice(-20), 20)) {
+        return { direction: 'BUY', reason: 'Elliott Wave 3/5 bullish pattern' };
+      }
+      break;
+
+    case 'onda_c_bajista':
+      // Elliott Wave bearish pattern
+      const trend_down = calculateTrend(candles.slice(-20));
+      if (trend_down === 'downtrend' && close < calculateSMA(candles.slice(-20), 20)) {
+        return { direction: 'SELL', reason: 'Elliott Wave C bearish pattern' };
+      }
+      break;
+
+    case 'ruptura_rango':
+      // Range breakout strategy
+      const range = calculateBollingerBands(candles.slice(-20));
+      if (close > range.upper && close > prevClose) {
+        return { direction: 'BUY', reason: 'Upper Bollinger Band breakout' };
+      } else if (close < range.lower && close < prevClose) {
+        return { direction: 'SELL', reason: 'Lower Bollinger Band breakout' };
+      }
+      break;
+
+    default:
+      // Default conservative strategy
+      const defaultRsi = calculateRSI(candles.slice(-14));
+      if (defaultRsi < 30 && close > prevClose) {
+        return { direction: 'BUY', reason: 'Default RSI strategy' };
+      }
+  }
+
+  return null;
+}
+
+// Helper functions for technical indicators
+function calculateRSI(prices: any[]): number {
+  if (prices.length < 2) return 50;
+
+  let gains = 0;
+  let losses = 0;
+
+  for (let i = 1; i < prices.length; i++) {
+    const change = prices[i][4] - prices[i-1][4]; // close prices
+    if (change > 0) gains += change;
+    else losses -= change;
+  }
+
+  const avgGain = gains / (prices.length - 1);
+  const avgLoss = losses / (prices.length - 1);
+
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+
+function calculateSMA(prices: any[], period: number): number {
+  if (prices.length < period) return prices[prices.length - 1][4];
+
+  const closes = prices.slice(-period).map(p => p[4]);
+  return closes.reduce((sum, price) => sum + price, 0) / period;
+}
+
+function calculateMACD(prices: any[]) {
+  // Simplified MACD calculation
+  const closes = prices.map(p => p[4]);
+  const ema12 = calculateEMA(closes, 12);
+  const ema26 = calculateEMA(closes, 26);
+  const macd = ema12 - ema26;
+  const signal = calculateEMA([macd], 9);
+  const histogram = macd - signal;
+
+  return { macd, signal, histogram };
+}
+
+function calculateEMA(prices: number[], period: number): number {
+  if (prices.length < period) return prices[prices.length - 1];
+
+  const multiplier = 2 / (period + 1);
+  let ema = prices.slice(0, period).reduce((sum, price) => sum + price, 0) / period;
+
+  for (let i = period; i < prices.length; i++) {
+    ema = (prices[i] - ema) * multiplier + ema;
+  }
+
+  return ema;
+}
+
+function calculateTrend(prices: any[]): string {
+  if (prices.length < 10) return 'sideways';
+
+  const recent = prices.slice(-10);
+  const older = prices.slice(-20, -10);
+
+  const recentAvg = recent.reduce((sum, p) => sum + p[4], 0) / recent.length;
+  const olderAvg = older.reduce((sum, p) => sum + p[4], 0) / older.length;
+
+  if (recentAvg > olderAvg * 1.02) return 'uptrend';
+  if (recentAvg < olderAvg * 0.98) return 'downtrend';
+  return 'sideways';
+}
+
+function calculateBollingerBands(prices: any[]) {
+  const closes = prices.map(p => p[4]);
+  const sma = closes.reduce((sum, price) => sum + price, 0) / closes.length;
+  const variance = closes.reduce((sum, price) => sum + Math.pow(price - sma, 2), 0) / closes.length;
+  const stdDev = Math.sqrt(variance);
+
+  return {
+    upper: sma + (stdDev * 2),
+    middle: sma,
+    lower: sma - (stdDev * 2)
+  };
+}
 
 export async function POST(request: Request) {
   console.log('[BACKTEST] ===== STARTING BACKTEST REQUEST =====');
@@ -179,7 +466,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Call the backtest service
+    // Call the external signals API for backtesting
     const apiUrl = `${process.env.SIGNALS_API_BASE}/backtest/run`;
 
     // Prepare request body for external API with correct parameter mapping
