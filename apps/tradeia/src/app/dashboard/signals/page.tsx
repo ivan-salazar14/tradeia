@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { format, subDays } from "date-fns";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -79,8 +79,6 @@ export default function SignalsPage() {
   const [signalsPerPage, setSignalsPerPage] = useState(25);
   const signalsPerPageOptions = [10, 25, 50, 100];
 
-  // Track initial load to prevent duplicate API calls
-  const initialLoadRef = useRef(false);
 
   const fetchSignals = useMemo(() => async () => {
     try {
@@ -335,14 +333,8 @@ export default function SignalsPage() {
     }
   }, [timeframe, symbol, selectedStrategies, dateRange.start, dateRange.end, initialBalance, riskPerTrade, session?.access_token]);
 
-  useEffect(() => {
-    // Only fetch signals on initial load when all conditions are met
-    if (strategyOptions.length > 0 && !strategiesLoading && session !== undefined && !initialLoadRef.current) {
-      console.log('[SIGNALS-PAGE] Initial load: calling fetchSignals');
-      initialLoadRef.current = true;
-      fetchSignals();
-    }
-  }, [fetchSignals, strategyOptions.length, strategiesLoading, session]);
+  // Removed automatic API call on page load
+  // Signals will only be fetched when user explicitly clicks buttons or changes filters
 
   // Use static mock strategies instead of API call
   useEffect(() => {
@@ -406,11 +398,6 @@ export default function SignalsPage() {
     console.log('[SIGNALS-PAGE] Mock strategies data:', mockStrategies);
     setStrategyOptions(mockStrategies);
     setStrategiesLoading(false);
-
-    // Log when strategies are set
-    setTimeout(() => {
-      console.log('[SIGNALS-PAGE] Strategy options after set:', strategyOptions.length);
-    }, 100);
   }, []);
 
   // Create a map of strategy IDs to names for quick lookup
@@ -422,10 +409,11 @@ export default function SignalsPage() {
   useEffect(() => {
     console.log('[SIGNALS-PAGE] Strategy options updated:', strategyOptions.length, 'strategies');
     console.log('[SIGNALS-PAGE] Strategies loading:', strategiesLoading);
+    console.log('[SIGNALS-PAGE] Session defined:', session !== undefined);
     if (strategyOptions.length > 0) {
       console.log('[SIGNALS-PAGE] Available strategies:', strategyOptions.map(s => `${s.id}: ${s.name}`));
     }
-  }, [strategyOptions, strategiesLoading]);
+  }, [strategyOptions, strategiesLoading, session]);
 
   // Pagination calculations
   const totalPages = Math.ceil(signals.length / signalsPerPage);

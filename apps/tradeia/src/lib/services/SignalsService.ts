@@ -209,11 +209,9 @@ export class SignalsService {
     );
   }
 
-  // Fetch signals from the external signals API
+  // Fetch signals from the internal signals API
   private static async fetchSignalsFromAPI(params: any): Promise<UnifiedSignal[]> {
-    // Use the external signals API endpoint
-    const apiBase = process.env.SIGNALS_API_BASE || 'http://localhost:8000';
-
+    // Use the internal signals API endpoint
     const qs = new URLSearchParams();
     qs.set('symbol', params.symbol || 'BTC/USDT');
     qs.set('timeframe', params.timeframe || '4h');
@@ -231,8 +229,19 @@ export class SignalsService {
     }
 
     try {
-      Logger.info(`Fetching signals from external API: ${apiBase}/api/signals?${qs.toString()}`);
-      const response = await signalsAPIClient.get(`${apiBase}/api/signals?${qs.toString()}`);
+      Logger.info(`Fetching signals from internal API: /api/signals?${qs.toString()}`);
+      const response = await fetch(`/api/signals?${qs.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Internal signals API returned ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
 
       const pickArray = (d: any): any[] | null => {
@@ -254,10 +263,10 @@ export class SignalsService {
           })
         : [normalizeExampleProvider(data)];
 
-      Logger.info(`Successfully fetched ${signals.length} signals from external signals API`);
+      Logger.info(`Successfully fetched ${signals.length} signals from internal signals API`);
       return this.filterAndValidateSignals(signals, params.activeStrategyIds);
     } catch (error) {
-      Logger.warn('External signals API failed, using mock signals as fallback:', error);
+      Logger.warn('Internal signals API failed, using mock signals as fallback:', error);
       return this.generateMockSignals(params);
     }
   }

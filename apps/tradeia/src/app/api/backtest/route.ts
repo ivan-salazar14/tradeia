@@ -570,6 +570,22 @@ export async function POST(request: Request) {
       }
     } catch (fetchError) {
       console.warn('[BACKTEST] External API fetch failed:', fetchError);
+
+      // Check if external service is running
+      try {
+        const healthResponse = await fetch(`${process.env.SIGNALS_API_BASE}/health`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (healthResponse.ok) {
+          console.warn('[BACKTEST] External signals service is running but backtest endpoint failed');
+        } else {
+          console.warn('[BACKTEST] External signals service is not responding');
+        }
+      } catch (healthError) {
+        console.warn('[BACKTEST] External signals service health check failed:', healthError);
+      }
     }
 
     // Fallback: Return mock backtest results when external API is not available
