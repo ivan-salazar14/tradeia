@@ -92,6 +92,15 @@ export class SignalsService {
       timeframe: '1d',
       indicators: ['Moving Average', 'Volume'],
       is_active: false
+    },
+    {
+      id: 'advanced_ta',
+      name: 'Advanced TA Strategy',
+      description: 'Advanced technical analysis strategy with multiple indicators and sophisticated entry/exit rules',
+      risk_level: 'High',
+      timeframe: '4h',
+      indicators: ['RSI', 'MACD', 'Bollinger Bands', 'Stochastic', 'Fibonacci'],
+      is_active: true
     }
   ];
 
@@ -297,7 +306,8 @@ export class SignalsService {
     // Available strategies for mock signals
     const availableStrategies = [
       'conservative', 'moderate', 'aggressive', 'sqzmom_adx', 'scenario_based',
-      'onda_3_5_alcista', 'onda_c_bajista', 'ruptura_rango', 'reversion_patron', 'gestion_riesgo'
+      'onda_3_5_alcista', 'onda_c_bajista', 'ruptura_rango', 'reversion_patron', 'gestion_riesgo',
+      'advanced_ta'
     ];
 
     // Use the first active strategy or pick a random one from available

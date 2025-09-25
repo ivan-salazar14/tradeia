@@ -295,6 +295,11 @@ export default function BacktestPage({ params }: PageProps) {
         id: 'gestion_riesgo',
         name: 'Gestión de Riesgo',
         description: 'Gestión avanzada de riesgo con trailing stops dinámicos'
+      },
+      {
+        id: 'advanced_ta',
+        name: 'Advanced TA Strategy',
+        description: 'Advanced technical analysis strategy with multiple indicators and sophisticated entry/exit rules'
       }
     ];
 
