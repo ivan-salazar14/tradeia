@@ -112,24 +112,9 @@ export async function POST(request: NextRequest) {
       }
     ];
 
-    // Store signals in database
-    const { data: storedSignals, error: insertError } = await supabase
-      .from('signals')
-      .insert(generatedSignals)
-      .select();
-
-    if (insertError) {
-      console.error('[SIGNALS GENERATE] Error storing signals:', insertError);
-      return NextResponse.json(
-        {
-          error: 'Failed to store generated signals',
-          details: insertError.message
-        },
-        { status: 500 }
-      );
-    }
-
-    console.log('[SIGNALS GENERATE] Successfully stored', storedSignals?.length || 0, 'signals');
+    // Skip database storage for now - return mock response directly
+    // TODO: Re-enable database storage once schema is updated
+    console.log('[SIGNALS GENERATE] Skipping database storage - returning mock response');
 
     // Calculate portfolio metrics
     const portfolioMetrics = {
@@ -144,9 +129,9 @@ export async function POST(request: NextRequest) {
       risk_per_trade_pct: body.risk_per_trade || 1.0
     };
 
-    // Transform signals for response (exclude internal fields)
-    const transformedSignals = storedSignals?.map(signal => ({
-      id: signal.id,
+    // Transform signals for response (use generated signals directly)
+    const transformedSignals = generatedSignals.map((signal, index) => ({
+      id: `generated-${Date.now()}-${index}`,
       symbol: signal.symbol,
       timeframe: signal.timeframe,
       timestamp: signal.timestamp,
@@ -164,7 +149,7 @@ export async function POST(request: NextRequest) {
       position_size: signal.position_size,
       risk_amount: signal.risk_amount,
       reward_to_risk: signal.reward_to_risk
-    })) || [];
+    }));
 
     console.log('[SIGNALS GENERATE] ===== SENDING RESPONSE =====');
 
@@ -179,7 +164,8 @@ export async function POST(request: NextRequest) {
       ],
       portfolio_metrics: portfolioMetrics,
       risk_parameters: riskParameters,
-      _message: `Successfully generated signals for ${strategyId} strategy`
+      _message: `Successfully generated signals for ${strategyId} strategy`,
+      _mock: true
     }, {
       status: 200,
       headers: {

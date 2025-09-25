@@ -414,8 +414,8 @@ export class SignalsService {
           activeStrategyIds
         });
 
-        // Calculate metrics using worker threads for CPU-intensive operations
-        const portfolioMetrics = await signalProcessorPool.calculatePortfolioMetrics(
+        // Calculate metrics using direct calculation (worker pool may timeout)
+        const portfolioMetrics = this.calculatePortfolioMetrics(
           signals,
           params.initialBalance,
           params.riskPerTrade
