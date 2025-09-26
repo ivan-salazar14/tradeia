@@ -84,92 +84,55 @@ export async function POST(request: NextRequest) {
       console.log('[SIGNALS GENERATE] User has access to strategy:', strategyId);
     }
 
-    // Generate mock signals (in production, this would use actual trading algorithms)
-    const generatedSignals = [
-      {
-        symbol: body.symbol || 'BTC/USDT',
-        timeframe: body.timeframe || '4h',
-        timestamp: new Date().toISOString(),
-        execution_timestamp: new Date().toISOString(),
-        signal_age_hours: 0.1,
-        signal_source: 'generated',
-        type: 'entry',
-        direction: 'BUY',
-        strategy_id: strategyId,
-        entry: 50000 + Math.random() * 1000, // Random price around 50k
-        tp1: 51000 + Math.random() * 1000,
-        tp2: 52000 + Math.random() * 1000,
-        stop_loss: 49000 + Math.random() * 1000,
-        source: { provider: 'internal_generator' },
-        position_size: 1000,
-        risk_amount: 100,
-        reward_to_risk: 2.0
-      },
-      {
-        symbol: body.symbol || 'ETH/USDT',
-        timeframe: body.timeframe || '4h',
-        timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-        execution_timestamp: new Date(Date.now() - 3600000).toISOString(),
-        signal_age_hours: 1.0,
-        signal_source: 'generated',
-        type: 'entry',
-        direction: 'SELL',
-        strategy_id: strategyId,
-        entry: 3000 + Math.random() * 200,
-        tp1: 2900 + Math.random() * 200,
-        tp2: 2800 + Math.random() * 200,
-        stop_loss: 3100 + Math.random() * 200,
-        source: { provider: 'internal_generator' },
-        position_size: 2000,
-        risk_amount: 60,
-        reward_to_risk: 1.8
-      }
-    ];
+    // Call external signals API for generation
+    const apiUrl = `${process.env.SIGNALS_API_BASE}/signals/generate`;
 
-    // Skip database storage for now - return mock response directly
-    // TODO: Re-enable database storage once schema is updated
-    console.log('[SIGNALS GENERATE] Skipping database storage - returning mock response');
-
-    // Calculate portfolio metrics
-    const portfolioMetrics = {
-      total_position_size: generatedSignals.reduce((sum, signal) => sum + (signal.position_size || 0), 0),
-      total_risk_amount: generatedSignals.reduce((sum, signal) => sum + (signal.risk_amount || 0), 0),
-      remaining_balance: 10000 - generatedSignals.reduce((sum, signal) => sum + (signal.risk_amount || 0), 0),
-      avg_reward_to_risk: generatedSignals.reduce((sum, signal) => sum + (signal.reward_to_risk || 0), 0) / generatedSignals.length
+    const requestBody = {
+      symbol: body.symbol || 'BTC/USDT',
+      timeframe: body.timeframe || '4h',
+      strategy_id: strategyId,
+      initial_balance: body.initial_balance || 10000,
+      risk_per_trade: body.risk_per_trade || 1.0
     };
 
-    const riskParameters = {
+    console.log('[SIGNALS GENERATE] Calling external API:', apiUrl);
+    console.log('[SIGNALS GENERATE] Request body:', requestBody);
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Accept-Encoding': 'identity'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      throw new Error(`External signals generation API returned ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('[SIGNALS GENERATE] External API response:', data);
+
+    // Use the response from external API directly
+    const transformedSignals = data.signals || [];
+    const portfolioMetrics = data.portfolio_metrics || {
+      total_position_size: 0,
+      total_risk_amount: 0,
+      remaining_balance: body.initial_balance || 10000,
+      avg_reward_to_risk: 0
+    };
+    const riskParameters = data.risk_parameters || {
       initial_balance: body.initial_balance || 10000,
       risk_per_trade_pct: body.risk_per_trade || 1.0
     };
-
-    // Transform signals for response (use generated signals directly)
-    const transformedSignals = generatedSignals.map((signal, index) => ({
-      id: `generated-${Date.now()}-${index}`,
-      symbol: signal.symbol,
-      timeframe: signal.timeframe,
-      timestamp: signal.timestamp,
-      execution_timestamp: signal.execution_timestamp,
-      signal_age_hours: signal.signal_age_hours,
-      signal_source: signal.signal_source,
-      type: signal.type,
-      direction: signal.direction,
-      strategyId: signal.strategy_id,
-      entry: signal.entry,
-      tp1: signal.tp1,
-      tp2: signal.tp2,
-      stopLoss: signal.stop_loss,
-      source: signal.source,
-      position_size: signal.position_size,
-      risk_amount: signal.risk_amount,
-      reward_to_risk: signal.reward_to_risk
-    }));
 
     console.log('[SIGNALS GENERATE] ===== SENDING RESPONSE =====');
 
     return NextResponse.json({
       signals: transformedSignals,
-      strategies: [
+      strategies: data.strategies || [
         {
           id: strategyId,
           name: `${strategyId.charAt(0).toUpperCase() + strategyId.slice(1)} Strategy`,
@@ -177,9 +140,7 @@ export async function POST(request: NextRequest) {
         }
       ],
       portfolio_metrics: portfolioMetrics,
-      risk_parameters: riskParameters,
-      _message: `Successfully generated signals for ${strategyId} strategy`,
-      _mock: true
+      risk_parameters: riskParameters
     }, {
       status: 200,
       headers: {

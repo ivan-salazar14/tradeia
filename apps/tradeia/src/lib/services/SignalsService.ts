@@ -218,9 +218,12 @@ export class SignalsService {
     );
   }
 
-  // Fetch signals from the internal signals API
+  // Fetch signals from external signals API only
   private static async fetchSignalsFromAPI(params: any): Promise<UnifiedSignal[]> {
-    // Use the internal signals API endpoint
+    if (!this.API_BASE) {
+      throw new Error('SIGNALS_API_BASE environment variable is not configured');
+    }
+
     const qs = new URLSearchParams();
     qs.set('symbol', params.symbol || 'BTC/USDT');
     qs.set('timeframe', params.timeframe || '4h');
@@ -237,47 +240,39 @@ export class SignalsService {
       qs.set('strategy_ids', params.activeStrategyIds.join(','));
     }
 
-    try {
-      Logger.info(`Fetching signals from internal API: /api/signals?${qs.toString()}`);
-      const response = await fetch(`/api/signals?${qs.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
+    const url = `${this.API_BASE}/signals?${qs.toString()}`;
+    Logger.info(`Fetching signals from external API: ${url}`);
 
-      if (!response.ok) {
-        throw new Error(`Internal signals API returned ${response.status}: ${response.statusText}`);
+    const response = await signalsAPIClient.get(url, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
       }
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      const pickArray = (d: any): any[] | null => {
-        if (!d) return null;
-        if (Array.isArray(d)) return d;
-        if (Array.isArray(d.signals)) return d.signals;
-        if (Array.isArray(d.results)) return d.results;
-        if (Array.isArray(d.items)) return d.items;
-        if (d.data) return pickArray(d.data);
-        return null;
-      };
+    const pickArray = (d: any): any[] | null => {
+      if (!d) return null;
+      if (Array.isArray(d)) return d;
+      if (Array.isArray(d.signals)) return d.signals;
+      if (Array.isArray(d.results)) return d.results;
+      if (Array.isArray(d.items)) return d.items;
+      if (d.data) return pickArray(d.data);
+      return null;
+    };
 
-      const payloadArr = pickArray(data);
-      const signals: UnifiedSignal[] = Array.isArray(payloadArr)
-        ? payloadArr.map(p => {
-            const signal = normalizeExampleProvider(p);
-            if (p.strategy_id) signal.strategyId = p.strategy_id;
-            return signal;
-          })
-        : [normalizeExampleProvider(data)];
+    const payloadArr = pickArray(data);
+    const signals: UnifiedSignal[] = Array.isArray(payloadArr)
+      ? payloadArr.map(p => {
+          const signal = normalizeExampleProvider(p);
+          if (p.strategy_id) signal.strategyId = p.strategy_id;
+          return signal;
+        })
+      : [normalizeExampleProvider(data)];
 
-      Logger.info(`Successfully fetched ${signals.length} signals from internal signals API`);
-      return this.filterAndValidateSignals(signals, params.activeStrategyIds);
-    } catch (error) {
-      Logger.warn('Internal signals API failed, using mock signals as fallback:', error);
-      return this.generateMockSignals(params);
-    }
+    Logger.info(`Successfully fetched ${signals.length} signals from external signals API`);
+    return this.filterAndValidateSignals(signals, params.activeStrategyIds);
   }
 
   // Filter and validate signals
@@ -299,61 +294,10 @@ export class SignalsService {
     return quality.filter((s) => !s.strategyId || activeSet.has(s.strategyId));
   }
 
-  // Generate mock signals for fallback
-  private static generateMockSignals(params: any): UnifiedSignal[] {
-    const { symbol = 'BTC/USDT', timeframe, activeStrategyIds = ['moderate'] } = params;
 
-    // Available strategies for mock signals
-    const availableStrategies = [
-      'conservative', 'moderate', 'aggressive', 'sqzmom_adx', 'scenario_based',
-      'onda_3_5_alcista', 'onda_c_bajista', 'ruptura_rango', 'reversion_patron', 'gestion_riesgo',
-      'advanced_ta'
-    ];
-
-    // Use the first active strategy or pick a random one from available
-    const strategyId = activeStrategyIds?.[0] || availableStrategies[Math.floor(Math.random() * availableStrategies.length)];
-
-    return [
-      {
-        id: 'mock-signal-1',
-        symbol,
-        timeframe,
-        timestamp: new Date().toISOString(),
-        execution_timestamp: new Date().toISOString(),
-        signal_age_hours: 0,
-        signal_source: 'mock',
-        type: 'entry' as const,
-        direction: 'BUY' as const,
-        strategyId: strategyId,
-        entry: 50000,
-        tp1: 51000,
-        tp2: 52000,
-        stopLoss: 49000,
-        source: { provider: 'mock_provider' }
-      },
-      {
-        id: 'mock-signal-2',
-        symbol: symbol.replace('BTC', 'ETH'),
-        timeframe,
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        execution_timestamp: new Date(Date.now() - 3600000).toISOString(),
-        signal_age_hours: 1,
-        signal_source: 'mock',
-        type: 'entry' as const,
-        direction: 'SELL' as const,
-        strategyId: strategyId,
-        entry: 3000,
-        tp1: 2900,
-        tp2: 2800,
-        stopLoss: 3100,
-        source: { provider: 'mock_provider' }
-      }
-    ];
-  }
-
-  // Transform signals for response
+  // Transform signals for response (no calculations, just pass through)
   private static transformSignals(signals: UnifiedSignal[], params: any, version: APIVersion) {
-    const { initialBalance = 10000, riskPerTrade = 1.0, fields } = params;
+    const { fields } = params;
 
     const transformedSignals = signals.map(signal => {
       const baseSignal = {
@@ -371,10 +315,7 @@ export class SignalsService {
         tp1: signal.tp1,
         tp2: signal.tp2,
         stopLoss: signal.stopLoss,
-        source: signal.source,
-        position_size: signal.entry ? (initialBalance * riskPerTrade / 100) / Math.abs(signal.entry - (signal.stopLoss || signal.entry)) * signal.entry : undefined,
-        risk_amount: signal.entry ? (initialBalance * riskPerTrade / 100) : undefined,
-        reward_to_risk: signal.entry && signal.tp1 && signal.stopLoss ? Math.abs(signal.tp1 - signal.entry) / Math.abs(signal.entry - signal.stopLoss) : undefined
+        source: signal.source
       };
 
       // Apply field selection if specified
@@ -443,12 +384,13 @@ export class SignalsService {
           activeStrategyIds
         });
 
-        // Calculate metrics using direct calculation (worker pool may timeout)
-        const portfolioMetrics = this.calculatePortfolioMetrics(
-          signals,
-          params.initialBalance,
-          params.riskPerTrade
-        );
+        // No calculations - just pass through from external API
+        const portfolioMetrics = {
+          total_position_size: 0,
+          total_risk_amount: 0,
+          remaining_balance: params.initialBalance,
+          avg_reward_to_risk: 0
+        };
         const riskParameters: RiskParameters = {
           initial_balance: params.initialBalance,
           risk_per_trade_pct: params.riskPerTrade
