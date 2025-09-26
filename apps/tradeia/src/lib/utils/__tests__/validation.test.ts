@@ -61,6 +61,22 @@ describe('Validation Utils', () => {
       }
     });
 
+    it('should convert lowercase symbol to uppercase', () => {
+      const lowercaseData = {
+        symbol: 'btc/usdt',
+        timeframe: '4h',
+        limit: 50,
+        offset: 0
+      };
+
+      const result = validateInput(lowercaseData, ValidationSchemas.signalsQuery);
+
+      expect(result.success).equal(true);
+      if (result.success) {
+        expect(result.data.symbol).equal('BTC/USDT');
+      }
+    });
+
     it('should reject invalid symbol format', () => {
       const invalidData = {
         symbol: 'INVALID',
