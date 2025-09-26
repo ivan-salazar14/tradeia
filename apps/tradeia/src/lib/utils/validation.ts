@@ -25,6 +25,8 @@ export const ValidationSchemas = {
   signalsQuery: Joi.object({
     symbol: Joi.string()
       .pattern(/^[A-Z0-9]+\/[A-Z0-9]+$/)
+      .optional()
+      .default('BTC/USDT')
       .messages({
         'string.pattern.base': 'Symbol must be in format BASE/QUOTE (e.g., BTC/USDT)'
       }),

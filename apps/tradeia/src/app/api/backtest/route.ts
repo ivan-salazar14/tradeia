@@ -549,7 +549,9 @@ export async function POST(request: Request) {
       ...params,
       strategy: params.strategy_id, // Map strategy_id to strategy for external API
       end_date: params.end_date, // Use the end_date provided by frontend (already includes current hour)
-      symbol: Array.isArray(params.symbol) ? params.symbol : (params.symbol ? [params.symbol] : undefined), // Ensure symbol is an array
+      symbol: Array.isArray(params.symbol) && params.symbol.length > 0
+        ? params.symbol
+        : (params.symbol ? [params.symbol] : ['BTC/USDT']), // Default to BTC/USDT if no symbols selected
       debug: true // Add debug field
     };
 
@@ -561,6 +563,7 @@ export async function POST(request: Request) {
     console.log('[BACKTEST] Request body:', JSON.stringify(requestBody, null, 2));
     console.log('[BACKTEST] Final symbol in request:', requestBody.symbol);
     console.log('[BACKTEST] Symbol is array:', Array.isArray(requestBody.symbol));
+    console.log('[BACKTEST] Symbol validation: All symbols valid format?', requestBody.symbol.every((s: string) => /^[A-Z0-9]+\/[A-Z0-9]+$/.test(s)));
 
     // Try to run backtest via external API
     try {
