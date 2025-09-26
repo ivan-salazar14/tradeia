@@ -24,7 +24,13 @@ export const ValidationSchemas = {
   // Signals API
   signalsQuery: Joi.object({
     symbol: Joi.string()
-      .pattern(/^[A-Z0-9]+\/[A-Z0-9]+$/)
+      .custom((value, helpers) => {
+        const upperValue = value.toUpperCase();
+        if (!/^[A-Z0-9]+\/[A-Z0-9]+$/.test(upperValue)) {
+          return helpers.error('string.pattern.base');
+        }
+        return upperValue;
+      })
       .optional()
       .default('BTC/USDT')
       .messages({
@@ -67,7 +73,13 @@ export const ValidationSchemas = {
   // Signal generation
   generateSignals: Joi.object({
     symbol: Joi.string()
-      .pattern(/^[A-Z0-9]+\/[A-Z0-9]+$/)
+      .custom((value, helpers) => {
+        const upperValue = value.toUpperCase();
+        if (!/^[A-Z0-9]+\/[A-Z0-9]+$/.test(upperValue)) {
+          return helpers.error('string.pattern.base');
+        }
+        return upperValue;
+      })
       .default('BTC/USDT')
       .messages({
         'string.pattern.base': 'Symbol must be in format BASE/QUOTE (e.g., BTC/USDT)'

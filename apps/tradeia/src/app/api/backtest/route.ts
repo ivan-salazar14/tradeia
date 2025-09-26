@@ -563,7 +563,7 @@ export async function POST(request: Request) {
     console.log('[BACKTEST] Request body:', JSON.stringify(requestBody, null, 2));
     console.log('[BACKTEST] Final symbol in request:', requestBody.symbol);
     console.log('[BACKTEST] Symbol is array:', Array.isArray(requestBody.symbol));
-    console.log('[BACKTEST] Symbol validation: All symbols valid format?', requestBody.symbol.every((s: string) => /^[A-Z0-9]+\/[A-Z0-9]+$/.test(s)));
+    console.log('[BACKTEST] Symbol validation: All symbols valid format?', (requestBody.symbol as string[]).every((s: string) => /^[A-Z0-9]+\/[A-Z0-9]+$/.test(s)));
 
     // Try to run backtest via external API
     try {
