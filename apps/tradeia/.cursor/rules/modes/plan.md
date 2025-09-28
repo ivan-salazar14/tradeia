@@ -67,6 +67,8 @@ Your working directory and file structure:
 
 ```
 [root]
+    [.apps/]
+    [.tradeia/]
     [.planr/]
         [stories/] # list of stories to work on
             {STORY-ID}.md

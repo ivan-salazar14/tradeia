@@ -1,6 +1,6 @@
 # Tradeia
 
-Tradeia is a comprehensive trading platform consisting of two main applications: a landing page for marketing and user acquisition, and a full-featured trading dashboard for portfolio management, backtesting, and strategy analysis.
+Tradeia is a comprehensive algorithmic trading platform built as a monorepo with two main applications: a marketing landing page for user acquisition and a full-featured trading dashboard for strategy development, backtesting, portfolio management, and real-time trading signals.
 
 ## 📱 Applications
 
@@ -45,6 +45,62 @@ A powerful web application for algorithmic trading, built with Next.js 15 and mo
 - API key management for external integrations
 - Dashboard with comprehensive stats and charts
 - Mobile-responsive design
+
+## 🏗️ Architecture Overview
+
+Tradeia follows a modern monorepo architecture with clear separation of concerns across multiple layers.
+
+### System Architecture
+
+```mermaid
+graph TB
+    A[Client Applications] --> B[Vercel Edge Network]
+    B --> C[Landing Page - Vite + React]
+    B --> D[Trading Dashboard - Next.js]
+
+    D --> E[Next.js API Routes]
+    E --> F[Services Layer]
+    F --> G[Database Layer]
+    F --> H[External APIs]
+    F --> I[Queue System]
+
+    G --> J[(Supabase PostgreSQL)]
+    I --> K[(Redis Queue)]
+
+    subgraph "External Services"
+        L[Supabase Auth]
+        M[Firebase Notifications]
+        N[External Signals API]
+    end
+
+    F --> L
+    F --> M
+    F --> N
+```
+
+### Core Architecture Layers
+
+#### 🎯 **Presentation Layer**
+- **Next.js App Router**: Modern React framework with SSR/SSG
+- **Component Architecture**: Reusable UI components with TypeScript
+- **Responsive Design**: Mobile-first approach with Tailwind CSS
+
+#### 🏢 **Application Layer**
+- **Services**: Business logic encapsulation (SignalsService, NotificationService)
+- **Middleware**: Security, validation, and request processing
+- **Utilities**: Validation, error handling, caching, and API versioning
+
+#### 🗄️ **Data Layer**
+- **Primary Database**: Supabase PostgreSQL with connection pooling
+- **Caching**: Redis for session storage and rate limiting
+- **Queue System**: Asynchronous job processing with Redis
+
+#### 🔐 **Security Layer**
+- **Authentication**: Supabase Auth with JWT tokens
+- **Authorization**: Role-based access control
+- **Input Validation**: Joi schema validation
+- **Rate Limiting**: Distributed rate limiting with Redis
+- **Security Headers**: OWASP-compliant headers and CORS policies
 
 ## 🚀 Getting Started
 
@@ -100,11 +156,54 @@ tradeia/
 │   │   └── docs/         # Strategy documentation
 │   └── tradeia/          # Main trading platform (Next.js)
 │       ├── src/
+│       │   ├── app/      # Next.js App Router pages
+│       │   ├── components/ # Reusable UI components
+│       │   ├── lib/      # Business logic and utilities
+│       │   │   ├── services/     # Business services
+│       │   │   ├── middleware/   # Security middleware
+│       │   │   ├── utils/        # Validation, caching, etc.
+│       │   │   ├── database/     # Database helpers
+│       │   │   ├── queue/        # Message queue system
+│       │   │   └── signals/      # Signal processing
+│       │   ├── types/    # TypeScript type definitions
+│       │   └── contexts/ # React contexts
 │       ├── supabase/     # Database migrations
-│       └── cypress/      # E2E tests
+│       ├── cypress/      # E2E tests
+│       └── __tests__/    # Unit and integration tests
+├── .planr/               # Project planning system
+│   ├── stories/          # User stories and requirements
+│   ├── roadmap.json      # Project roadmap
+│   ├── prd.md           # Product requirements
+│   └── assetlist.json   # Project assets
 ├── package.json          # Root build scripts
 └── vercel.json           # Deployment configuration
 ```
+
+## 🔐 Security Features
+
+Tradeia implements enterprise-grade security measures:
+
+### Authentication & Authorization
+- **Supabase Auth**: JWT-based authentication with secure session management
+- **Role-based Access Control**: Granular permissions for different user types
+- **API Key Management**: Secure external API integrations
+
+### API Security
+- **Rate Limiting**: Distributed rate limiting (100 req/min per IP) with Redis
+- **Input Validation**: Comprehensive Joi schema validation for all inputs
+- **Request Sanitization**: XSS and SQL injection prevention
+- **Security Headers**: OWASP-compliant headers (CSP, X-Frame-Options, etc.)
+- **CORS Policies**: Configured cross-origin request handling
+
+### Data Protection
+- **Encryption**: Data encrypted at rest and in transit
+- **Secure Cookies**: HttpOnly, Secure, and SameSite cookie attributes
+- **Audit Logging**: Comprehensive request/response logging for compliance
+
+### Monitoring & Compliance
+- **Security Monitoring**: Real-time threat detection and alerting
+- **Regular Audits**: Automated security scanning and dependency checks
+- **Incident Response**: Structured incident handling procedures
 
 ## 🔧 Development
 
@@ -138,11 +237,43 @@ The project is configured for deployment on Vercel with the following routing:
 - `/app/*` - Trading dashboard
 - `/landing/*` - Landing page (alternative route)
 
+## 📋 Project Planning
+
+Tradeia uses a structured planning system located in the `.planr/` directory:
+
+### Planning Structure
+```
+.planr/
+├── stories/              # User stories and feature specifications
+│   ├── SEC-001.md       # Standardize Security Middleware
+│   ├── SEC-002.md       # Implement Joi Validation
+│   ├── SEC-003.md       # Production-Grade Rate Limiting
+│   └── ...              # Additional security and feature stories
+├── roadmap.json          # Project roadmap with task tracking
+├── prd.md               # Product requirements document
+└── assetlist.json       # Project assets and resources
+```
+
+### Security Improvement Stories
+The platform includes comprehensive security enhancements tracked as user stories:
+- **SEC-001**: Standardize Security Middleware Application
+- **SEC-002**: Implement Comprehensive Joi Validation
+- **SEC-003**: Production-Grade Rate Limiting with Redis
+- **SEC-004**: Request Size Limits and Payload Validation
+- **SEC-005**: Enhanced Password Security Policies
+- **SEC-006**: API Versioning Security Implementation
+- **SEC-007**: Comprehensive Request Logging and Audit
+- **SEC-008**: Regular Security Audits and Scanning
+- **SEC-009**: Security Monitoring and Alerting System
+- **SEC-010**: Rate Limit Monitoring and Analytics
+
 ## 📚 Documentation
 
 - [Trading Strategies](./apps/landing/docs/) - Strategy documentation and guides
 - [API Reference](./apps/tradeia/docs/) - API documentation and integrations
 - [Development Guide](./apps/tradeia/README.md) - Detailed setup for the trading platform
+- [Security Stories](./.planr/stories/) - Security improvement specifications
+- [Architecture Overview](./README.md#architecture-overview) - System architecture documentation
 
 ## 🤝 Contributing
 

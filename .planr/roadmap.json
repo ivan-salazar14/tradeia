@@ -1,0 +1,92 @@
+[
+  {
+    "id": "SEC-001",
+    "title": "Standardize Security Middleware Application",
+    "file": ".planr/stories/SEC-001.md",
+    "status": "todo",
+    "created": "2025-09-28",
+    "updated": "2025-09-28",
+    "notes": ""
+  },
+  {
+    "id": "SEC-002",
+    "title": "Implement Comprehensive Joi Validation",
+    "file": ".planr/stories/SEC-002.md",
+    "status": "todo",
+    "created": "2025-09-28",
+    "updated": "2025-09-28",
+    "notes": ""
+  },
+  {
+    "id": "SEC-003",
+    "title": "Implement Production-Grade Rate Limiting",
+    "file": ".planr/stories/SEC-003.md",
+    "status": "todo",
+    "created": "2025-09-28",
+    "updated": "2025-09-28",
+    "notes": ""
+  },
+  {
+    "id": "SEC-004",
+    "title": "Implement Request Size Limits",
+    "file": ".planr/stories/SEC-004.md",
+    "status": "todo",
+    "created": "2025-09-28",
+    "updated": "2025-09-28",
+    "notes": ""
+  },
+  {
+    "id": "SEC-005",
+    "title": "Enhance Password Security Policies",
+    "file": ".planr/stories/SEC-005.md",
+    "status": "todo",
+    "created": "2025-09-28",
+    "updated": "2025-09-28",
+    "notes": ""
+  },
+  {
+    "id": "SEC-006",
+    "title": "Implement API Versioning Security",
+    "file": ".planr/stories/SEC-006.md",
+    "status": "todo",
+    "created": "2025-09-28",
+    "updated": "2025-09-28",
+    "notes": ""
+  },
+  {
+    "id": "SEC-007",
+    "title": "Implement Comprehensive Request Logging",
+    "file": ".planr/stories/SEC-007.md",
+    "status": "todo",
+    "created": "2025-09-28",
+    "updated": "2025-09-28",
+    "notes": ""
+  },
+  {
+    "id": "SEC-008",
+    "title": "Establish Regular Security Audits",
+    "file": ".planr/stories/SEC-008.md",
+    "status": "todo",
+    "created": "2025-09-28",
+    "updated": "2025-09-28",
+    "notes": ""
+  },
+  {
+    "id": "SEC-009",
+    "title": "Implement Security Monitoring and Alerting",
+    "file": ".planr/stories/SEC-009.md",
+    "status": "todo",
+    "created": "2025-09-28",
+    "updated": "2025-09-28",
+    "notes": ""
+  },
+  {
+    "id": "SEC-010",
+    "title": "Implement Rate Limit Monitoring",
+    "file": ".planr/stories/SEC-010.md",
+    "status": "todo",
+    "created": "2025-09-28",
+    "updated": "2025-09-28",
+    "notes": ""
+  }
+]

@@ -518,6 +518,65 @@ node validate-system.js
 - **Performance Issues**: Health check failures
 - **Security Issues**: Dependency vulnerability alerts
 
+## 🔐 Security Architecture
+
+Tradeia implements enterprise-grade security measures with comprehensive protection across all layers:
+
+### Security Features Implemented
+
+#### **Input Validation & Sanitization**
+- **Joi Schema Validation**: Comprehensive input validation for all API endpoints
+- **XSS Prevention**: HTML sanitization and script tag removal
+- **SQL Injection Protection**: Parameterized queries and input sanitization
+- **Request Size Limits**: Payload size validation and configurable limits
+
+#### **Authentication & Authorization**
+- **Supabase Auth**: JWT-based authentication with secure session management
+- **Bearer Token Validation**: API authentication with token refresh
+- **Role-based Access Control**: Granular permissions system
+- **Secure Cookie Handling**: HttpOnly, Secure, and SameSite attributes
+
+#### **API Security**
+- **Rate Limiting**: Distributed rate limiting (100 req/min per IP) with Redis
+- **OWASP Security Headers**: X-Frame-Options, CSP, HSTS, and CORS policies
+- **API Versioning**: Backward-compatible API versioning with security validation
+- **Request Logging**: Comprehensive audit logging for compliance
+
+#### **Infrastructure Security**
+- **Data Encryption**: Data encrypted at rest and in transit
+- **Secure Deployment**: Vercel Edge Network with automatic SSL
+- **Environment Segregation**: Separate staging and production environments
+- **Dependency Scanning**: Automated vulnerability detection
+
+### Security Improvement Roadmap
+
+The platform includes planned security enhancements tracked as user stories:
+
+- **SEC-001**: Standardize Security Middleware Application
+- **SEC-002**: Implement Comprehensive Joi Validation
+- **SEC-003**: Production-Grade Rate Limiting with Redis
+- **SEC-004**: Request Size Limits and Payload Validation
+- **SEC-005**: Enhanced Password Security Policies
+- **SEC-006**: API Versioning Security Implementation
+- **SEC-007**: Comprehensive Request Logging and Audit
+- **SEC-008**: Regular Security Audits and Scanning
+- **SEC-009**: Security Monitoring and Alerting System
+- **SEC-010**: Rate Limit Monitoring and Analytics
+
+### Security Monitoring
+
+#### Real-time Monitoring
+- **Rate Limit Tracking**: Monitor and alert on rate limit violations
+- **Security Event Logging**: Comprehensive security event tracking
+- **Performance Monitoring**: Response time and error rate tracking
+- **Health Checks**: Automated system health validation
+
+#### Compliance & Auditing
+- **Regular Security Audits**: Automated vulnerability scanning
+- **Dependency Updates**: Automated security patch management
+- **Incident Response**: Structured security incident handling
+- **Audit Trails**: Complete request/response logging
+
 ## 📄 Licencia
 
 **Licencia Propietaria - Todos los Derechos Reservados**
