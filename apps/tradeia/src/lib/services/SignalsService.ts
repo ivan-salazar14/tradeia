@@ -219,7 +219,7 @@ export class SignalsService {
   }
 
   // Fetch signals from external signals API only
-  private static async fetchSignalsFromAPI(params: any): Promise<UnifiedSignal[]> {
+  private static async fetchSignalsFromAPI(params: any, accessToken: string): Promise<UnifiedSignal[]> {
     if (!this.API_BASE) {
       throw new Error('SIGNALS_API_BASE environment variable is not configured');
     }
@@ -246,7 +246,8 @@ export class SignalsService {
     const response = await signalsAPIClient.get(url, {
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
       }
     });
 
@@ -365,6 +366,10 @@ export class SignalsService {
         const supabase = await this.createSupabaseClient();
         const { data: { session } } = await supabase.auth.getSession();
 
+        if (!session?.access_token) {
+          throw ErrorFactory.authentication('Authentication required');
+        }
+
         // Get user strategies
         const userStrategyIds = await this.getUserStrategies(session);
 
@@ -382,7 +387,7 @@ export class SignalsService {
         const signals = await this.fetchSignalsFromAPI({
           ...params,
           activeStrategyIds
-        });
+        }, session.access_token);
 
         // No calculations - just pass through from external API
         const portfolioMetrics = {

@@ -1,11 +1,12 @@
-import { supabase } from './supabase';
-import { JWTPayload } from '@/types/jwt';
+import { getSupabaseClient } from './supabase/client';
+import { JWTPayload } from '../types/jwt';
 
 export const getSession = async () => {
+  const supabase = getSupabaseClient();
   if (!supabase) return null;
   const { data: { session } } = await supabase.auth.getSession();
   const meta = session?.user?.user_metadata;
-console.log(meta?.subscription_plan, meta?.active_strategies);
+  console.log(meta?.subscription_plan, meta?.active_strategies);
 
   return session;
 };

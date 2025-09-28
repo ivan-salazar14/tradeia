@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react"
 import { User as SupabaseUser, Session } from "@supabase/supabase-js"
-import { getSupabaseClient } from "@/lib/supabase-singleton"
+import { getSupabaseClient } from "@/lib/supabase/client"
 
 export interface UserWithUUID extends SupabaseUser {
   id_uuid?: string | null;
