@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 
 interface Notification {
@@ -54,24 +54,6 @@ export default function NotificationsPage() {
   const availableSymbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'ADA/USDT', 'DOT/USDT'];
   const availableTimeframes = ['1H', '4H', '1D', '1W'];
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      await Promise.all([
-        loadNotifications(),
-        loadPreferences()
-      ]);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadNotifications = async (page = 1) => {
     try {
       const offset = (page - 1) * 20;
@@ -97,6 +79,24 @@ export default function NotificationsPage() {
       console.error('Error loading preferences:', error);
     }
   };
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        loadNotifications(),
+        loadPreferences()
+      ]);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const savePreferences = async () => {
     if (!preferences) return;

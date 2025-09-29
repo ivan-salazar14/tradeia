@@ -329,6 +329,7 @@ export async function POST(request: Request) {
         });
       } else {
         console.warn('[BACKTEST] External API not available, using fallback');
+        throw new Error(`External API returned status ${response.status}`);
       }
     } catch (fetchError) {
       console.error('[BACKTEST] External API fetch failed:', fetchError);

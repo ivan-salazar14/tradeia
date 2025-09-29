@@ -1,5 +1,4 @@
-import { getSupabaseClient } from '@/lib/supabase-singleton'
-import { Database } from '@/types/supabase'
+import { getSupabaseClient } from '@/lib/supabase-client'
 
 // Create a type for the auth state
 export type AuthState = {
