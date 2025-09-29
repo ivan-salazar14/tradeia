@@ -3,82 +3,11 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
-  // Check for Bearer token authentication
-  const auth = request.headers.get('authorization');
-  if (!auth || !auth.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Missing or invalid Authorization header. Use Bearer token.' }, {
-      status: 401,
-      headers: {
-        'Accept-Encoding': 'identity' // Disable gzip compression
-      }
-    });
-  }
-
-  // Extract token from Bearer header
-  const token = auth.substring(7); // Remove 'Bearer ' prefix
-  if (!token || token.length < 10) {
-    return NextResponse.json({ error: 'Invalid Bearer token' }, {
-      status: 401,
-      headers: {
-        'Accept-Encoding': 'identity' // Disable gzip compression
-      }
-    });
-  }
-
-  // Setup Supabase client for session validation
-  const cookieStore = await cookies();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx';
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          if (name === `sb-${projectRef}-auth-token`) {
-            return cookieStore.get(`sb-${projectRef}-auth-token`)?.value;
-          }
-          if (name === `sb-${projectRef}-refresh-token`) {
-            return cookieStore.get(`sb-${projectRef}-refresh-token`)?.value;
-          }
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          try {
-            cookieStore.set(name, value, options);
-          } catch {
-            // Ignore in server context
-          }
-        },
-        remove(name: string, options: any) {
-          try {
-            cookieStore.set(name, '', { ...options, maxAge: 0 });
-          } catch {
-            // Ignore in server context
-          }
-        },
-      },
-    }
-  );
-
-  // Validate user session
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError || !session) {
-    return NextResponse.json({ error: 'Usuario no autenticado' }, {
-      status: 401,
-      headers: {
-        'Accept-Encoding': 'identity' // Disable gzip compression
-      }
-    });
-  }
-
   const { searchParams } = new URL(request.url);
   const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100); // Cap at 100, default 20
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  console.log('[STRATEGIES API] ===== RETURNING MOCK STRATEGIES WITH AUTHENTICATION =====');
-  console.log('[STRATEGIES API] User authenticated:', session.user?.email);
+  console.log('[STRATEGIES API] ===== RETURNING MOCK STRATEGIES =====');
 
   // Return strategies in the format expected by the API documentation
   const mockStrategies = {

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -23,6 +24,7 @@ interface Strategy {
 
 export default function StrategiesPage() {
   const router = useRouter();
+  const { session } = useAuth();
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,11 +37,17 @@ export default function StrategiesPage() {
     try {
       setLoading(true);
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+
+      // Add Authorization header if user is authenticated
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch('/api/strategies/', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        headers
       });
 
       if (response.ok && response.status==200) {
@@ -211,13 +219,19 @@ export default function StrategiesPage() {
                 variant={strategy.is_active ? "destructive" : "default"}
                 onClick={async () => {
                   try {
+                    const headers: Record<string, string> = {
+                      'Content-Type': 'application/json'
+                    };
+
+                    // Add Authorization header if user is authenticated
+                    if (session?.access_token) {
+                      headers["Authorization"] = `Bearer ${session.access_token}`;
+                    }
+
                     const response = await fetch('/api/strategies/set', {
                       method: 'POST',
                       credentials: 'include',
-                      headers: {
-                        'Content-Type': 'application/json',
-                         'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-                      },
+                      headers,
                       body: JSON.stringify({
                         strategy_name: strategy.id
                       })
