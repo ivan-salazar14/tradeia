@@ -53,22 +53,57 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('[SIGNALS GENERATE] Request body:', body);
     // Get strategy from request
-    const strategyId = body.strategy_id || 'moderate';
+    let strategyId = body.strategy_id || 'moderate';
     console.log('[SIGNALS GENERATE] Strategy:', strategyId);
 
-    // Validate strategy exists and user has access
-    const { data: userStrategy, error: strategyError } = await supabase
-      .from('user_strategies')
-      .select('strategy_id')
-      .eq('user_id', user.id)
-      .eq('strategy_id', strategyId)
-      .eq('is_active', true)
-      .single();
+    // Define basic strategies that don't require permission checks
+    const basicStrategies = ['conservative', 'moderate', 'aggressive','squeeze_momentum', 'breakout_momentum', 'advanced_ta'];
+    const isBasicStrategy = basicStrategies.includes(strategyId);
+
+    let hasAccess = false;
+    let strategyError = null;
+    let userStrategy = null;
+
+    if (isBasicStrategy) {
+      // Basic strategies are always accessible
+      hasAccess = true;
+      console.log('[SIGNALS GENERATE] Basic strategy access granted:', strategyId);
+    } else {
+      // Premium strategies require database permission check
+      // First get the strategy UUID from the strategies table
+      const { data: strategyRecord, error: strategyLookupError } = await supabase
+        .from('strategies')
+        .select('id')
+        .eq('name', strategyId)
+        .single();
+
+      if (strategyLookupError || !strategyRecord) {
+        strategyError = {
+          message: `Strategy '${strategyId}' not found`,
+          code: 'STRATEGY_NOT_FOUND',
+          details: 'The requested strategy does not exist in the system'
+        };
+      } else {
+        // Check if user has access to this premium strategy
+        const { data: userStrategyData, error: userStrategyError } = await supabase
+          .from('user_strategies')
+          .select('strategy_id')
+          .eq('user_id', user.id)
+          .eq('strategy_id', strategyRecord.id)
+          .eq('is_active', true)
+          .single();
+
+        hasAccess = !userStrategyError && !!userStrategyData;
+        strategyError = userStrategyError;
+        userStrategy = userStrategyData;
+      }
+    }
 
     console.log('[SIGNALS GENERATE] Strategy access validation result:', {
       userId: user.id,
       requestedStrategy: strategyId,
-      hasAccess: !strategyError && !!userStrategy,
+      isBasicStrategy,
+      hasAccess,
       strategyError: strategyError ? {
         message: strategyError.message,
         code: strategyError.code,
@@ -77,9 +112,11 @@ export async function POST(request: NextRequest) {
       userStrategy: userStrategy
     });
 
-    if (strategyError || !userStrategy) {
+    if (!hasAccess) {
       console.warn('[SIGNALS GENERATE] User does not have access to strategy:', strategyId, '- Error details:', strategyError);
-      // Default to moderate strategy
+      // Default to moderate strategy for premium strategies without access
+      strategyId = 'moderate';
+      console.log('[SIGNALS GENERATE] Defaulting to moderate strategy');
     } else {
       console.log('[SIGNALS GENERATE] User has access to strategy:', strategyId);
     }

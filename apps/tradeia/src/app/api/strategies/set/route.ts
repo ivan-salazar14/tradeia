@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate strategy exists
-    const validStrategies = ['conservative', 'moderate', 'aggressive', 'sqzmom_adx', 'scenario_based', 'onda_3_5_alcista', 'onda_c_bajista', 'ruptura_rango', 'reversion_patron', 'gestion_riesgo'];
+    const validStrategies = ['conservative', 'moderate', 'aggressive', 'sqzmom_adx', 'scenario_based', 'onda_3_5_alcista', 'onda_c_bajista', 'ruptura_rango', 'reversion_patron', 'gestion_riesgo', 'advanced_ta'];
     if (!validStrategies.includes(strategy_name)) {
       return NextResponse.json({
         error: `Invalid strategy name. Must be one of: ${validStrategies.join(', ')}`
@@ -103,6 +103,10 @@ export async function POST(request: NextRequest) {
         }
       });
     }
+
+    // Define basic strategies that don't require database permissions
+    const basicStrategies = ['conservative', 'moderate', 'aggressive','sqzmom_adx', 'advanced_ta'];
+    const isBasicStrategy = basicStrategies.includes(strategy_name);
 
     // Mock strategy info based on the API documentation
     const strategyInfo: Record<string, any> = {
@@ -155,20 +159,93 @@ export async function POST(request: NextRequest) {
         name: 'Gestión de Riesgo',
         description: 'Gestión avanzada de riesgo con trailing stops dinámicos',
         risk_level: 'conservative'
+      },
+      advanced_ta: {
+        name: 'Advanced Technical Analysis',
+        description: 'Advanced technical analysis strategy with multiple indicators',
+        risk_level: 'high'
       }
     };
 
     const strategy = strategyInfo[strategy_name];
 
-    return NextResponse.json({
-      success: true,
-      message: `Strategy '${strategy_name}' activated successfully`,
-      strategy_info: strategy
-    }, {
-      headers: {
-        'Accept-Encoding': 'identity' // Disable gzip compression
+    if (isBasicStrategy) {
+      // Basic strategies are always available, no database operation needed
+      return NextResponse.json({
+        success: true,
+        message: `Basic strategy '${strategy_name}' is always available`,
+        strategy_info: strategy
+      }, {
+        headers: {
+          'Accept-Encoding': 'identity' // Disable gzip compression
+        }
+      });
+    } else {
+      // Premium strategies require database permission assignment
+      try {
+        // Get the strategy UUID from the strategies table
+        const { data: strategyRecord, error: strategyLookupError } = await supabase
+          .from('strategies')
+          .select('id')
+          .eq('name', strategy_name)
+          .single();
+
+        if (strategyLookupError || !strategyRecord) {
+          return NextResponse.json({
+            error: `Strategy '${strategy_name}' not found in database`
+          }, {
+            status: 404,
+            headers: {
+              'Accept-Encoding': 'identity' // Disable gzip compression
+            }
+          });
+        }
+
+        // Insert or update user strategy permission
+        const { error: upsertError } = await supabase
+          .from('user_strategies')
+          .upsert({
+            user_id: session.user.id,
+            strategy_id: strategyRecord.id,
+            is_active: true
+          }, {
+            onConflict: 'user_id,strategy_id'
+          });
+
+        if (upsertError) {
+          console.error('[STRATEGIES SET API] Database error:', upsertError);
+          return NextResponse.json({
+            error: 'Failed to assign strategy permission'
+          }, {
+            status: 500,
+            headers: {
+              'Accept-Encoding': 'identity' // Disable gzip compression
+            }
+          });
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: `Premium strategy '${strategy_name}' activated successfully`,
+          strategy_info: strategy
+        }, {
+          headers: {
+            'Accept-Encoding': 'identity' // Disable gzip compression
+          }
+        });
+
+      } catch (dbError) {
+        console.error('[STRATEGIES SET API] Unexpected error:', dbError);
+        return NextResponse.json({
+          error: 'Internal server error'
+        }, {
+          status: 500,
+          headers: {
+            'Accept-Encoding': 'identity' // Disable gzip compression
+          }
+        });
       }
-    });
+    }
 
   } catch (error) {
     console.error('[STRATEGIES SET API] Error:', error);
