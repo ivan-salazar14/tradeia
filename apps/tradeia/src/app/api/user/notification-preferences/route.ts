@@ -44,9 +44,9 @@ export async function GET(request: NextRequest) {
     );
 
     // Get authenticated user
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (sessionError || !session?.user) {
+    if (userError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     const { data: preferences, error } = await supabase
       .from('user_notification_preferences')
       .select('*')
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -145,9 +145,9 @@ export async function POST(request: NextRequest) {
     );
 
     // Get authenticated user
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (sessionError || !session?.user) {
+    if (userError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
     const { data: preferences, error } = await supabase
       .from('user_notification_preferences')
       .upsert({
-        user_id: session.user.id,
+        user_id: user.id,
         ...updateData
       })
       .select()
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[NotificationPreferences] Preferences updated for user:', session.user.id);
+    console.log('[NotificationPreferences] Preferences updated for user:', user.id);
 
     return NextResponse.json({
       message: 'Preferences updated successfully',

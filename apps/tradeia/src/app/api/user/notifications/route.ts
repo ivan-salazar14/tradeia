@@ -49,10 +49,10 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    // Get authenticated user
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // Get authenticated user (secure method)
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (sessionError || !session?.user) {
+    if (userError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -71,14 +71,13 @@ export async function GET(request: NextRequest) {
         created_at,
         signals (
           symbol,
-          direction,
           strategy_id,
           entry,
           tp1,
           stop_loss
         )
       `)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -91,21 +90,57 @@ export async function GET(request: NextRequest) {
       query = query.eq('notification_type', type);
     }
 
-    const { data: notifications, error, count } = await query;
+    let notifications, error, count;
+
+    try {
+      const result = await query;
+      notifications = result.data;
+      error = result.error;
+      count = result.count;
+    } catch (queryError) {
+      console.error('[NotificationsHistory] Query execution failed:', queryError);
+      return NextResponse.json(
+        { error: 'Database query failed', details: queryError instanceof Error ? queryError.message : 'Unknown query error' },
+        { status: 500 }
+      );
+    }
 
     if (error) {
-      console.error('[NotificationsHistory] Error fetching history:', error);
+      console.error('[NotificationsHistory] Supabase error:', error);
+      // If it's a permissions or table not found error, return empty results
+      if (error.code === 'PGRST116' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+        console.log('[NotificationsHistory] Table or permissions issue, returning empty results');
+        return NextResponse.json({
+          notifications: [],
+          pagination: {
+            total: 0,
+            limit,
+            offset,
+            current_page: 1,
+            total_pages: 0,
+            has_next: false,
+            has_prev: false
+          }
+        });
+      }
       return NextResponse.json(
-        { error: 'Failed to fetch notification history' },
+        { error: 'Failed to fetch notification history', details: error.message },
         { status: 500 }
       );
     }
 
     // Get total count for pagination
-    const { count: totalCount } = await supabase
-      .from('notifications_history')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', session.user.id);
+    let totalCount = 0;
+    try {
+      const { count } = await supabase
+        .from('notifications_history')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      totalCount = count || 0;
+    } catch (countError) {
+      console.warn('[NotificationsHistory] Failed to get total count, using 0:', countError);
+      totalCount = 0;
+    }
 
     // Calculate pagination info
     const totalPages = Math.ceil((totalCount || 0) / limit);
