@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Define basic strategies that don't require database permissions
-    const basicStrategies = ['conservative', 'moderate', 'aggressive','sqzmom_adx', 'advanced_ta'];
+    const basicStrategies = ['conservative', 'moderate', 'aggressive'];
     const isBasicStrategy = basicStrategies.includes(strategy_name);
 
     // Mock strategy info based on the API documentation
@@ -201,19 +201,38 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // Insert or update user strategy permission
-        const { error: upsertError } = await supabase
+        // Ensure user has active permission for this strategy
+        // First try to update existing row to set is_active = true
+        const { data: updateResult, error: updateError } = await supabase
           .from('user_strategies')
-          .upsert({
-            user_id: session.user.id,
-            strategy_id: strategyRecord.id,
-            is_active: true
-          }, {
-            onConflict: 'user_id,strategy_id'
-          });
+          .update({ is_active: true })
+          .eq('user_id', session.user.id)
+          .eq('strategy_id', strategyRecord.id)
+          .select();
 
-        if (upsertError) {
-          console.error('[STRATEGIES SET API] Database error:', upsertError);
+        // If no row was updated (row didn't exist), insert new one
+        if (!updateResult || updateResult.length === 0) {
+          const { error: insertError } = await supabase
+            .from('user_strategies')
+            .insert({
+              user_id: session.user.id,
+              strategy_id: strategyRecord.id,
+              is_active: true
+            });
+
+          if (insertError) {
+            console.error('[STRATEGIES SET API] Insert error:', insertError);
+            return NextResponse.json({
+              error: 'Failed to assign strategy permission'
+            }, {
+              status: 500,
+              headers: {
+                'Accept-Encoding': 'identity' // Disable gzip compression
+              }
+            });
+          }
+        } else if (updateError) {
+          console.error('[STRATEGIES SET API] Update error:', updateError);
           return NextResponse.json({
             error: 'Failed to assign strategy permission'
           }, {
