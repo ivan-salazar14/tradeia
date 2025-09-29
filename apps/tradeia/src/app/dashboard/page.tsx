@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
-import { getSupabaseClient } from "@/lib/supabase-singleton"
 import { Button } from "@/components/ui/button"
 import DashboardStats from "@/components/dashboard/dashboard-stats"
 

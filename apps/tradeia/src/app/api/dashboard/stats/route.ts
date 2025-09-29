@@ -190,11 +190,10 @@ export async function GET(req: NextRequest) {
 
     console.log('[DASHBOARD STATS] User authenticated:', authenticatedUser.id);
 
-    // Build query for signals
+    // Build query for signals (signals are global, not user-specific)
     let query = supabase
       .from('signals')
       .select('*')
-      .eq('user_id', authenticatedUser.id)
       .gte('timestamp', `${actualStartDate}T00:00:00Z`)
       .lte('timestamp', `${actualEndDate}T23:59:59Z`);
 

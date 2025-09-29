@@ -4,4 +4,4 @@ export function createClient() {
   return getSupabaseClient();
 }
 
-export { useSupabase };
+export { getSupabaseClient, useSupabase };
