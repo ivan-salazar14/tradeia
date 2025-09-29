@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 
 export async function POST(request: NextRequest) {
   try {
-    if (!supabase) {
+    if (!supabaseAdmin) {
       return NextResponse.json(
         { error: "Supabase no está configurado correctamente en el servidor" },
         { status: 500 }
       )
     }
-    const { error } = await supabase.auth.signOut()
+    const { error } = await supabaseAdmin.auth.signOut()
 
     if (error) {
       return NextResponse.json(

@@ -7,8 +7,13 @@ export function getSupabaseClient() {
   if (typeof window === 'undefined') return null
   if (clientInstance) return clientInstance
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const projectRef = supabaseUrl.split('https://')[1]?.split('.')[0] || 'ztlxyfrznqerebeysxbx'
+  const authTokenKey = `sb-${projectRef}-auth-token`
+  const refreshTokenKey = `sb-${projectRef}-refresh-token`
+
   clientInstance = createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
@@ -30,9 +35,9 @@ export function getSupabaseClient() {
           setItem: (key: string, value: string) => {
             if (typeof document === 'undefined') return
             try {
-              if (key === 'sb-access-token') {
+              if (key === authTokenKey) {
                 document.cookie = `${key}=${encodeURIComponent(value)}; expires=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString()}; path=/; samesite=lax; ${process.env.NODE_ENV === 'production' ? 'secure;' : ''}`
-              } else if (key === 'sb-refresh-token') {
+              } else if (key === refreshTokenKey) {
                 document.cookie = `${key}=${encodeURIComponent(value)}; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}; path=/; samesite=lax; ${process.env.NODE_ENV === 'production' ? 'secure;' : ''}`
               }
             } catch (error) {

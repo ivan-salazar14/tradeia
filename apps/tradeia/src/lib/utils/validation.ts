@@ -236,6 +236,9 @@ export function validateQueryParams(
       params[key] = false;
     } else if (!isNaN(Number(value))) {
       params[key] = Number(value);
+    } else if (key === 'symbol') {
+      // Don't sanitize symbol to preserve the / character
+      params[key] = value.trim().toUpperCase();
     } else {
       params[key] = sanitizeString(value);
     }

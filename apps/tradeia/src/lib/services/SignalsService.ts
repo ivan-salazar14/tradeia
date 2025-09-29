@@ -384,21 +384,28 @@ export class SignalsService {
         }
 
         // Fetch signals
-        const signals = await this.fetchSignalsFromAPI({
-          ...params,
-          activeStrategyIds
-        }, session.access_token);
+        let signals: UnifiedSignal[] = [];
+        try {
+          signals = await this.fetchSignalsFromAPI({
+            ...params,
+            activeStrategyIds
+          }, session.access_token);
+        } catch (error) {
+          Logger.warn('Failed to fetch signals from external API, returning empty results:', error);
+          // Return empty signals instead of failing
+          signals = [];
+        }
 
         // No calculations - just pass through from external API
         const portfolioMetrics = {
           total_position_size: 0,
           total_risk_amount: 0,
-          remaining_balance: params.initialBalance,
+          remaining_balance: Number(params.initialBalance) || 10000,
           avg_reward_to_risk: 0
         };
         const riskParameters: RiskParameters = {
-          initial_balance: params.initialBalance,
-          risk_per_trade_pct: params.riskPerTrade
+          initial_balance: Number(params.initialBalance) || 10000,
+          risk_per_trade_pct: Number(params.riskPerTrade) || 1.0
         };
 
         // Apply pagination

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { getSupabaseClient } from "@/lib/supabase/client"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -38,6 +38,7 @@ export default function RegisterPage() {
       return
     }
     try {
+      const supabase = getSupabaseClient()
       if (!supabase) {
         setError("Error de conexión. Por favor intenta de nuevo.")
         setIsLoading(false)

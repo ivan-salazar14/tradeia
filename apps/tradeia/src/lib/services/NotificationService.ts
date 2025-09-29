@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import type { Database } from '@/types/supabase';
 
 interface SignalData {
   signal_id: string;
@@ -82,13 +83,13 @@ export class NotificationService {
    */
   private async getUsersForSignal(signalData: SignalData): Promise<Array<{userId: string, preferences: UserPreferences}>> {
     try {
-      if (!supabase) {
+      if (!supabaseAdmin) {
         console.error('[NotificationService] Supabase client not initialized');
         return [];
       }
 
       // Get all users with notification preferences
-      const { data: users, error } = await supabase
+      const { data: users, error } = await (supabaseAdmin as any)
         .from('user_notification_preferences')
         .select('user_id, email_notifications, push_notifications, strategies, symbols, timeframes');
 
@@ -100,7 +101,7 @@ export class NotificationService {
       if (!users) return [];
 
       // Filter users based on their preferences
-      return users
+      return (users as Database['public']['Tables']['user_notification_preferences']['Row'][])
         .filter(user => this.shouldNotifyUser(user, signalData))
         .map(user => ({
           userId: user.user_id,
@@ -337,12 +338,12 @@ export class NotificationService {
     sent_at?: string;
   }): Promise<void> {
     try {
-      if (!supabase) {
+      if (!supabaseAdmin) {
         console.error('[NotificationService] Supabase client not initialized');
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabaseAdmin as any)
         .from('notifications_history')
         .insert([data]);
 
@@ -359,12 +360,12 @@ export class NotificationService {
    */
   async initializeUserPreferences(userId: string): Promise<void> {
     try {
-      if (!supabase) {
+      if (!supabaseAdmin) {
         console.error('[NotificationService] Supabase client not initialized');
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabaseAdmin as any)
         .from('user_notification_preferences')
         .insert([{
           user_id: userId,

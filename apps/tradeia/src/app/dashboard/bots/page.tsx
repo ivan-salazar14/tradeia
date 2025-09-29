@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { getSupabaseClient } from "@/lib/supabase-singleton";
+import { getSupabaseClient } from "@/lib/supabase/client";
 
 type Strategy = { id: string; name: string };
 

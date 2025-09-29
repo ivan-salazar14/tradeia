@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { randomUUID } from "crypto"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,13 +24,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Autenticación con Supabase
-    if (!supabase) {
+    if (!supabaseAdmin) {
       return NextResponse.json(
         { error: "Supabase no está configurado correctamente en el servidor" },
         { status: 500 }
       )
     }
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabaseAdmin.auth.signInWithPassword({
       email,
       password,
     })
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     if (data.user && data.user.email) {
       // 1. Verificar si el usuario existe en la tabla users
       let userRow, userError;
-      ({ data: userRow, error: userError } = await supabase
+      ({ data: userRow, error: userError } = await supabaseAdmin
         .from('users')
         .select('id_uuid')
         .eq('email', data.user.email)
@@ -55,11 +56,11 @@ export async function POST(request: NextRequest) {
 
       // 2. Si no existe, crearlo
       if (userError || !userRow) {
-        const { data: newUser, error: insertError } = await supabase
+        const { data: newUser, error: insertError } = await (supabaseAdmin
           .from('users')
-          .insert([{ email: data.user.email }])
+          .insert({ email: data.user.email, id_uuid: randomUUID() } as any)
           .select('id_uuid')
-          .single();
+          .single() as any);
         if (insertError) {
           console.error("Error insertando usuario en tabla users:", insertError);
         }
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
 
       // 3. Si existe o fue creado, actualizar los metadatos
       if (userRow?.id_uuid) {
-        await supabase.auth.updateUser({
+        await supabaseAdmin.auth.updateUser({
           data: { id_uuid: userRow.id_uuid }
         });
         id_uuid = userRow.id_uuid;
