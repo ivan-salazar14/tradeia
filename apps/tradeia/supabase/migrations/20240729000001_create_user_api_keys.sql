@@ -23,12 +23,12 @@ WITH CHECK (auth.uid() = user_id);
 
 -- Function to update the updated_at timestamp
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Trigger to automatically update updated_at on row update
 CREATE TRIGGER update_user_api_keys_updated_at

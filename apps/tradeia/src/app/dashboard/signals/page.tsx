@@ -68,6 +68,7 @@ export default function SignalsPage() {
   const [includeLiveSignals, setIncludeLiveSignals] = useState(false);
   const [isUsingFallback, setIsUsingFallback] = useState(false);
   const [fallbackMessage, setFallbackMessage] = useState<string>('');
+  const [copiedSignalId, setCopiedSignalId] = useState<string | null>(null);
 
   // Trading pairs options
   const tradingPairs = ["BTC/USDT", "ETH/USDT", "LINK/USDT", "XRP/USDT", "LTC/USDT","XLM/USDT","DOGE/USDT","MATIC/USDT","AVAX/USDT","ATOM/USDT"];
@@ -458,6 +459,20 @@ export default function SignalsPage() {
     setCurrentPage(1); // Reset to first page
   };
 
+  // Copy signal to clipboard
+  const copySignal = async (signal: Signal) => {
+    const strategyName = signal.strategyId ? strategyMap.get(signal.strategyId) || signal.strategyId : 'N/A';
+    const signalText = `SYMBOL: ${signal.symbol}\nTYPE: ${signal.type || 'N/A'}\nDIRECTION: ${signal.direction || 'N/A'}\nENTRY: ${signal.entry ? signal.entry.toLocaleString(undefined, { maximumFractionDigits: 8 }) : 'N/A'}\nTP1: ${signal.tp1 ? signal.tp1.toLocaleString(undefined, { maximumFractionDigits: 8 }) : 'N/A'}\nTP2: ${signal.tp2 ? signal.tp2.toLocaleString(undefined, { maximumFractionDigits: 8 }) : 'N/A'}\nSL: ${signal.stopLoss ? signal.stopLoss.toLocaleString(undefined, { maximumFractionDigits: 8 }) : 'N/A'}\nTIMEFRAME: ${signal.timeframe || 'N/A'}\nSTRATEGY: ${strategyName}\nPOSITION: ${signal.position_size ? signal.position_size.toLocaleString(undefined, { maximumFractionDigits: 2 }) : 'N/A'}\nRISK: ${signal.risk_amount ? signal.risk_amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : 'N/A'}\nR/R: ${signal.reward_to_risk ? signal.reward_to_risk.toFixed(2) + ':1' : 'N/A'}`;
+    
+    try {
+      await navigator.clipboard.writeText(signalText);
+      setCopiedSignalId(signal.id);
+      setTimeout(() => setCopiedSignalId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy signal:', err);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -498,20 +513,21 @@ export default function SignalsPage() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
-            <div className="space-y-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* Date Range Section */}
+            <div className="space-y-1 sm:col-span-2 lg:col-span-2 xl:col-span-1">
               <label className="block text-sm font-medium text-gray-700">Rango de Fechas</label>
-              <div className="flex flex-col space-y-2 md:flex-row md:space-x-2 md:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <input
                   type="date"
-                  className="border rounded px-2 py-1 text-sm w-full"
+                  className="border rounded px-2 py-1.5 text-sm w-full"
                   value={dateRange.start}
                   onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
                 />
-                <span className="flex items-center md:flex-shrink-0">a</span>
+                <span className="text-gray-500 text-xs sm:text-sm text-center">a</span>
                 <input
                   type="date"
-                  className="border rounded px-2 py-1 text-sm w-full"
+                  className="border rounded px-2 py-1.5 text-sm w-full"
                   value={dateRange.end}
                   onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
                   max={format(new Date(), 'yyyy-MM-dd')}
@@ -522,7 +538,7 @@ export default function SignalsPage() {
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">Símbolo</label>
               <select
-                className="border rounded px-2 py-1 text-sm w-full"
+                className="border rounded px-2 py-1.5 text-sm w-full"
                 value={symbol}
                 onChange={(e) => setSymbol(e.target.value)}
               >
@@ -536,7 +552,7 @@ export default function SignalsPage() {
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">Timeframe</label>
               <select
-                className="border rounded px-2 py-1 text-sm w-full"
+                className="border rounded px-2 py-1.5 text-sm w-full"
                 value={timeframe}
                 onChange={(e) => setTimeframe(e.target.value)}
               >
@@ -550,7 +566,7 @@ export default function SignalsPage() {
               <label className="block text-sm font-medium text-gray-700">Balance Inicial</label>
               <input
                 type="number"
-                className="border rounded px-2 py-1 text-sm w-full"
+                className="border rounded px-2 py-1.5 text-sm w-full"
                 placeholder="10000"
                 value={initialBalance}
                 onChange={(e) => setInitialBalance(e.target.value)}
@@ -563,7 +579,7 @@ export default function SignalsPage() {
               <label className="block text-sm font-medium text-gray-700">Riesgo por Trade (%)</label>
               <input
                 type="number"
-                className="border rounded px-2 py-1 text-sm w-full"
+                className="border rounded px-2 py-1.5 text-sm w-full"
                 placeholder="1.0"
                 value={riskPerTrade}
                 onChange={(e) => setRiskPerTrade(e.target.value)}
@@ -584,7 +600,7 @@ export default function SignalsPage() {
               </label>
               <select
                 multiple
-                className="border rounded px-2 py-1 text-sm w-full h-24"
+                className="border rounded px-2 py-1.5 text-sm w-full h-20 sm:h-24"
                 value={selectedStrategies}
                 onChange={(e) => {
                   const opts = Array.from(e.target.selectedOptions).map(o => o.value);
@@ -605,7 +621,7 @@ export default function SignalsPage() {
                 )}
               </select>
               {strategyOptions.length > 0 && (
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-gray-500 mt-1 hidden sm:block">
                   Using mock strategies for demonstration
                 </div>
               )}
@@ -619,7 +635,7 @@ export default function SignalsPage() {
                   id="includeLiveSignals"
                   checked={includeLiveSignals}
                   onChange={(e) => setIncludeLiveSignals(e.target.checked)}
-                  className="mr-2"
+                  className="mr-2 h-4 w-4"
                 />
                 <label htmlFor="includeLiveSignals" className="text-sm">Sí</label>
               </div>
@@ -732,8 +748,8 @@ export default function SignalsPage() {
               )}
             </div>
 
-            {/* Signals Table with Scrolling */}
-            <div className="overflow-x-auto overflow-y-auto max-h-96 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+            {/* Signals Table with Scrolling - Desktop */}
+            <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-96 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
               <table className="min-w-full divide-y divide-gray-200 text-xs md:text-sm">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
@@ -754,12 +770,13 @@ export default function SignalsPage() {
                     <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Riesgo</th>
                     <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">R/R</th>
                     <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                    <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acción</th>
                   </tr>
                 </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {signals.length === 0 && (
                   <tr>
-                    <td colSpan={17} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={18} className="px-6 py-4 text-center text-gray-500">
                       No hay señales disponibles. Seleccione una estrategia activa en &quot;Gestión de Bots&quot; o intente refrescar.
                     </td>
                   </tr>
@@ -812,10 +829,10 @@ export default function SignalsPage() {
                           {s.stopLoss ? s.stopLoss.toLocaleString(undefined, { maximumFractionDigits: 8 }) : '-'}
                         </td>
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-mono text-sm">
-                          {s.position_size ? `$${s.position_size.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '-'}
+                          {s.position_size ? `${s.position_size.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '-'}
                         </td>
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-mono text-sm">
-                          {s.risk_amount ? `$${s.risk_amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '-'}
+                          {s.risk_amount ? `${s.risk_amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '-'}
                         </td>
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap font-mono text-sm">
                           {s.reward_to_risk ? `${s.reward_to_risk.toFixed(2)}:1` : '-'}
@@ -823,11 +840,101 @@ export default function SignalsPage() {
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm text-gray-500">
                           {s.source?.provider || '-'}
                         </td>
+                        <td className="px-2 md:px-4 py-2 md:py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => copySignal(s)}
+                            className={`p-1.5 rounded transition-colors ${
+                              copiedSignalId === s.id
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                            }`}
+                            title="Copiar señal"
+                          >
+                            {copiedSignalId === s.id ? (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                          </button>
+                        </td>
                       </tr>
                   );
                 })}
               </tbody>
             </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {signals.length === 0 && (
+                <div className="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
+                  No hay señales disponibles. Seleccione una estrategia activa en &quot;Gestión de Bots&quot; o intente refrescar.
+                </div>
+              )}
+              {currentSignals.map((s) => {
+                const strategyName = s.strategyId ? strategyMap.get(s.strategyId) || s.strategyId : '-';
+                return (
+                  <div key={s.id} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm">{s.symbol}</span>
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${
+                          s.type?.toLowerCase() === 'buy'
+                            ? 'bg-green-100 text-green-700'
+                            : s.type?.toLowerCase() === 'sell'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {s.type ? s.type.toUpperCase() : '-'}
+                        </span>
+                        <span className="text-xs text-gray-500">{s.direction}</span>
+                      </div>
+                      <button
+                        onClick={() => copySignal(s)}
+                        className={`p-1.5 rounded transition-colors ${
+                          copiedSignalId === s.id
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                        }`}
+                        title="Copiar señal"
+                      >
+                        {copiedSignalId === s.id ? (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <span className="text-gray-500">Entry</span>
+                        <p className="font-mono font-medium">{s.entry ? s.entry.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">TP1</span>
+                        <p className="font-mono font-medium text-green-600">{s.tp1 ? s.tp1.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">SL</span>
+                        <p className="font-mono font-medium text-red-600">{s.stopLoss ? s.stopLoss.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '-'}</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between text-xs text-gray-500">
+                      <span>{s.timeframe}</span>
+                      <span>{strategyName}</span>
+                      <span className="font-medium">{s.reward_to_risk ? `R/R: ${s.reward_to_risk.toFixed(2)}:1` : '-'}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
