@@ -98,7 +98,10 @@ export default function SignalsPage() {
         initial_balance: initialBalance,
         risk_per_trade: riskPerTrade
       });
-      if (symbol.trim()) params.set('symbol', symbol.trim().toUpperCase());
+      if (symbol.trim()) {
+        const symbols = symbol.split(',').map(s => s.trim()).filter(Boolean);
+        params.set('symbol', symbols.join(','));
+      }
       if (includeLiveSignals) params.set('include_live_signals', 'true');
       // If exactly one strategy is active, pass as strategy_id param
       if (Array.isArray(activeStrategies) && activeStrategies.length === 1) {
@@ -226,7 +229,7 @@ export default function SignalsPage() {
         end_date: `${dateRange.end}T23:59:59`,
         initial_balance: parseFloat(initialBalance),
         risk_per_trade: parseFloat(riskPerTrade),
-        symbol: symbol.trim() || undefined,
+        symbol: symbol.trim() ? symbol.split(',').map(s => s.trim()).filter(Boolean) : undefined,
         strategy_id: strategyToUse
       };
 
@@ -536,17 +539,26 @@ export default function SignalsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Símbolo</label>
+              <label className="block text-sm font-medium text-gray-700">Símbolo (Ctrl+Clic para multi-select)</label>
               <select
-                className="border rounded px-2 py-1.5 text-sm w-full"
+                multiple
+                className="border rounded px-2 py-1.5 text-sm w-full h-20"
                 value={symbol}
-                onChange={(e) => setSymbol(e.target.value)}
+                onChange={(e) => {
+                  const opts = Array.from(e.target.selectedOptions).map(o => o.value);
+                  setSymbol(opts.join(','));
+                }}
               >
-                <option value="">Seleccionar par...</option>
+                <option value="">Todos los pares...</option>
                 {tradingPairs.map(pair => (
                   <option key={pair} value={pair}>{pair}</option>
                 ))}
               </select>
+              {symbol && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Seleccionados: {symbol.split(',').filter(Boolean).join(', ')}
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
