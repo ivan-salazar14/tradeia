@@ -12,10 +12,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
 
   // Set client flag on mount
   useEffect(() => {
     setIsClient(true);
+    
+    // Load sidebar visibility from localStorage
+    const savedVisibility = localStorage.getItem('sidebarVisible');
+    if (savedVisibility !== null) {
+      setSidebarVisible(JSON.parse(savedVisibility));
+    }
   }, []);
 
   // Handle authentication state changes
@@ -45,6 +52,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     // Onboarding redirects removed - users can access dashboard freely
   }, [user, loading, router, isClient]);
 
+  // Save sidebar visibility to localStorage
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('sidebarVisible', JSON.stringify(sidebarVisible));
+    }
+  }, [sidebarVisible, isClient]);
+
+  const toggleSidebar = () => {
+    setSidebarVisible(!sidebarVisible);
+  };
+
   // Show loading state while checking auth or during redirect
   if (loading || !isClient || isRedirecting) {
     return (
@@ -62,9 +80,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // Render the dashboard layout
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <MobileHeader pathname={pathname} />
+      <Sidebar 
+        isVisible={sidebarVisible} 
+        onToggleVisibility={toggleSidebar}
+      />
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarVisible ? '' : 'w-full'}`}>
+        <MobileHeader 
+          pathname={pathname} 
+          sidebarVisible={sidebarVisible}
+          onToggleSidebar={toggleSidebar}
+        />
         <main className="flex-1 overflow-x-hidden overflow-y-auto">
           {children}
         </main>

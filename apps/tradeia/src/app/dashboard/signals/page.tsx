@@ -57,7 +57,7 @@ export default function SignalsPage() {
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<string>('4h');
   const timeframeOptions = ['1m','5m','15m','1h','4h','1d','1w'];
-  const [symbol, setSymbol] = useState<string>("");
+  const [symbol, setSymbol] = useState<string[]>([]);
   const [strategyOptions, setStrategyOptions] = useState<Array<{ id: string; name: string }>>([]);
   const [strategiesLoading, setStrategiesLoading] = useState(true);
   const [selectedStrategies, setSelectedStrategies] = useState<string[]>([]);
@@ -98,9 +98,8 @@ export default function SignalsPage() {
         initial_balance: initialBalance,
         risk_per_trade: riskPerTrade
       });
-      if (symbol.trim()) {
-        const symbols = symbol.split(',').map(s => s.trim()).filter(Boolean);
-        params.set('symbol', symbols.join(','));
+      if (symbol.length > 0) {
+        params.set('symbol', symbol.join(','));
       }
       if (includeLiveSignals) params.set('include_live_signals', 'true');
       // If exactly one strategy is active, pass as strategy_id param
@@ -171,7 +170,7 @@ export default function SignalsPage() {
       const mockSignals: Signal[] = [
         {
           id: 'fallback-1',
-          symbol: symbol || 'BTC/USDT',
+          symbol: symbol.length > 0 ? symbol[0] : 'BTC/USDT',
           timeframe: timeframe,
           timestamp: new Date().toISOString(),
           execution_timestamp: new Date().toISOString(),
@@ -229,7 +228,7 @@ export default function SignalsPage() {
         end_date: `${dateRange.end}T23:59:59`,
         initial_balance: parseFloat(initialBalance),
         risk_per_trade: parseFloat(riskPerTrade),
-        symbol: symbol.trim() ? symbol.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+        symbol: symbol.length > 0 ? symbol : undefined,
         strategy_id: strategyToUse
       };
 
@@ -313,7 +312,7 @@ export default function SignalsPage() {
       const mockSignals: Signal[] = [
         {
           id: 'generated-fallback-1',
-          symbol: symbol || 'BTC/USDT',
+          symbol: symbol.length > 0 ? symbol[0] : 'BTC/USDT',
           timeframe: timeframe,
           timestamp: new Date().toISOString(),
           execution_timestamp: new Date().toISOString(),
@@ -546,7 +545,7 @@ export default function SignalsPage() {
                 value={symbol}
                 onChange={(e) => {
                   const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                  setSymbol(opts.join(','));
+                  setSymbol(opts);
                 }}
               >
                 <option value="">Todos los pares...</option>
@@ -554,9 +553,9 @@ export default function SignalsPage() {
                   <option key={pair} value={pair}>{pair}</option>
                 ))}
               </select>
-              {symbol && (
+              {symbol.length > 0 && (
                 <div className="text-xs text-gray-500 mt-1">
-                  Seleccionados: {symbol.split(',').filter(Boolean).join(', ')}
+                  Seleccionados: {symbol.join(', ')}
                 </div>
               )}
             </div>

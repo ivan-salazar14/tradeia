@@ -53,7 +53,13 @@ const icons: Record<string, React.ReactElement> = {
   ),
 };
 
-export default function Sidebar() {
+export default function Sidebar({ 
+  isVisible = true, 
+  onToggleVisibility 
+}: { 
+  isVisible?: boolean; 
+  onToggleVisibility?: () => void 
+}) {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -65,6 +71,12 @@ export default function Sidebar() {
   useEffect(() => {
     // Set mounted state
     setIsMounted(true);
+    
+    // Load collapsed state from localStorage
+    const savedCollapsed = localStorage.getItem('sidebarCollapsed');
+    if (savedCollapsed) {
+      setIsCollapsed(JSON.parse(savedCollapsed));
+    }
     
     // Only run path cleaning on client side
     if (pathname && pathname.includes('undefined')) {
@@ -89,6 +101,11 @@ export default function Sidebar() {
     };
   }, [pathname, router]);
 
+  // Save collapsed state to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
+  }, [isCollapsed]);
+
   // Show loading state until we're sure about the path
   if (!isMounted || showLoading) {
     return (
@@ -107,6 +124,10 @@ export default function Sidebar() {
     router.push(cleanPath);
   };
 
+  const handleCollapseToggle = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -117,15 +138,50 @@ export default function Sidebar() {
     }
   };
 
+  // Don't render if not visible
+  if (!isVisible) {
+    return null;
+  }
+
   return (
-    <div className="hidden md:flex flex-col w-64 bg-white shadow-lg">
+    <div className={`flex flex-col bg-white shadow-lg transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Desktop Sidebar Header */}
-      <div className="flex items-center justify-center h-20 shadow-md">
-        <h1 className="text-2xl font-bold text-indigo-600">AI Trader</h1>
+      <div className="flex items-center justify-between h-20 shadow-md px-2">
+        {!isCollapsed && (
+          <h1 className="text-2xl font-bold text-indigo-600">AI Trader</h1>
+        )}
+        <div className="flex items-center space-x-1">
+          {/* Collapse/Expand Button */}
+          <button
+            onClick={handleCollapseToggle}
+            className="p-2 rounded-md text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isCollapsed ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              )}
+            </svg>
+          </button>
+          {/* Hide Sidebar Button */}
+          {onToggleVisibility && (
+            <button
+              onClick={onToggleVisibility}
+              className="p-2 rounded-md text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              title="Hide sidebar"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Desktop Navigation */}
-      <nav className="flex-1 px-2 py-4 space-y-2">
+      <nav className={`flex-1 px-2 py-4 space-y-2 ${isCollapsed ? 'px-1' : ''}`}>
         {menu.map((item) => {
           // Clean the path for comparison to handle any undefined segments
           const cleanPathname = pathname.replace(/\/undefined/g, '');
@@ -136,39 +192,51 @@ export default function Sidebar() {
             <button
               key={item.path}
               onClick={() => handleNavigation(item.path)}
-              className={`nav-item flex items-center w-full px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors duration-150 ${active ? "active" : ""}`}
+              className={`nav-item flex items-center w-full px-2 py-2 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors duration-150 ${active ? "active" : ""} ${isCollapsed ? 'justify-center' : ''}`}
               style={active ? { backgroundColor: "#e0e7ff", color: "#4f46e5", fontWeight: 600 } : {}}
+              title={isCollapsed ? item.label : undefined}
             >
-              <span className="sidebar-icon mr-4">{icons[item.icon]}</span>
-              <span className="mx-4">{item.label}</span>
+              <span className={`sidebar-icon ${isCollapsed ? '' : 'mr-4'}`}>{icons[item.icon]}</span>
+              {!isCollapsed && <span className="mx-4">{item.label}</span>}
             </button>
           );
         })}
       </nav>
 
       {/* User Info and Logout Section */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium text-indigo-600">
-              {user?.email?.charAt(0).toUpperCase()}
-            </span>
+      <div className={`p-4 border-t border-gray-200 ${isCollapsed ? 'px-1 py-2' : ''}`}>
+        {!isCollapsed && (
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+              <span className="text-sm font-medium text-indigo-600">
+                {user?.email?.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user?.email}
+              </p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.email}
-            </p>
+        )}
+        {isCollapsed && (
+          <div className="flex justify-center mb-4">
+            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+              <span className="text-sm font-medium text-indigo-600">
+                {user?.email?.charAt(0).toUpperCase()}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
         <Button
           onClick={handleLogout}
           variant="outline"
-          className="w-full justify-start"
+          className={`w-full justify-start ${isCollapsed ? 'px-0 justify-center' : ''}`}
         >
-          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          Cerrar Sesión
+          {!isCollapsed && <span className="ml-2">Cerrar Sesión</span>}
         </Button>
       </div>
     </div>
