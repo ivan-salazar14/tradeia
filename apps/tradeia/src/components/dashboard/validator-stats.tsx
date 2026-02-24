@@ -27,7 +27,7 @@ export default function ValidatorStats() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/strategies/validator/stats', {
+      const response = await fetch('/validator/stats', {
         credentials: 'include',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
