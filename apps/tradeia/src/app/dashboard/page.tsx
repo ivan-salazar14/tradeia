@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import DashboardStats from "@/components/dashboard/dashboard-stats"
+import ValidatorStats from "@/components/dashboard/validator-stats"
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth()
@@ -47,8 +48,12 @@ export default function DashboardPage() {
 
         {/* Onboarding section removed - no forced onboarding */}
 
-        {/* Dashboard Stats */}
-        <DashboardStats />
+        {/* Dashboard Stats  <DashboardStats />*/}
+       
+        {/* Validator Stats - Consensus Validation */}
+        <div className="mt-8">
+          <ValidatorStats />
+        </div>
 
         {/* Charts Section */}
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
