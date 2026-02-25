@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Play, Users, Award, ChevronRight } from 'lucide-react';
+import { Play, Users, Award, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const Education = () => {

@@ -2,7 +2,7 @@
   "name": "Tradeia - Plataforma de Trading Cuantitativo",
   "short_name": "Tradeia",
   "description": "Automatiza tus estrategias de trading con Tradeia. Plataforma cuantitativa avanzada con estrategias probadas, backtesting y señales en tiempo real.",
-  "start_url": "https://tradeia.online.com",
+  "start_url": "https://tradeia.online/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1f2937",

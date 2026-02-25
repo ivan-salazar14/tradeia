@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { Copy, Check, Terminal, Book, Users } from 'lucide-react';
+import React from 'react';
+import { Terminal, Book, Users } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const GettingStarted = () => {
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const { t } = useLanguage();
 
   const steps = [
@@ -26,12 +25,6 @@ const GettingStarted = () => {
       action: t('gettingStarted.steps.signals.action')
     }
   ];
-
-  const copyToClipboard = (text: string, index: number) => {
-    navigator.clipboard.writeText(text);
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 2000);
-  };
 
   return (
     <section className="py-20 bg-white">

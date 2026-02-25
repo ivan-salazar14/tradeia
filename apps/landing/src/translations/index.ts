@@ -1,5 +1,3 @@
-import { Language } from '../contexts/LanguageContext';
-
 export const translations = {
   en: {
     // Navigation

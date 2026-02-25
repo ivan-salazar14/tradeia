@@ -97,13 +97,14 @@ const Header = () => {
             type="button"
             className="inline-flex items-center justify-center p-2 rounded-md md:hidden focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-expanded="false"
+            aria-expanded={isMenuOpen}
+            aria-controls="mobile-menu"
           >
             <span className="sr-only">Abrir menú principal</span>
             {isMenuOpen ? (
-              <X className="block h-6 w-6 text-gray-700" aria-hidden="true" />
+              <X className={`block h-6 w-6 ${isScrolled ? 'text-gray-700' : 'text-white'}`} aria-hidden="true" />
             ) : (
-              <Menu className="block h-6 w-6 text-gray-700" aria-hidden="true" />
+              <Menu className={`block h-6 w-6 ${isScrolled ? 'text-gray-700' : 'text-white'}`} aria-hidden="true" />
             )}
           </button>
         </div>
@@ -111,6 +112,7 @@ const Header = () => {
 
       {/* Mobile Navigation */}
       <div
+        id="mobile-menu"
         className={`md:hidden transition-all duration-300 ease-in-out overflow-hidden ${
           isMenuOpen ? 'max-h-96' : 'max-h-0'
         }`}

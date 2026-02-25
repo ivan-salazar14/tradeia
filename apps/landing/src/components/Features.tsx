@@ -1,4 +1,4 @@
-import { BarChart2, Cpu, Shield, Zap, TrendingUp, Clock, Activity, Target, Bell, BarChart4, LineChart } from 'lucide-react';
+import { BarChart2, Cpu, Shield, Zap, TrendingUp, Activity, Target, Bell, BarChart4, LineChart } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) => (
