@@ -27,7 +27,7 @@ export default function ValidatorStats() {
       setLoading(true);
       setError(null);
       // Use relative URL - the API route is internal to Next.js
-      const url = '/strategies/validator/stats';
+      const url = '/api/strategies/validator/stats';
       console.log('[VALIDATOR STATS] Fetching from URL:', url);
       const response = await fetch(url, {
         credentials: 'include',
