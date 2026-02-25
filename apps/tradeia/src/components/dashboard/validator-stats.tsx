@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { ValidatorStatsItem, ValidatorStatsData } from '@/types/validator-stats';
-import { env } from 'process';
 
 export default function ValidatorStats() {
   const { session, loading: authLoading } = useAuth();
@@ -27,8 +26,9 @@ export default function ValidatorStats() {
     try {
       setLoading(true);
       setError(null);
-      var url = new URL('/strategies/validator/stats', process.env.SIGNALS_API_BASE || 'http://localhost:8000');
-      console.log('[VALIDATOR STATS] Fetching from URL:', url.toString());
+      // Use relative URL - the API route is internal to Next.js
+      const url = '/strategies/validator/stats';
+      console.log('[VALIDATOR STATS] Fetching from URL:', url);
       const response = await fetch(url, {
         credentials: 'include',
         headers: {
