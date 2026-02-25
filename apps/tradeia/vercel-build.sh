@@ -9,7 +9,9 @@ echo "🚀 Starting TradeIA Vercel Build Process..."
 
 # Install dependencies
 echo "📦 Installing dependencies..."
-npm ci --only=production
+# Clear npm cache to avoid corrupted cache issues
+npm cache clean --force 2>/dev/null || true
+npm install
 
 # Build Next.js application
 echo "🔨 Building Next.js application..."
