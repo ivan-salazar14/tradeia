@@ -56,7 +56,7 @@ export default function SignalsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<string>('4h');
-  const timeframeOptions = ['1m','5m','15m','1h','4h','1d','1w'];
+  const timeframeOptions = ['15m','1h','4h','1d','1w'];
   const [symbol, setSymbol] = useState<string[]>([]);
   const [strategyOptions, setStrategyOptions] = useState<Array<{ id: string; name: string }>>([]);
   const [strategiesLoading, setStrategiesLoading] = useState(true);
@@ -587,28 +587,22 @@ export default function SignalsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Riesgo por Trade (%)</label>
+              <label className="block text-sm font-medium text-gray-700">Riesgo por Trade (escala de 0-10 %)</label>
               <input
                 type="number"
                 className="border rounded px-2 py-1.5 text-sm w-full"
                 placeholder="1.0"
                 value={riskPerTrade}
                 onChange={(e) => setRiskPerTrade(e.target.value)}
-                min="0.01"
-                max="100"
-                step="0.01"
+                min="0.1"
+                max="10"
+                step="0.1"
               />
             </div>
 
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">
-                Estrategias
-                {strategyOptions.length > 0 && (
-                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    Mock ({strategyOptions.length})
-                  </span>
-                )}
-              </label>
+                Estrategias</label>
               <select
                 multiple
                 className="border rounded px-2 py-1.5 text-sm w-full h-20 sm:h-24"

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import DashboardStats from "@/components/dashboard/dashboard-stats"
 import ValidatorStats from "@/components/dashboard/validator-stats"
 
 export default function DashboardPage() {
