@@ -7,13 +7,25 @@ set -e
 
 echo "🚀 Starting TradeIA Vercel Build Process..."
 
-# Install dependencies - use --ignore-scripts to avoid issues with husky and other postinstall scripts
+# Install dependencies - try pnpm first (most reliable), then yarn, then npm
 echo "📦 Installing dependencies..."
-npm install --ignore-scripts --no-audit --no-fund
+if command -v pnpm &> /dev/null; then
+    pnpm install --ignore-scripts
+elif command -v yarn &> /dev/null; then
+    yarn install --ignore-scripts --ignore-engines
+else
+    npm install --ignore-scripts --no-audit --no-fund
+fi
 
 # Build Next.js application
 echo "🔨 Building Next.js application..."
-npm run build
+if command -v pnpm &> /dev/null; then
+    pnpm build
+elif command -v yarn &> /dev/null; then
+    yarn build
+else
+    npm run build
+fi
 
 # Validate build output
 echo "✅ Validating build output..."
