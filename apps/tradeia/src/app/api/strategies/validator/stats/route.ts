@@ -17,8 +17,49 @@ export async function GET(request: NextRequest) {
 
   console.log('[VALIDATOR STATS API] Fetching validator statistics');
 
-  // Mock data for validator stats - in production, this would query the database
-  const mockStats = [
+  // Get the external API base URL
+  const API_BASE = process.env.SIGNALS_API_BASE;
+  
+  if (!API_BASE) {
+    console.error('[VALIDATOR STATS API] SIGNALS_API_BASE not configured');
+    return NextResponse.json(
+      { error: 'SIGNALS_API_BASE environment variable is not configured' },
+      { status: 500 }
+    );
+  }
+
+  try {
+    // Build the external API URL
+    const externalUrl = new URL('/strategies/validator/stats', API_BASE);
+    if (symbol) externalUrl.searchParams.set('symbol', symbol);
+    if (strategyId) externalUrl.searchParams.set('strategy_id', strategyId);
+    if (timeframe) externalUrl.searchParams.set('timeframe', timeframe);
+
+    console.log('[VALIDATOR STATS API] Calling external API:', externalUrl.toString());
+
+    // Call the external API
+    const response = await fetch(externalUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`External API returned ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('[VALIDATOR STATS API] External API response received');
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('[VALIDATOR STATS API] Error calling external API:', error);
+    
+    // Fallback to mock data if external API fails
+    console.log('[VALIDATOR STATS API] Falling back to mock data');
+    
+    const mockStats = [
     {
       symbol: 'BTC/USDT',
       timeframe: '1h',
@@ -250,4 +291,5 @@ export async function GET(request: NextRequest) {
       'Accept-Encoding': 'identity'
     }
   });
+  }
 }
