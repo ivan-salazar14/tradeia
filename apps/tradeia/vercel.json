@@ -21,9 +21,6 @@
     }
   },
   "regions": ["iad1"],
-  "env": {
-    "NODE_ENV": "production"
-  },
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -141,11 +138,5 @@
       "destination": "/api/docs",
       "statusCode": 302
     }
-  ],
-  "build": {
-    "env": {
-      "NODE_OPTIONS": "--max-old-space-size=4096"
-    }
-  },
-  "outputDirectory": ".next"
+  ]
 }
