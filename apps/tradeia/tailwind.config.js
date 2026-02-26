@@ -24,8 +24,8 @@ module.exports = {
           inter: ['Inter', 'sans-serif'],
         },
         colors: {
-          primary: '#6be80c', // Indigo
-          secondary: '#f0f2f5', // Light gray background
+          primary: '#3f8c05', // Indigo
+          secondary: '#c7d412', // Light gray background
           cardbg: '#ffffff',
           textdark: '#1f2937',
           textlight: '#6b7280',
