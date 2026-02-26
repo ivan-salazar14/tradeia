@@ -19,6 +19,20 @@ export default function RootLayout({
   
   return (
     <html lang="es">
+      <head>
+        {/* Google tag (gtag.js) */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-NLNRVF2BZ4"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-NLNRVF2BZ4');
+            `,
+          }}
+        />
+      </head>
       <body className="bg-secondary text-textdark font-inter">
         <AuthProvider>
           {children}
