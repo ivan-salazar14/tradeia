@@ -1,5 +1,22 @@
 import { UnifiedSignal } from './types';
 
+// Helper to extract range values from reason string
+function extractRangeFromReason(reason: string | undefined): { range_min?: number; range_max?: number } {
+  if (!reason) return {};
+  
+  // Match patterns like "Pool: [1955.6329 – 2097.5271]" or "Pool: [58750.0 – 61250.0]"
+  const poolMatch = reason.match(/Pool:\s*\[([^\s–]+)\s*[–-]\s*([^\s\]]+)\]/);
+  if (poolMatch && poolMatch[1] && poolMatch[2]) {
+    const range_min = parseFloat(poolMatch[1]);
+    const range_max = parseFloat(poolMatch[2]);
+    if (!isNaN(range_min) && !isNaN(range_max)) {
+      return { range_min, range_max };
+    }
+  }
+  
+  return {};
+}
+
 // Normalize from an external payload (example given in US-015)
 export function normalizeExampleProvider(payload: any): UnifiedSignal {
   const id = payload?.id ?? payload?.signal_id ?? payload?.uuid ?? undefined;
@@ -20,8 +37,9 @@ export function normalizeExampleProvider(payload: any): UnifiedSignal {
   const provider = payload?.provider ?? payload?.source ?? 'external';
 
   // Range Detection specific fields
-  const range_min = payload?.range_min ?? payload?.rangeMin ?? undefined;
-  const range_max = payload?.range_max ?? payload?.rangeMax ?? undefined;
+  const rangeData = extractRangeFromReason(payload?.reason);
+  const range_min = payload?.range_min ?? payload?.rangeMin ?? rangeData.range_min;
+  const range_max = payload?.range_max ?? payload?.rangeMax ?? rangeData.range_max;
   const confidence = payload?.confidence ?? payload?.range_confidence ?? undefined;
   
   // Hedge short data

@@ -19,6 +19,10 @@ export function RangePoolCard({
   tp1,
   stopLoss,
 }: RangePoolCardProps) {
+  // Use stopLoss and tp1 as fallback if range values are not available
+  const effectiveRangeMin = range_min ?? stopLoss;
+  const effectiveRangeMax = range_max ?? tp1;
+  
   // Determine border style based on confidence
   const getConfidenceStyles = () => {
     switch (confidence) {
@@ -28,6 +32,7 @@ export function RangePoolCard({
           bg: "bg-green-50",
           badge: "bg-green-100 text-green-800",
           badgeText: "ALTA",
+          iconColor: "text-green-600",
         };
       case "medium":
         return {
@@ -35,6 +40,7 @@ export function RangePoolCard({
           bg: "bg-yellow-50",
           badge: "bg-yellow-100 text-yellow-800",
           badgeText: "MEDIA",
+          iconColor: "text-yellow-600",
         };
       case "low":
         return {
@@ -42,6 +48,7 @@ export function RangePoolCard({
           bg: "bg-gray-50",
           badge: "bg-gray-100 text-gray-800",
           badgeText: "BAJA",
+          iconColor: "text-gray-600",
         };
       default:
         return {
@@ -49,12 +56,22 @@ export function RangePoolCard({
           bg: "bg-yellow-50",
           badge: "bg-yellow-100 text-yellow-800",
           badgeText: "MEDIA",
+          iconColor: "text-yellow-600",
         };
     }
   };
 
   const styles = getConfidenceStyles();
-  const rangeSize = range_max && range_min ? range_max - range_min : 0;
+  const rangeSize = effectiveRangeMax && effectiveRangeMin ? effectiveRangeMax - effectiveRangeMin : 0;
+  
+  // Calculate position percentage for the entry price within the range
+  const calculatePositionPercent = (price: number) => {
+    if (!effectiveRangeMin || !effectiveRangeMax || rangeSize === 0) return 50;
+    const percent = ((price - effectiveRangeMin) / rangeSize) * 100;
+    return Math.max(0, Math.min(100, percent));
+  };
+
+  const entryPercent = entry ? calculatePositionPercent(entry) : 50;
 
   return (
     <div
@@ -66,7 +83,7 @@ export function RangePoolCard({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <svg
-            className="w-5 h-5 text-gray-600"
+            className={`w-5 h-5 ${styles.iconColor}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -85,13 +102,53 @@ export function RangePoolCard({
         </span>
       </div>
 
+      {/* Visual Range Bar */}
+      {effectiveRangeMin && effectiveRangeMax && (
+        <div className="mb-4">
+          <div className="relative h-8 bg-gray-200 rounded-lg overflow-hidden">
+            {/* Range Zone */}
+            <div className="absolute inset-y-0 left-0 right-0 bg-gradient-to-r from-red-100 via-yellow-100 to-green-100 opacity-50"></div>
+            
+            {/* Range Labels */}
+            <div className="absolute inset-0 flex items-center justify-between px-2">
+              <span className="text-xs font-mono font-bold text-red-700 bg-white/80 px-1 rounded">
+                {effectiveRangeMin.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              </span>
+              <span className="text-xs font-mono font-bold text-green-700 bg-white/80 px-1 rounded">
+                {effectiveRangeMax.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              </span>
+            </div>
+            
+            {/* Entry Position Marker */}
+            {entry && (
+              <div 
+                className="absolute top-0 bottom-0 w-0.5 bg-blue-600 z-10"
+                style={{ left: `${entryPercent}%` }}
+              >
+                <div className="absolute -top-1 -left-3 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="text-center mt-1">
+            <span className="text-xs text-gray-600">Entrada: </span>
+            <span className="text-xs font-mono font-bold text-blue-700">
+              {entry?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || "-"}
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         {/* Piso (Range Min) */}
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <div className="text-xs text-gray-500 mb-1">PISO (Range Min)</div>
           <div className="font-mono font-bold text-red-600">
-            {range_min
-              ? range_min.toLocaleString(undefined, {
+            {effectiveRangeMin
+              ? effectiveRangeMin.toLocaleString(undefined, {
                   maximumFractionDigits: 2,
                 })
               : "-"}
@@ -102,8 +159,8 @@ export function RangePoolCard({
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <div className="text-xs text-gray-500 mb-1">TECHO (Range Max)</div>
           <div className="font-mono font-bold text-green-600">
-            {range_max
-              ? range_max.toLocaleString(undefined, {
+            {effectiveRangeMax
+              ? effectiveRangeMax.toLocaleString(undefined, {
                   maximumFractionDigits: 2,
                 })
               : "-"}
@@ -119,10 +176,15 @@ export function RangePoolCard({
             ? rangeSize.toLocaleString(undefined, { maximumFractionDigits: 2 })
             : "-"}
         </span>
+        {rangeSize > 0 && entry && (
+          <span className="ml-2 text-gray-500">
+            ({((rangeSize / entry) * 100).toFixed(2)}% del precio)
+          </span>
+        )}
       </div>
 
       {/* Entry and TP for Pool */}
-      {(entry || tp1) && (
+      {(entry || effectiveRangeMax) && (
         <div className="mt-3 pt-3 border-t border-gray-200">
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
@@ -138,8 +200,8 @@ export function RangePoolCard({
             <div>
               <span className="text-gray-500">TP Pool:</span>
               <span className="ml-1 font-mono font-medium text-green-600">
-                {tp1
-                  ? tp1.toLocaleString(undefined, {
+                {effectiveRangeMax
+                  ? effectiveRangeMax.toLocaleString(undefined, {
                       maximumFractionDigits: 2,
                     })
                   : "-"}
@@ -154,7 +216,7 @@ export function RangePoolCard({
         className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
         onClick={() => {
           // Configurar los límites del pool en la plataforma de liquidez
-          console.log("Abrir Pool con límites:", { range_min, range_max });
+          console.log("Abrir Pool con límites:", { range_min: effectiveRangeMin, range_max: effectiveRangeMax });
         }}
       >
         <svg
