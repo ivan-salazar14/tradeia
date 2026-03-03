@@ -1,20 +1,31 @@
 import { UnifiedSignal } from './types';
 
 // Helper to extract range values from reason string
-function extractRangeFromReason(reason: string | undefined): { range_min?: number; range_max?: number } {
+function extractRangeFromReason(reason: string | undefined): { range_min?: number; range_max?: number; confidence?: 'high' | 'medium' | 'low' } {
   if (!reason) return {};
   
+  // Match confidence level (HIGH, MEDIUM, LOW) in parentheses
+  const confidenceMatch = reason.match(/\(HIGH\)|\(MEDIUM\)|\(LOW\)/i);
+  let confidence: 'high' | 'medium' | 'low' | undefined;
+  if (confidenceMatch) {
+    const confStr = confidenceMatch[0].toLowerCase().replace(/[()]/g, '');
+    if (confStr === 'high') confidence = 'high';
+    else if (confStr === 'medium') confidence = 'medium';
+    else if (confStr === 'low') confidence = 'low';
+  }
+  
   // Match patterns like "Pool: [1955.6329 – 2097.5271]" or "Pool: [58750.0 – 61250.0]"
-  const poolMatch = reason.match(/Pool:\s*\[([^\s–]+)\s*[–-]\s*([^\s\]]+)\]/);
+  // Handle both en-dash (–) and em-dash (—)
+  const poolMatch = reason.match(/Pool:\s*\[([^\s–—]+)\s*[–—]+\s*([^\s\]]+)\]/);
   if (poolMatch && poolMatch[1] && poolMatch[2]) {
     const range_min = parseFloat(poolMatch[1]);
     const range_max = parseFloat(poolMatch[2]);
     if (!isNaN(range_min) && !isNaN(range_max)) {
-      return { range_min, range_max };
+      return { range_min, range_max, confidence };
     }
   }
   
-  return {};
+  return { confidence };
 }
 
 // Normalize from an external payload (example given in US-015)
@@ -40,7 +51,8 @@ export function normalizeExampleProvider(payload: any): UnifiedSignal {
   const rangeData = extractRangeFromReason(payload?.reason);
   const range_min = payload?.range_min ?? payload?.rangeMin ?? rangeData.range_min;
   const range_max = payload?.range_max ?? payload?.rangeMax ?? rangeData.range_max;
-  const confidence = payload?.confidence ?? payload?.range_confidence ?? undefined;
+  const confidence = payload?.confidence ?? payload?.range_confidence ?? rangeData.confidence;
+  const marketScenario = payload?.market_scenario ?? payload?.marketScenario ?? payload?.context ?? null;
   
   // Hedge short data
   const hedge_short = payload?.hedge_short ?? payload?.hedgeShort ?? undefined;
@@ -61,7 +73,7 @@ export function normalizeExampleProvider(payload: any): UnifiedSignal {
     tp1,
     tp2,
     stopLoss,
-    marketScenario: payload?.market_scenario ?? payload?.context ?? null,
+    marketScenario,
     createdAt: payload?.created_at ?? payload?.createdAt,
     // Range Detection fields
     range_min,
