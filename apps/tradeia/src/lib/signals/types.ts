@@ -1,5 +1,17 @@
 export type SignalDirection = 'BUY' | 'SELL' | 'LONG' | 'SHORT';
 
+export type RangeConfidence = 'high' | 'medium' | 'low';
+
+export interface HedgeShort {
+  entry_price: number;
+  stop_price: number;
+  target_price: number;
+  size_suggestion: string;
+  risk_pct: number;
+  reward_pct: number;
+  rationale: string;
+}
+
 export interface UnifiedSignal {
   id: string;
   symbol: string; // e.g., BTC/USDT
@@ -18,6 +30,11 @@ export interface UnifiedSignal {
   stopLoss?: number;
   marketScenario?: string | null;
   createdAt?: string; // ISO string
+  // Range Detection specific fields
+  range_min?: number;
+  range_max?: number;
+  confidence?: RangeConfidence;
+  hedge_short?: HedgeShort;
   source: {
     provider: string; // Provider identifier
     generatedBy?: string; // e.g., cronjob

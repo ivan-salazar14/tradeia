@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { format, subDays } from "date-fns";
 import { useAuth } from "@/contexts/auth-context";
+import { RangeDetectionSignal } from "@/components/signals";
 
 type Signal = {
   id: string;
@@ -19,10 +20,25 @@ type Signal = {
   tp1?: number;
   tp2?: number;
   stopLoss?: number;
+  reason?: string;
+  marketScenario?: string | null;
   source: { provider: string };
   position_size?: number;
   risk_amount?: number;
   reward_to_risk?: number;
+  // Range Detection specific fields
+  range_min?: number;
+  range_max?: number;
+  confidence?: 'high' | 'medium' | 'low';
+  hedge_short?: {
+    entry_price: number;
+    stop_price: number;
+    target_price: number;
+    size_suggestion: string;
+    risk_pct: number;
+    reward_pct: number;
+    rationale: string;
+  };
 };
 
 type PortfolioMetrics = {
@@ -416,6 +432,11 @@ export default function SignalsPage() {
         id: 'advanced_ta',
         name: 'Advanced TA Strategy',
         description: 'Advanced technical analysis strategy with multiple indicators and sophisticated entry/exit rules'
+      },
+      {
+        id: 'RangeDetection',
+        name: 'Range Detection (Pool Liquidity)',
+        description: 'Detecta rangos laterales y genera señales para pools de liquidez con protección de hedge'
       }
     ];
 
@@ -806,6 +827,14 @@ export default function SignalsPage() {
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm">{s.timeframe}</td>
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-sm text-gray-500">
                           {strategyName}
+                          {s.strategyId === 'RangeDetection' && s.range_min && (
+                            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                              <svg className="w-3 h-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                              </svg>
+                              Pool
+                            </span>
+                          )}
                         </td>
                         <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
                           <span
@@ -934,9 +963,23 @@ export default function SignalsPage() {
                     </div>
                     <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between text-xs text-gray-500">
                       <span>{s.timeframe}</span>
-                      <span>{strategyName}</span>
+                      <span className="flex items-center gap-1">
+                        {strategyName}
+                        {s.strategyId === 'RangeDetection' && s.range_min && (
+                          <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                            Pool
+                          </span>
+                        )}
+                      </span>
                       <span className="font-medium">{s.reward_to_risk ? `R/R: ${s.reward_to_risk.toFixed(2)}:1` : '-'}</span>
                     </div>
+
+                    {/* Range Detection Signal - Show when strategy is RangeDetection */}
+                    {s.strategyId === 'RangeDetection' && s.range_min && s.range_max && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <RangeDetectionSignal signal={s} />
+                      </div>
+                    )}
                   </div>
                 );
               })}

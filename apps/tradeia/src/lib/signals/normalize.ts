@@ -19,6 +19,14 @@ export function normalizeExampleProvider(payload: any): UnifiedSignal {
   const strategyId = payload?.strategy_id ?? payload?.strategy ?? undefined;
   const provider = payload?.provider ?? payload?.source ?? 'external';
 
+  // Range Detection specific fields
+  const range_min = payload?.range_min ?? payload?.rangeMin ?? undefined;
+  const range_max = payload?.range_max ?? payload?.rangeMax ?? undefined;
+  const confidence = payload?.confidence ?? payload?.range_confidence ?? undefined;
+  
+  // Hedge short data
+  const hedge_short = payload?.hedge_short ?? payload?.hedgeShort ?? undefined;
+
   return {
     id: String(id ?? cryptoRandomId()),
     symbol,
@@ -37,6 +45,19 @@ export function normalizeExampleProvider(payload: any): UnifiedSignal {
     stopLoss,
     marketScenario: payload?.market_scenario ?? payload?.context ?? null,
     createdAt: payload?.created_at ?? payload?.createdAt,
+    // Range Detection fields
+    range_min,
+    range_max,
+    confidence: (confidence === 'high' || confidence === 'medium' || confidence === 'low') ? confidence : undefined,
+    hedge_short: hedge_short ? {
+      entry_price: hedge_short.entry_price ?? hedge_short.entryPrice ?? 0,
+      stop_price: hedge_short.stop_price ?? hedge_short.stopPrice ?? 0,
+      target_price: hedge_short.target_price ?? hedge_short.targetPrice ?? 0,
+      size_suggestion: hedge_short.size_suggestion ?? hedge_short.sizeSuggestion ?? '',
+      risk_pct: hedge_short.risk_pct ?? hedge_short.riskPct ?? 0,
+      reward_pct: hedge_short.reward_pct ?? hedge_short.rewardPct ?? 0,
+      rationale: hedge_short.rationale ?? ''
+    } : undefined,
     source: {
       provider,
       generatedBy: payload?.generated_by,
