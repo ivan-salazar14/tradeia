@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     console.log('[SIGNALS GENERATE] Strategy:', strategyId);
 
     // Define basic strategies that don't require permission checks
-    const basicStrategies = ['conservative', 'moderate', 'aggressive','squeeze_momentum', 'breakout_momentum', 'advanced_ta'];
+    const basicStrategies = ['conservative', 'moderate', 'aggressive','squeeze_momentum', 'breakout_momentum', 'advanced_ta', 'RangeDetection', 'range_detection'];
     const isBasicStrategy = basicStrategies.includes(strategyId);
 
     let hasAccess = false;
@@ -158,48 +158,109 @@ export async function POST(request: NextRequest) {
       console.log('[SIGNALS GENERATE] External API response:', data);
     } catch (apiError) {
       console.log('[SIGNALS GENERATE] External API unavailable, falling back to mock data');
-      // Return mock data when external API fails
-      data = {
-        signals: [
-          {
-            id: `generated-${Date.now()}`,
-            symbol: requestBody.symbol,
-            timeframe: requestBody.timeframe,
-            timestamp: new Date().toISOString(),
-            execution_timestamp: new Date().toISOString(),
-            signal_age_hours: 0.1,
-            signal_source: 'mock_generation',
-            type: 'BUY',
-            direction: 'LONG',
-            strategyId: requestBody.strategy_id,
-            entry: 45000,
-            tp1: 46000,
-            tp2: 47000,
-            stopLoss: 44000,
-            source: { provider: 'mock_provider' },
-            position_size: 1000,
-            risk_amount: 100,
-            reward_to_risk: 2.0
-          }
-        ],
-        portfolio_metrics: {
-          total_position_size: 1000,
-          total_risk_amount: 100,
-          remaining_balance: Number(requestBody.initial_balance) - 100,
-          avg_reward_to_risk: 2.0
-        },
-        risk_parameters: {
-          initial_balance: Number(requestBody.initial_balance),
-          risk_per_trade_pct: Number(requestBody.risk_per_trade)
-        },
-        strategies: [
-          {
-            id: requestBody.strategy_id,
-            name: `${requestBody.strategy_id.charAt(0).toUpperCase() + requestBody.strategy_id.slice(1)} Strategy`,
-            description: `Mock generated signals for ${requestBody.strategy_id} strategy`
-          }
-        ]
-      };
+      
+      // Check if requesting RangeDetection strategy - return specific mock data
+      if (strategyId === 'RangeDetection' || strategyId === 'range_detection') {
+        data = {
+          signals: [
+            {
+              id: `generated-${Date.now()}`,
+              symbol: requestBody.symbol,
+              timeframe: requestBody.timeframe,
+              timestamp: new Date().toISOString(),
+              execution_timestamp: new Date().toISOString(),
+              signal_age_hours: 0.1,
+              signal_source: 'mock_generation',
+              type: 'entry',
+              direction: 'LONG',
+              strategyId: 'RangeDetection',
+              reason: 'RANGO DETECTADO (HIGH) — Pool: [58750.0 – 61250.0] | ADX=18.5 < 23.0',
+              entry: 60000,
+              tp1: 61250,
+              tp2: 62500,
+              stopLoss: 58750,
+              marketScenario: 'lateral',
+              // Range Detection specific fields
+              range_min: 58750,
+              range_max: 61250,
+              confidence: 'high',
+              hedge_short: {
+                entry_price: 60000,
+                stop_price: 61250,
+                target_price: 58750,
+                size_suggestion: '~10-20% del valor total del pool',
+                risk_pct: 2.08,
+                reward_pct: 2.08,
+                rationale: 'Short Market @ 60000.0000 | Stop Market @ 61250.0000 (techo del rango) | Target @ 58750.0000 (piso del rango)'
+              },
+              source: { provider: 'mock_provider' },
+              position_size: 1000,
+              risk_amount: 100,
+              reward_to_risk: 2.0
+            }
+          ],
+          portfolio_metrics: {
+            total_position_size: 1000,
+            total_risk_amount: 100,
+            remaining_balance: Number(requestBody.initial_balance) - 100,
+            avg_reward_to_risk: 2.0
+          },
+          risk_parameters: {
+            initial_balance: Number(requestBody.initial_balance),
+            risk_per_trade_pct: Number(requestBody.risk_per_trade)
+          },
+          strategies: [
+            {
+              id: 'RangeDetection',
+              name: 'Range Detection (Pool Liquidity)',
+              description: 'Detects lateral ranges and generates signals for liquidity pools with hedge protection'
+            }
+          ]
+        };
+      } else {
+        // Return standard mock data for other strategies
+        data = {
+          signals: [
+            {
+              id: `generated-${Date.now()}`,
+              symbol: requestBody.symbol,
+              timeframe: requestBody.timeframe,
+              timestamp: new Date().toISOString(),
+              execution_timestamp: new Date().toISOString(),
+              signal_age_hours: 0.1,
+              signal_source: 'mock_generation',
+              type: 'BUY',
+              direction: 'LONG',
+              strategyId: requestBody.strategy_id,
+              entry: 45000,
+              tp1: 46000,
+              tp2: 47000,
+              stopLoss: 44000,
+              source: { provider: 'mock_provider' },
+              position_size: 1000,
+              risk_amount: 100,
+              reward_to_risk: 2.0
+            }
+          ],
+          portfolio_metrics: {
+            total_position_size: 1000,
+            total_risk_amount: 100,
+            remaining_balance: Number(requestBody.initial_balance) - 100,
+            avg_reward_to_risk: 2.0
+          },
+          risk_parameters: {
+            initial_balance: Number(requestBody.initial_balance),
+            risk_per_trade_pct: Number(requestBody.risk_per_trade)
+          },
+          strategies: [
+            {
+              id: requestBody.strategy_id,
+              name: `${requestBody.strategy_id.charAt(0).toUpperCase() + requestBody.strategy_id.slice(1)} Strategy`,
+              description: `Mock generated signals for ${requestBody.strategy_id} strategy`
+            }
+          ]
+        };
+      }
     }
 
     // Use the response from external API or mock data

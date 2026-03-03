@@ -101,6 +101,15 @@ export class SignalsService {
       timeframe: '4h',
       indicators: ['RSI', 'MACD', 'Bollinger Bands', 'Stochastic', 'Fibonacci'],
       is_active: true
+    },
+    {
+      id: 'RangeDetection',
+      name: 'Range Detection (Pool Liquidity)',
+      description: 'Detects lateral ranges and generates signals for liquidity pools with hedge protection',
+      risk_level: 'Medium',
+      timeframe: '4h',
+      indicators: ['ADX', 'Bollinger Bands', 'Volume'],
+      is_active: true
     }
   ];
 
