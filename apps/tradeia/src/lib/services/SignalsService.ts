@@ -325,7 +325,13 @@ export class SignalsService {
         tp1: signal.tp1,
         tp2: signal.tp2,
         stopLoss: signal.stopLoss,
-        source: signal.source
+        source: signal.source,
+        // Range Detection specific fields
+        range_min: signal.range_min,
+        range_max: signal.range_max,
+        confidence: signal.confidence,
+        hedge_short: signal.hedge_short,
+        marketScenario: signal.marketScenario
       };
 
       // Apply field selection if specified
