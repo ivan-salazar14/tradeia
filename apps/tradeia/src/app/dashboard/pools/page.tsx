@@ -153,9 +153,9 @@ export default function PoolsPage() {
       
       // Calculate pool metrics
       if (signals.length > 0) {
-        const highConf = signals.filter(p => p.confidence === 'high').length;
-        const mediumConf = signals.filter(p => p.confidence === 'medium').length;
-        const lowConf = signals.filter(p => p.confidence === 'low').length;
+        const highConf = signals.filter(p => p.confidence?.toLowerCase() === 'high').length;
+        const mediumConf = signals.filter(p => p.confidence?.toLowerCase() === 'medium').length;
+        const lowConf = signals.filter(p => p.confidence?.toLowerCase() === 'low').length;
         
         const rangesWithEntry = signals.filter(p => p.range_min && p.range_max && p.entry);
         const avgRange = rangesWithEntry.length > 0
@@ -195,9 +195,11 @@ export default function PoolsPage() {
   const filteredPools = useMemo(() => {
     let filtered = pools;
 
-    // Filter by confidence
+    // Filter by confidence (case-insensitive comparison)
     if (confidenceFilter !== 'all') {
-      filtered = filtered.filter(pool => pool.confidence === confidenceFilter);
+      filtered = filtered.filter(pool => 
+        pool.confidence?.toLowerCase() === confidenceFilter.toLowerCase()
+      );
     }
 
     // Filter by range size
@@ -528,11 +530,14 @@ export default function PoolsPage() {
                         <span className="text-xs text-gray-500">• {pool.timeframe}</span>
                       </div>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        pool.confidence === 'high' ? 'bg-green-100 text-green-800' :
-                        pool.confidence === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        pool.confidence?.toLowerCase() === 'high' ? 'bg-green-100 text-green-800' :
+                        pool.confidence?.toLowerCase() === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        pool.confidence?.toLowerCase() === 'low' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {pool.confidence === 'high' ? 'ALTA' : pool.confidence === 'medium' ? 'MEDIA' : 'BAJA'}
+                        {pool.confidence?.toLowerCase() === 'high' ? 'ALTA' : 
+                         pool.confidence?.toLowerCase() === 'medium' ? 'MEDIA' : 
+                         pool.confidence?.toLowerCase() === 'low' ? 'BAJA' : 'N/A'}
                       </span>
                     </div>
                     

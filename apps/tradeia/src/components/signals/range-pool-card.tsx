@@ -5,7 +5,7 @@ import React from "react";
 interface RangePoolCardProps {
   range_min?: number;
   range_max?: number;
-  confidence?: "high" | "medium" | "low";
+  confidence?: "high" | "medium" | "low" | string;
   entry?: number;
   tp1?: number;
   stopLoss?: number;
@@ -23,9 +23,12 @@ export function RangePoolCard({
   const effectiveRangeMin = range_min ?? stopLoss;
   const effectiveRangeMax = range_max ?? tp1;
   
+  // Normalize confidence to lowercase for comparison
+  const normalizedConfidence = confidence?.toLowerCase() || "medium";
+
   // Determine border style based on confidence
   const getConfidenceStyles = () => {
-    switch (confidence) {
+    switch (normalizedConfidence) {
       case "high":
         return {
           border: "border-green-500",
@@ -44,11 +47,11 @@ export function RangePoolCard({
         };
       case "low":
         return {
-          border: "border-gray-400",
-          bg: "bg-gray-50",
-          badge: "bg-gray-100 text-gray-800",
+          border: "border-red-400",
+          bg: "bg-red-50",
+          badge: "bg-red-100 text-red-800",
           badgeText: "BAJA",
-          iconColor: "text-gray-600",
+          iconColor: "text-red-600",
         };
       default:
         return {
@@ -77,7 +80,7 @@ export function RangePoolCard({
     <div
       className={`
         border-2 ${styles.border} rounded-lg p-4 ${styles.bg}
-        ${confidence === "high" ? "border-dashed" : confidence === "low" ? "border-dotted" : "border-dashed"}
+        ${normalizedConfidence === "high" ? "border-dashed" : normalizedConfidence === "low" ? "border-dotted" : "border-dashed"}
       `}
     >
       <div className="flex items-center justify-between mb-3">
