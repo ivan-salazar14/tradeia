@@ -227,6 +227,84 @@ export default function SignalsPage() {
     }
   }, [timeframe, symbol, selectedStrategies, dateRange.start, dateRange.end, includeLiveSignals, session?.access_token]);
 
+  const generateRangeDetectionSignals = useMemo(() => async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const requestBody = {
+        timeframe,
+        start_date: `${dateRange.start}T00:00:00`,
+        end_date: `${dateRange.end}T23:59:59`,
+        initial_balance: parseFloat(initialBalance),
+        risk_per_trade: parseFloat(riskPerTrade),
+        symbol: symbol.length > 0 ? symbol[0] : 'BTC/USDT',
+        strategy_id: 'RangeDetection'
+      };
+
+      console.log('[SIGNALS] Making POST request to /api/signals/generate for RangeDetection');
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'identity',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      };
+
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
+      let res: Response;
+      try {
+        res = await fetch(`/api/signals/generate`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody),
+          mode: 'cors',
+          credentials: 'same-origin'
+        });
+      } catch (fetchError) {
+        console.error('[SIGNALS] Fetch failed:', fetchError);
+        throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'}`);
+      }
+
+      if (!res.ok) {
+        let errorText: string;
+        try {
+          errorText = await res.text();
+        } catch (decodeError) {
+          console.warn('[SIGNALS] Failed to decode error response:', decodeError);
+          errorText = `HTTP ${res.status} - Content decoding failed`;
+        }
+        throw new Error(errorText || `HTTP ${res.status}`);
+      }
+
+      let json: SignalsResponse;
+      try {
+        json = await res.json();
+        console.log('[SIGNALS] RangeDetection generation successful:', {
+          signalsCount: json.signals?.length || 0,
+          strategies: json.strategies
+        });
+      } catch (decodeError) {
+        console.warn('[SIGNALS] Failed to decode JSON response:', decodeError);
+        throw new Error('Failed to decode response JSON');
+      }
+
+      setSignals(json.signals || []);
+      setPortfolioMetrics(json.portfolio_metrics || null);
+      setRiskParameters(json.risk_parameters || null);
+      setIsUsingFallback(json._fallback || false);
+      setFallbackMessage(json._message || '');
+    } catch (e: any) {
+      console.error('[SIGNALS] Error in generateRangeDetectionSignals:', e);
+      setError(`Error generando Range Detection: ${e?.message ?? "Error desconocido"}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [timeframe, symbol, dateRange.start, dateRange.end, initialBalance, riskPerTrade, session?.access_token]);
+
   const generateNewSignals = useMemo(() => async () => {
     try {
       setLoading(true);
@@ -520,7 +598,7 @@ export default function SignalsPage() {
         <div className="flex flex-col space-y-4 mb-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Señales</h2>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={fetchSignals}
                 className="px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
@@ -532,6 +610,29 @@ export default function SignalsPage() {
                 className="px-3 py-1.5 text-sm rounded bg-green-600 text-white hover:bg-green-700"
               >
                 Generate New Signals
+              </button>
+              <button
+                onClick={generateRangeDetectionSignals}
+                disabled={loading}
+                className="px-3 py-1.5 text-sm rounded bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                title="Genera señales de Range Detection (Pool de Liquidez) manualmente"
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Generar Rango
+                  </>
+                )}
               </button>
             </div>
           </div>

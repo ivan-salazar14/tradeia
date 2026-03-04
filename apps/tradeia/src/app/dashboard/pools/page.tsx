@@ -82,6 +82,83 @@ export default function PoolsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const poolsPerPage = 12;
 
+  // Generate Range Detection Signals manually
+  const generateRangeDetectionSignals = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const requestBody = {
+        timeframe,
+        start_date: `${dateRange.start}T00:00:00`,
+        end_date: `${dateRange.end}T23:59:59`,
+        initial_balance: 10000,
+        risk_per_trade: 1.0,
+        symbol: symbol.length > 0 ? symbol[0] : 'BTC/USDT',
+        strategy_id: 'RangeDetection'
+      };
+
+      console.log('[POOLS] Making POST request to /api/signals/generate for RangeDetection');
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'identity',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      };
+
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
+      let res: Response;
+      try {
+        res = await fetch(`/api/signals/generate`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody),
+          mode: 'cors',
+          credentials: 'same-origin'
+        });
+      } catch (fetchError) {
+        console.error('[POOLS] Fetch failed:', fetchError);
+        throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'}`);
+      }
+
+      if (!res.ok) {
+        let errorText: string;
+        try {
+          errorText = await res.text();
+        } catch (decodeError) {
+          console.warn('[POOLS] Failed to decode error response:', decodeError);
+          errorText = `HTTP ${res.status} - Content decoding failed`;
+        }
+        throw new Error(errorText || `HTTP ${res.status}`);
+      }
+
+      let json: PoolsResponse;
+      try {
+        json = await res.json();
+        console.log('[POOLS] RangeDetection generation successful:', {
+          signalsCount: json.signals?.length || 0
+        });
+      } catch (decodeError) {
+        console.warn('[POOLS] Failed to decode JSON response:', decodeError);
+        throw new Error('Failed to decode response JSON');
+      }
+
+      setPools(json.signals || []);
+      setPoolMetrics(json.pool_metrics || null);
+      setIsUsingFallback(json._fallback || false);
+      setFallbackMessage(json._message || '');
+    } catch (e: any) {
+      console.error('[POOLS] Error in generateRangeDetectionSignals:', e);
+      setError(`Error generando Range Detection: ${e?.message ?? "Error desconocido"}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter pools based on confidence and range size
   const filteredPools = useMemo(() => {
     let filtered = pools;
@@ -411,6 +488,31 @@ export default function PoolsPage() {
                 <span className="text-sm text-gray-700">Señales en Vivo</span>
               </label>
             </div>
+
+            {/* Generate Range Button */}
+            <button
+              onClick={generateRangeDetectionSignals}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+              title="Genera señales de Range Detection (Pool de Liquidez) manualmente"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generando...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Generar Rango
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
