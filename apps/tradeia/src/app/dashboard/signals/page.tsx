@@ -34,7 +34,10 @@ type Signal = {
     entry_price: number;
     stop_price: number;
     target_price: number;
-    size_suggestion_pct: number;
+    size_suggestion?: string;
+    size_suggestion_pct?: number;
+    risk_pct?: number;
+    reward_pct?: number;
     rationale: string;
   };
 };
@@ -228,7 +231,9 @@ export default function SignalsPage() {
             entry_price: 65000,
             stop_price: 68000,
             target_price: 62000,
-            size_suggestion_pct: 15.0,
+            size_suggestion: '~10-20% del valor total del pool',
+            risk_pct: 2.08,
+            reward_pct: 2.08,
             rationale: 'Protective short to hedge IL within range limits'
           }
         }
@@ -400,7 +405,9 @@ export default function SignalsPage() {
             entry_price: 3000,
             stop_price: 3200,
             target_price: 2800,
-            size_suggestion_pct: 15.0,
+            size_suggestion: '~10-20% del valor total del pool',
+            risk_pct: 2.08,
+            reward_pct: 2.08,
             rationale: 'Protective short to hedge IL within range limits'
           }
         }
@@ -1047,7 +1054,10 @@ export default function SignalsPage() {
                               entry_price: s.hedge_short.entry_price,
                               stop_price: s.hedge_short.stop_price,
                               target_price: s.hedge_short.target_price,
-                              size_suggestion_pct: s.hedge_short.size_suggestion_pct ?? 15.0,
+                              size_suggestion: s.hedge_short.size_suggestion,
+                              size_suggestion_pct: s.hedge_short.size_suggestion_pct,
+                              risk_pct: s.hedge_short.risk_pct,
+                              reward_pct: s.hedge_short.reward_pct,
                               rationale: s.hedge_short.rationale
                             } : undefined
                           }} 

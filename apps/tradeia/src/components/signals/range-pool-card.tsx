@@ -13,7 +13,10 @@ interface RangePoolCardProps {
     entry_price: number;
     stop_price: number;
     target_price: number;
-    size_suggestion_pct: number;
+    size_suggestion?: string;
+    size_suggestion_pct?: number;
+    risk_pct?: number;
+    reward_pct?: number;
     rationale: string;
   };
 }
@@ -232,7 +235,7 @@ export function RangePoolCard({
               </svg>
               <span className="text-sm font-semibold text-red-800">Short de Cobertura</span>
               <span className="ml-auto px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs font-medium">
-                {hedge_short.size_suggestion_pct?.toFixed(1)}%
+                {hedge_short.size_suggestion_pct ? `${hedge_short.size_suggestion_pct.toFixed(1)}%` : hedge_short.size_suggestion || 'N/A'}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-2 text-xs">

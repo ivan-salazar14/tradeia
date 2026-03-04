@@ -16,7 +16,10 @@ interface RangeDetectionSignalProps {
       entry_price: number;
       stop_price: number;
       target_price: number;
-      size_suggestion_pct: number;
+      size_suggestion?: string;
+      size_suggestion_pct?: number;
+      risk_pct?: number;
+      reward_pct?: number;
       rationale: string;
     };
   };
