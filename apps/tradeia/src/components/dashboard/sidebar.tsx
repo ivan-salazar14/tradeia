@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 const menu = [
   { label: "Panel de Control", path: "/dashboard", icon: "dashboard" },
   { label: "Señales", path: "/dashboard/signals", icon: "signals" },
+  { label: "Pools de Liquidez", path: "/dashboard/pools", icon: "pools" },
   { label: "Estrategias", path: "/dashboard/strategies", icon: "strategies" },
   { label: "Análisis", path: "/dashboard/analysis", icon: "analysis" },
   { label: "Backtesting", path: "/dashboard/backtest", icon: "backtest" },
@@ -49,6 +50,11 @@ const icons: Record<string, React.ReactElement> = {
   notifications: (
     <svg xmlns="http://www.w3.org/2000/svg" className="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-5 5v-5zM4.868 12.683A17.925 17.925 0 012 21h13.78a3 3 0 002.442-1.79l.816-5.823A6.001 6.001 0 0015.501 7h-.25A6.001 6.001 0 009 13.25V21H6.014a2 2 0 01-1.414-.586l-1.5-1.5A2 2 0 012.014 17H4v-4.317z" />
+    </svg>
+  ),
+  pools: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
     </svg>
   ),
 };
