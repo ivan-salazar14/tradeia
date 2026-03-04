@@ -344,6 +344,10 @@ export default function PoolsPage() {
                   <div className="text-xs text-yellow-600 font-medium">Confianza Media</div>
                   <div className="text-lg font-bold text-yellow-900">{poolMetrics.medium_confidence}</div>
                 </div>
+                <div className="bg-red-50 rounded-lg px-4 py-2">
+                  <div className="text-xs text-red-600 font-medium">Baja Confianza</div>
+                  <div className="text-lg font-bold text-red-900">{poolMetrics.low_confidence}</div>
+                </div>
                 <div className="bg-gray-50 rounded-lg px-4 py-2">
                   <div className="text-xs text-gray-600 font-medium">Símbolos</div>
                   <div className="text-lg font-bold text-gray-900">{poolMetrics.symbols_count}</div>
