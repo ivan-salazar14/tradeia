@@ -18,8 +18,8 @@ const Home: React.FC = () => {
   return (
     <>
       <SEO
-        title="TradeIA – Señales de trading cuantitativo para criptomonedas"
-        description="Plataforma de señales de trading con análisis técnico avanzado, backtesting y gestión de riesgo. Integración con Binance y dashboard responsive."
+        title="TradeIA - Análisis técnico avanzado y gestión de riesgo"
+        description="Análisis técnico avanzado, backtesting y gestión de riesgo. TradeIA es tu compañero de trading inteligente para maximizar tus ganancias y minimizar tus riesgos."
       />
       <Hero />
       <Trust />
