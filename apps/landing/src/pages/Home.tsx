@@ -1,6 +1,7 @@
 import React from 'react';
 import Hero from '../components/Hero';
 import Strategies from '../components/Strategies';
+import LiquidityPoolStrategy from '../components/LiquidityPoolStrategy';
 import Features from '../components/Features';
 import Services from '../components/Services';
 import Education from '../components/Education';
@@ -23,6 +24,7 @@ const Home: React.FC = () => {
       <Hero />
       <Trust />
       <Strategies />
+      <LiquidityPoolStrategy />
       <Features />
       <Services />
       <Testimonials />
