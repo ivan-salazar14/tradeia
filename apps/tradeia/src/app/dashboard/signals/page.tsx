@@ -177,6 +177,7 @@ export default function SignalsPage() {
         throw new Error('Failed to decode response JSON');
       }
       setSignals(json.signals || []);
+      console.log('[SIGNALS] Raw signals from API:', JSON.stringify(json.signals, null, 2));
       setPortfolioMetrics(json.portfolio_metrics || null);
       setRiskParameters(json.risk_parameters || null);
     } catch (e: any) {

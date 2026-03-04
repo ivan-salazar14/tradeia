@@ -149,6 +149,7 @@ export default function PoolsPage() {
       }
 
       const signals = json.signals || [];
+      console.log('[POOLS] Raw signals from API:', JSON.stringify(signals, null, 2));
       setPools(signals);
       
       // Calculate pool metrics
@@ -549,6 +550,8 @@ export default function PoolsPage() {
                       entry={pool.entry}
                       tp1={pool.tp1}
                       stopLoss={pool.stopLoss}
+                      // @ts-ignore
+                      hedge_short={pool.hedge_short}
                     />
                   </div>
                 </div>
