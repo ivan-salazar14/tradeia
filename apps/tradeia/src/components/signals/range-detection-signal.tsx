@@ -26,6 +26,9 @@ interface RangeDetectionSignalProps {
 }
 
 export function RangeDetectionSignal({ signal }: RangeDetectionSignalProps) {
+  console.log('[RangeDetectionSignal] signal:', JSON.stringify(signal, null, 2));
+  console.log('[RangeDetectionSignal] hedge_short:', JSON.stringify(signal.hedge_short, null, 2));
+  
   return (
     <div className="space-y-4">
       {/* Pool Card - Always show when RangeDetection */}
@@ -40,7 +43,7 @@ export function RangeDetectionSignal({ signal }: RangeDetectionSignalProps) {
       />
 
       {/* Hedge Short Card - Shows protection details */}
-      {signal.hedge_short && (
+      {signal.hedge_short && signal.hedge_short.entry_price !== undefined && (
         <HedgeShortCard hedge_short={signal.hedge_short} />
       )}
 

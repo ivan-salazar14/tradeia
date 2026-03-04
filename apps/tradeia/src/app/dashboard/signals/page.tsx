@@ -177,6 +177,7 @@ export default function SignalsPage() {
         throw new Error('Failed to decode response JSON');
       }
       setSignals(json.signals || []);
+      console.log('[SIGNALS] Raw signals from API:', JSON.stringify(json.signals, null, 2));
       setPortfolioMetrics(json.portfolio_metrics || null);
       setRiskParameters(json.risk_parameters || null);
     } catch (e: any) {
@@ -1042,6 +1043,7 @@ export default function SignalsPage() {
                     {/* Range Detection Signal - Show when strategy is RangeDetection */}
                     {s.strategyId === 'RangeDetection' && (s.range_min || s.stopLoss) && (
                       <div className="mt-3 pt-3 border-t border-gray-200">
+                        {console.log('[SIGNALS-PAGE] Rendering RangeDetectionSignal with hedge_short:', s.hedge_short)}
                         <RangeDetectionSignal 
                           signal={{
                             range_min: s.range_min ?? s.stopLoss,

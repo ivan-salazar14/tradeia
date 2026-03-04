@@ -30,6 +30,8 @@ export function RangePoolCard({
   stopLoss,
   hedge_short,
 }: RangePoolCardProps) {
+  console.log('[RangePoolCard] hedge_short received:', JSON.stringify(hedge_short, null, 2));
+  
   // Use stopLoss and tp1 as fallback if range values are not available
   const effectiveRangeMin = range_min ?? stopLoss;
   const effectiveRangeMax = range_max ?? tp1;
@@ -226,7 +228,7 @@ export function RangePoolCard({
       )}
 
       {/* Hedge Short Info - Integrated View */}
-      {hedge_short && (
+      {hedge_short && hedge_short.entry_price !== undefined && (
         <div className="mt-3 pt-3 border-t border-red-200">
           <div className="bg-red-50 rounded-lg p-3 border border-red-200">
             <div className="flex items-center gap-2 mb-2">
