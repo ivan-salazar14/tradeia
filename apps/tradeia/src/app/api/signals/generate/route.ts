@@ -264,7 +264,48 @@ export async function POST(request: NextRequest) {
     }
 
     // Use the response from external API or mock data
-    const transformedSignals = data.signals || [];
+    let transformedSignals = data.signals || [];
+    
+    // Calculate confidence for RangeDetection signals based on ADX or other metrics
+    if (strategyId === 'RangeDetection' || strategyId === 'range_detection') {
+      transformedSignals = transformedSignals.map((signal: any) => {
+        // If confidence is already provided, use it
+        if (signal.confidence && ['high', 'medium', 'low'].includes(signal.confidence.toLowerCase())) {
+          return signal;
+        }
+        
+        // Calculate confidence based on ADX in reason or other indicators
+        let calculatedConfidence: 'high' | 'medium' | 'low' = 'medium';
+        
+        // Try to extract ADX from reason string (e.g., "ADX=18.5 < 23.0")
+        const adxMatch = signal.reason?.match(/ADX[=<>]\s*(\d+\.?\d*)/i);
+        if (adxMatch && adxMatch[1]) {
+          const adx = parseFloat(adxMatch[1]);
+          if (adx >= 25) {
+            calculatedConfidence = 'high';
+          } else if (adx >= 18) {
+            calculatedConfidence = 'medium';
+          } else {
+            calculatedConfidence = 'low';
+          }
+        }
+        
+        // Also check if "HIGH", "MEDIUM", or "LOW" is in the reason
+        if (signal.reason?.toUpperCase().includes('(HIGH)')) {
+          calculatedConfidence = 'high';
+        } else if (signal.reason?.toUpperCase().includes('(MEDIUM)')) {
+          calculatedConfidence = 'medium';
+        } else if (signal.reason?.toUpperCase().includes('(LOW)')) {
+          calculatedConfidence = 'low';
+        }
+        
+        return {
+          ...signal,
+          confidence: calculatedConfidence
+        };
+      });
+    }
+    
     const portfolioMetrics = data.portfolio_metrics;
     const riskParameters = data.risk_parameters;
 

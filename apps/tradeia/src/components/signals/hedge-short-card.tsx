@@ -7,9 +7,7 @@ interface HedgeShortCardProps {
     entry_price: number;
     stop_price: number;
     target_price: number;
-    size_suggestion: string;
-    risk_pct: number;
-    reward_pct: number;
+    size_suggestion_pct: number;
     rationale: string;
   };
 }
@@ -23,9 +21,7 @@ export function HedgeShortCard({ hedge_short }: HedgeShortCardProps) {
     entry_price,
     stop_price,
     target_price,
-    size_suggestion,
-    risk_pct,
-    reward_pct,
+    size_suggestion_pct,
     rationale,
   } = hedge_short;
 
@@ -110,13 +106,13 @@ export function HedgeShortCard({ hedge_short }: HedgeShortCardProps) {
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <div className="text-xs text-gray-500 mb-1">Riesgo</div>
           <div className="font-mono font-bold text-red-600">
-            {risk_pct ? `${risk_pct.toFixed(2)}%` : "-"}
+            {stop_price && entry_price ? `${(((stop_price - entry_price) / entry_price) * 100).toFixed(2)}%` : "-"}
           </div>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <div className="text-xs text-gray-500 mb-1">Recompensa</div>
           <div className="font-mono font-bold text-green-600">
-            {reward_pct ? `${reward_pct.toFixed(2)}%` : "-"}
+            {entry_price && target_price ? `${(((entry_price - target_price) / entry_price) * 100).toFixed(2)}%` : "-"}
           </div>
         </div>
       </div>
@@ -141,7 +137,9 @@ export function HedgeShortCard({ hedge_short }: HedgeShortCardProps) {
             <div className="text-xs text-yellow-800 font-semibold">
               Sugerencia de Tamaño
             </div>
-            <div className="text-sm text-yellow-900">{size_suggestion}</div>
+            <div className="text-sm text-yellow-900 font-bold">
+              {size_suggestion_pct ? `${size_suggestion_pct.toFixed(1)}% del capital` : "-"}
+            </div>
           </div>
         </div>
       </div>

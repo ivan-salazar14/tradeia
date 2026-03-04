@@ -16,9 +16,7 @@ interface RangeDetectionSignalProps {
       entry_price: number;
       stop_price: number;
       target_price: number;
-      size_suggestion: string;
-      risk_pct: number;
-      reward_pct: number;
+      size_suggestion_pct: number;
       rationale: string;
     };
   };
@@ -35,6 +33,7 @@ export function RangeDetectionSignal({ signal }: RangeDetectionSignalProps) {
         entry={signal.entry}
         tp1={signal.tp1}
         stopLoss={signal.stopLoss}
+        hedge_short={signal.hedge_short}
       />
 
       {/* Hedge Short Card - Shows protection details */}

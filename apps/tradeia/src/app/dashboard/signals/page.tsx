@@ -34,9 +34,7 @@ type Signal = {
     entry_price: number;
     stop_price: number;
     target_price: number;
-    size_suggestion: string;
-    risk_pct: number;
-    reward_pct: number;
+    size_suggestion_pct: number;
     rationale: string;
   };
 };
@@ -203,6 +201,36 @@ export default function SignalsPage() {
           position_size: 1000,
           risk_amount: 100,
           reward_to_risk: 2.0
+        },
+        // RangeDetection mock signal with hedge_short
+        {
+          id: 'fallback-range-1',
+          symbol: 'BTC/USDT',
+          timeframe: '1h',
+          timestamp: new Date().toISOString(),
+          execution_timestamp: new Date().toISOString(),
+          signal_age_hours: 0.5,
+          signal_source: 'fallback_mock',
+          type: 'BUY',
+          direction: 'LONG',
+          strategyId: 'RangeDetection',
+          range_min: 62000,
+          range_max: 68000,
+          confidence: 'high',
+          entry: 65000,
+          tp1: 68000,
+          stopLoss: 62000,
+          source: { provider: 'range_detection_provider' },
+          position_size: 2000,
+          risk_amount: 200,
+          reward_to_risk: 1.5,
+          hedge_short: {
+            entry_price: 65000,
+            stop_price: 68000,
+            target_price: 62000,
+            size_suggestion_pct: 15.0,
+            rationale: 'Protective short to hedge IL within range limits'
+          }
         }
       ];
 
@@ -345,6 +373,36 @@ export default function SignalsPage() {
           position_size: 1000,
           risk_amount: 100,
           reward_to_risk: 2.0
+        },
+        // RangeDetection mock signal with hedge_short
+        {
+          id: 'generated-range-1',
+          symbol: 'ETH/USDT',
+          timeframe: '4h',
+          timestamp: new Date().toISOString(),
+          execution_timestamp: new Date().toISOString(),
+          signal_age_hours: 0.1,
+          signal_source: 'generated_fallback',
+          type: 'BUY',
+          direction: 'LONG',
+          strategyId: 'RangeDetection',
+          range_min: 2800,
+          range_max: 3200,
+          confidence: 'high',
+          entry: 3000,
+          tp1: 3200,
+          stopLoss: 2800,
+          source: { provider: 'range_detection_provider' },
+          position_size: 2000,
+          risk_amount: 200,
+          reward_to_risk: 1.5,
+          hedge_short: {
+            entry_price: 3000,
+            stop_price: 3200,
+            target_price: 2800,
+            size_suggestion_pct: 15.0,
+            rationale: 'Protective short to hedge IL within range limits'
+          }
         }
       ];
 
@@ -979,9 +1037,19 @@ export default function SignalsPage() {
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <RangeDetectionSignal 
                           signal={{
-                            ...s,
                             range_min: s.range_min ?? s.stopLoss,
-                            range_max: s.range_max ?? s.tp1
+                            range_max: s.range_max ?? s.tp1,
+                            confidence: s.confidence,
+                            entry: s.entry,
+                            tp1: s.tp1,
+                            stopLoss: s.stopLoss,
+                            hedge_short: s.hedge_short ? {
+                              entry_price: s.hedge_short.entry_price,
+                              stop_price: s.hedge_short.stop_price,
+                              target_price: s.hedge_short.target_price,
+                              size_suggestion_pct: s.hedge_short.size_suggestion_pct ?? 15.0,
+                              rationale: s.hedge_short.rationale
+                            } : undefined
                           }} 
                         />
                       </div>

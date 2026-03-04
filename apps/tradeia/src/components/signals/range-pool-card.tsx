@@ -9,6 +9,13 @@ interface RangePoolCardProps {
   entry?: number;
   tp1?: number;
   stopLoss?: number;
+  hedge_short?: {
+    entry_price: number;
+    stop_price: number;
+    target_price: number;
+    size_suggestion_pct: number;
+    rationale: string;
+  };
 }
 
 export function RangePoolCard({
@@ -18,6 +25,7 @@ export function RangePoolCard({
   entry,
   tp1,
   stopLoss,
+  hedge_short,
 }: RangePoolCardProps) {
   // Use stopLoss and tp1 as fallback if range values are not available
   const effectiveRangeMin = range_min ?? stopLoss;
@@ -210,6 +218,48 @@ export function RangePoolCard({
                   : "-"}
               </span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hedge Short Info - Integrated View */}
+      {hedge_short && (
+        <div className="mt-3 pt-3 border-t border-red-200">
+          <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+              <span className="text-sm font-semibold text-red-800">Short de Cobertura</span>
+              <span className="ml-auto px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs font-medium">
+                {hedge_short.size_suggestion_pct?.toFixed(1)}%
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="text-gray-500">Entry:</span>
+                <div className="font-mono font-medium text-red-600">
+                  {hedge_short.entry_price?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || "-"}
+                </div>
+              </div>
+              <div>
+                <span className="text-gray-500">Stop:</span>
+                <div className="font-mono font-medium text-orange-600">
+                  {hedge_short.stop_price?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || "-"}
+                </div>
+              </div>
+              <div>
+                <span className="text-gray-500">Target:</span>
+                <div className="font-mono font-medium text-green-600">
+                  {hedge_short.target_price?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || "-"}
+                </div>
+              </div>
+            </div>
+            {hedge_short.rationale && (
+              <div className="mt-2 text-xs text-gray-600 italic">
+                {hedge_short.rationale}
+              </div>
+            )}
           </div>
         </div>
       )}
