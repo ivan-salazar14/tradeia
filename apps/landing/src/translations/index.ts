@@ -105,6 +105,87 @@ export const translations = {
       buttons: {
         select: 'Select a Strategy',
         backtest: 'Backtest Now'
+      },
+      liquidityPool: {
+        badge: 'NEW',
+        subtitle: 'For Uniswap V3 & PancakeSwap',
+        title: 'Delta-Neutral Liquidity Pools',
+        description: 'Maximize yields with Active Protection. Our Range Detection + Hedge Short strategy.',
+        cta: 'Explore Strategy'
+      }
+    },
+
+    // Liquidity Pool Strategy Section
+    liquidityPool: {
+      title: 'Strategy: Delta-Neutral Range Detection',
+      subtitle: 'Maximize your returns in Liquidity Pools with Active Protection',
+      description: 'Designed specifically for Concentrated Liquidity protocols like Uniswap V3 or PancakeSwap, where precision of limits and risk management are key to profitability.',
+      whatIsRange: {
+        title: 'What is the Range Strategy?',
+        description: 'Unlike trend strategies seeking explosive moves, our Range Detection engine identifies "accumulation" and "sideways" phases. During these periods, price oscillates between two clear levels, allowing you to earn fees from every transaction within your pool.'
+      },
+      secretSauce: {
+        title: 'Our "Secret Sauce"',
+        subtitle: 'Institutional-grade multi-indicator analysis to confirm market suitability for pooling'
+      },
+      indicators: {
+        adx: {
+          title: 'ADX - Directional Index',
+          description: 'Confirms absence of strong trend',
+          rule: 'ADX < 23 = Calm market, ideal for pools'
+        },
+        ema: {
+          title: 'Intertwined EMAs',
+          description: 'Short and long term moving averages',
+          rule: 'When they "braid" = Equilibrium zone'
+        },
+        sqzmom: {
+          title: 'SQZMOM',
+          description: 'Validates low momentum without aggressive pressures',
+          rule: 'Low momentum = Confirmed stable range'
+        },
+        atr: {
+          title: 'Dynamic ATR Limits',
+          description: 'Real volatility for safety margin',
+          rule: '± ATR from current price = Pool limits'
+        }
+      },
+      protection: {
+        badge: 'Active Protection',
+        hedgeTitle: 'Hedge Short Enabled',
+        position: 'Hedge Position',
+        breakeven: 'Break-even Stop',
+        compensation: 'IL Compensation',
+        description: 'If the price drops to the lower limit, your Short profits compensate for Impermanent Loss in the pool.'
+      },
+      howItWorks: {
+        title: 'How Does the Protection Hedge Work?',
+        step1: {
+          title: 'Immediate Coverage',
+          description: 'When opening your pool, open a 10-20% SHORT as insurance'
+        },
+        step2: {
+          title: 'Loss Compensation',
+          description: 'If price drops, Short profits compensate for Impermanent Loss'
+        },
+        step3: {
+          title: 'Smart Stop-Loss',
+          description: 'If it breaks the ceiling, Short closes at break-even'
+        }
+      },
+      timeframes: {
+        h4: '4H (Sweet Spot)',
+        d1: '1D (Macro)'
+      },
+      assets: 'Supported Assets',
+      cta: {
+        primary: 'Try Strategy',
+        secondary: 'View Documentation'
+      },
+      confidence: {
+        high: 'High Confidence',
+        medium: 'Medium Confidence',
+        low: 'Low Confidence'
       }
     },
 
@@ -346,6 +427,87 @@ export const translations = {
       buttons: {
         select: 'Seleccionar Estrategia',
         backtest: 'Hacer Backtest'
+      },
+      liquidityPool: {
+        badge: 'NUEVO',
+        subtitle: 'Para Uniswap V3 y PancakeSwap',
+        title: 'Pools de Liquidez Delta-Neutral',
+        description: 'Maximiza rendimientos con Protección Activa. Nuestra estrategia de Detección de Rango + Hedge Short.',
+        cta: 'Explorar Estrategia'
+      }
+    },
+
+    // Liquidity Pool Strategy Section
+    liquidityPool: {
+      title: 'Estrategia: Detección de Rango Delta-Neutral',
+      subtitle: 'Maximiza tu rendimiento en Pools de Liquidez con Protección Activa',
+      description: 'Diseñada específicamente para protocolos de Liquidez Concentrada como Uniswap V3 o PancakeSwap, donde la precisión de los límites y la gestión del riesgo son la clave para la rentabilidad.',
+      whatIsRange: {
+        title: '¿Qué es la Estrategia de Rango?',
+        description: 'A diferencia de las estrategias de tendencia que buscan subidas o bajadas explosivas, nuestro motor de Detección de Rango identifica fases de "acumulación" y "lateralización". En estos periodos, el precio oscila entre dos niveles claros, permitiéndote ganar comisiones por cada transacción que ocurre dentro de tu pool.'
+      },
+      secretSauce: {
+        title: 'Nuestra "Salsa Secreta"',
+        subtitle: 'Análisis multi-indicador de grado institucional para confirmar que el mercado es apto para un pool'
+      },
+      indicators: {
+        adx: {
+          title: 'ADX - Índice Direccional',
+          description: 'Confirma la ausencia de tendencia fuerte',
+          rule: 'ADX < 23 = Mercado en calma, ideal para pools'
+        },
+        ema: {
+          title: 'EMAs Entrelazadas',
+          description: 'Medias móviles de corto y largo plazo',
+          rule: 'Cuando se "trenzan" = Zona de equilibrio'
+        },
+        sqzmom: {
+          title: 'SQZMOM',
+          description: 'Valida momentum bajo sin presiones agresivas',
+          rule: 'Bajo momentum = Rango estable confirmado'
+        },
+        atr: {
+          title: 'Límites ATR Dinámicos',
+          description: 'Volatilidad real para margen de seguridad',
+          rule: '± ATR desde precio actual = Límites del pool'
+        }
+      },
+      protection: {
+        badge: 'Protección Activa',
+        hedgeTitle: 'Hedge Short Activado',
+        position: 'Posición Hedge',
+        breakeven: 'Stop Break-even',
+        compensation: 'Compensación IL',
+        description: 'Si el precio cae hacia el límite inferior, las ganancias de tu Short compensan la Pérdida Impermanente del pool.'
+      },
+      howItWorks: {
+        title: '¿Cómo funciona el Hedge de Protección?',
+        step1: {
+          title: 'Cobertura Inmediata',
+          description: 'Al abrir tu pool, abres un SHORT del 10-20% como seguro'
+        },
+        step2: {
+          title: 'Compensación de Pérdida',
+          description: 'Si el precio cae, las ganancias del Short compensan la Pérdida Impermanente'
+        },
+        step3: {
+          title: 'Stop-Loss Inteligente',
+          description: 'Si rompe el techo, el Short se cierra en break-even'
+        }
+      },
+      timeframes: {
+        h4: '4H (Punto Dulce)',
+        d1: '1D (Macro)'
+      },
+      assets: 'Activos Soportados',
+      cta: {
+        primary: 'Probar Estrategia',
+        secondary: 'Ver Documentación'
+      },
+      confidence: {
+        high: 'Alta Confianza',
+        medium: 'Confianza Media',
+        low: 'Baja Confianza'
       }
     },
 

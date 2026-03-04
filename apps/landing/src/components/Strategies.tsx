@@ -3,7 +3,7 @@ import { TrendingUp, Shield, Zap, Target, BarChart3, Activity, Droplets, ArrowRi
 import { useLanguage } from '../contexts/LanguageContext';
 
 const Strategies = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   return (
     <section className="py-20 bg-gray-50">
@@ -237,6 +237,39 @@ const Strategies = () => {
                 <p className="opacity-80">Visualización en tiempo real de señales</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Liquidity Pool Strategy Promo */}
+        <div className="mt-12 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 lg:p-10 text-white">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center">
+                <Droplets className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold">
+                    {t('strategies.liquidityPool.badge')}
+                  </span>
+                  <span className="text-emerald-100 text-sm">{t('strategies.liquidityPool.subtitle')}</span>
+                </div>
+                <h3 className="text-2xl font-bold">{t('strategies.liquidityPool.title')}</h3>
+                <p className="text-emerald-100 mt-1">
+                  {t('strategies.liquidityPool.description')}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                const element = document.getElementById('liquidity-pool-strategy');
+                element?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="group flex items-center gap-2 bg-white text-emerald-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors whitespace-nowrap"
+            >
+              {t('strategies.liquidityPool.cta')}
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
           </div>
         </div>
       </div>
