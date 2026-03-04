@@ -146,8 +146,8 @@ export default function ValidatorStats() {
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">All Symbols</option>
-            {data.stats.map((stat) => (
-              <option key={stat.symbol} value={stat.symbol}>
+            {data.stats.map((stat, index) => (
+              <option key={`${stat.symbol}-${index}`} value={stat.symbol}>
                 {stat.symbol}
               </option>
             ))}

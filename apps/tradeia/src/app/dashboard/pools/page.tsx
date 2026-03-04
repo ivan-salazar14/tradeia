@@ -58,8 +58,9 @@ export default function PoolsPage() {
   const { session } = useAuth();
   const [pools, setPools] = useState<PoolSignal[]>([]);
   const [poolMetrics, setPoolMetrics] = useState<PoolMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasGenerated, setHasGenerated] = useState(false);
   const [timeframe, setTimeframe] = useState<string>('4h');
   const timeframeOptions = ['15m', '1h', '4h', '1d', '1w'];
   const [symbol, setSymbol] = useState<string[]>([]);
@@ -147,13 +148,44 @@ export default function PoolsPage() {
         throw new Error('Failed to decode response JSON');
       }
 
-      setPools(json.signals || []);
-      setPoolMetrics(json.pool_metrics || null);
+      const signals = json.signals || [];
+      setPools(signals);
+      
+      // Calculate pool metrics
+      if (signals.length > 0) {
+        const highConf = signals.filter(p => p.confidence === 'high').length;
+        const mediumConf = signals.filter(p => p.confidence === 'medium').length;
+        const lowConf = signals.filter(p => p.confidence === 'low').length;
+        
+        const rangesWithEntry = signals.filter(p => p.range_min && p.range_max && p.entry);
+        const avgRange = rangesWithEntry.length > 0
+          ? rangesWithEntry.reduce((acc, p) => {
+              const rangeSize = ((p.range_max! - p.range_min!) / p.entry!) * 100;
+              return acc + rangeSize;
+            }, 0) / rangesWithEntry.length
+          : 0;
+
+        const uniqueSymbols = new Set(signals.map(p => p.symbol));
+
+        setPoolMetrics({
+          total_pools: signals.length,
+          high_confidence: highConf,
+          medium_confidence: mediumConf,
+          low_confidence: lowConf,
+          avg_range_size: Math.round(avgRange * 100) / 100,
+          symbols_count: uniqueSymbols.size,
+        });
+      } else {
+        setPoolMetrics(null);
+      }
+      
       setIsUsingFallback(json._fallback || false);
       setFallbackMessage(json._message || '');
+      setHasGenerated(true);
     } catch (e: any) {
       console.error('[POOLS] Error in generateRangeDetectionSignals:', e);
       setError(`Error generando Range Detection: ${e?.message ?? "Error desconocido"}`);
+      setHasGenerated(true);
     } finally {
       setLoading(false);
     }
@@ -193,98 +225,7 @@ export default function PoolsPage() {
   const totalPages = Math.ceil(filteredPools.length / poolsPerPage);
 
   // Fetch pools data
-  useEffect(() => {
-    async function fetchPools() {
-      if (!session?.access_token) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Build query params for Range Detection strategy only
-        const params = new URLSearchParams();
-        params.append('strategy_ids', 'RangeDetection');
-        
-        if (timeframe) params.append('timeframe', timeframe);
-        if (symbol.length > 0) params.append('symbol', symbol.join(','));
-        params.append('start_date', dateRange.start);
-        params.append('end_date', dateRange.end);
-        params.append('limit', '100');
-        if (includeLiveSignals) params.append('include_live', 'true');
-
-        const response = await fetch(`/api/signals?${params.toString()}`, {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Error fetching pools: ${response.statusText}`);
-        }
-
-        const data: PoolsResponse = await response.json();
-        
-        setPools(data.signals || []);
-        
-        // Calculate pool metrics
-        if (data.signals && data.signals.length > 0) {
-          const poolsData = data.signals;
-          const highConf = poolsData.filter(p => p.confidence === 'high').length;
-          const mediumConf = poolsData.filter(p => p.confidence === 'medium').length;
-          const lowConf = poolsData.filter(p => p.confidence === 'low').length;
-          
-          const rangesWithEntry = poolsData.filter(p => p.range_min && p.range_max && p.entry);
-          const avgRange = rangesWithEntry.length > 0
-            ? rangesWithEntry.reduce((acc, p) => {
-                const rangeSize = ((p.range_max! - p.range_min!) / p.entry!) * 100;
-                return acc + rangeSize;
-              }, 0) / rangesWithEntry.length
-            : 0;
-
-          const uniqueSymbols = new Set(poolsData.map(p => p.symbol));
-
-          setPoolMetrics({
-            total_pools: poolsData.length,
-            high_confidence: highConf,
-            medium_confidence: mediumConf,
-            low_confidence: lowConf,
-            avg_range_size: Math.round(avgRange * 100) / 100,
-            symbols_count: uniqueSymbols.size,
-          });
-        }
-
-        // Handle fallback mode
-        if (data._fallback) {
-          setIsUsingFallback(true);
-          setFallbackMessage(data._message || 'Using cached data');
-        }
-      } catch (err) {
-        console.error('Error fetching pools:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch pools');
-        
-        // Use fallback data for demo
-        setPools(getDemoPools());
-        setPoolMetrics({
-          total_pools: 3,
-          high_confidence: 1,
-          medium_confidence: 1,
-          low_confidence: 1,
-          avg_range_size: 4.5,
-          symbols_count: 2,
-        });
-        setIsUsingFallback(true);
-        setFallbackMessage('Demo mode: Showing sample pool data');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchPools();
-  }, [session, timeframe, symbol, dateRange, includeLiveSignals]);
+  // Note: Automatic fetching removed - only manual generation via button
 
   // Demo pools for fallback
   function getDemoPools(): PoolSignal[] {
@@ -533,7 +474,17 @@ export default function PoolsPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading ? (
+        {!hasGenerated ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <svg className="w-16 h-16 text-purple-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <p className="text-gray-600 text-lg font-medium">Presiona "Generar Rango" para obtener señales</p>
+              <p className="text-gray-400 text-sm mt-1">La generación es manual, no automática</p>
+            </div>
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="flex flex-col items-center gap-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
