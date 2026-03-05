@@ -414,6 +414,89 @@ export default function PoolsPage() {
       {/* Filters */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          {/* Strategy Info Button & Explanation */}
+          <div className="mb-4">
+            <details className="group">
+              <summary className="flex items-center gap-2 cursor-pointer text-sm text-blue-600 hover:text-blue-800 font-medium">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="group-open:hidden">ℹ️ Información sobre la Estrategia</span>
+                <span className="hidden group-open:inline">ℹ️ Ocultar Información</span>
+              </summary>
+              <div className="mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200 text-sm">
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Estrategia Range Detection */}
+                  <div>
+                    <h4 className="font-semibold text-blue-900 mb-2">🎯 Estrategia Range Detection (Pool de Liquidez)</h4>
+                    <p className="text-gray-700 mb-2">
+                      Detecta <strong>pools de liquidez</strong> (zonas donde se concentra gran volumen de órdenes) en mercados laterales. 
+                      Utiliza el indicador <strong>ADX</strong> para confirmar que el mercado está en rango (no en tendencia).
+                    </p>
+                    <ul className="list-disc list-inside text-gray-600 space-y-1">
+                      <li><strong>Rango:</strong> Zona entre soporte (piso) y resistencia (techo)</li>
+                      <li><strong>Entry:</strong> Precio de entrada al pool</li>
+                      <li><strong>TP (Techo):</strong> Objetivo = resistencia del rango</li>
+                      <li><strong>Stop Loss:</strong> Precio de protección = soporte del rango</li>
+                    </ul>
+                  </div>
+
+                  {/* Niveles de Confianza */}
+                  <div>
+                    <h4 className="font-semibold text-blue-900 mb-2">📊 Niveles de Confianza</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-bold">ALTA</span>
+                        <span className="text-gray-600">ADX &lt; 20 (rango confirmado), ancho &gt; 3%</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs font-bold">MEDIA</span>
+                        <span className="text-gray-600">ADX 20-30 (rango posible), ancho 1-3%</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs font-bold">BAJA</span>
+                        <span className="text-gray-600">ADX &gt; 30 (tendencia), ancho &lt; 1%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Parámetros Configurables */}
+                  <div>
+                    <h4 className="font-semibold text-blue-900 mb-2">⚙️ Parámetros Configurables</h4>
+                    <ul className="list-disc list-inside text-gray-600 space-y-1">
+                      <li><strong>🛡️ Cierre (%):</strong> Porcentaje de la posición a cerrar cuando el precio toca el piso del rango (stop loss). Protege ganancias.</li>
+                      <li><strong>📉 Cobertura (%):</strong> Porcentaje del valor/volatility del pool utilizado para el hedge short en caso de ruptura falsa.</li>
+                    </ul>
+                  </div>
+
+                  {/* Hedge Short */}
+                  <div>
+                    <h4 className="font-semibold text-blue-900 mb-2">🛡️ Hedge Short (Cobertura)</h4>
+                    <p className="text-gray-700 mb-2">
+                      Si el precio rompe el rango hacia arriba pero luego vuelve, el hedge short protege contra pérdidas. 
+                      Es un <strong>short de protección</strong> que se activa al precio de entrada del pool.
+                    </p>
+                    <ul className="list-disc list-inside text-gray-600 space-y-1 text-xs">
+                      <li><strong>Entry:</strong> Precio de entrada del short = precio actual</li>
+                      <li><strong>Stop:</strong> Stop del short = techo del rango</li>
+                      <li><strong>Target:</strong> Objetivo = piso del rango</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Gráfico ASCII de ejemplo */}
+                <div className="mt-4 p-3 bg-white rounded border border-blue-100 font-mono text-xs">
+                  <div className="text-gray-500 mb-1">Ejemplo de Pool:</div>
+                  <div className="text-green-600">$61,500 ───────── TP (techo del pool)</div>
+                  <div className="text-blue-600">$60,000 ───────── ENTRY (precio actual)</div>
+                  <div className="text-orange-500">$58,500 ───────── 🛡️ PROTECTION TRIGGER</div>
+                  <div className="text-red-600">$57,000 ───────── STOP LOSS (piso - margen)</div>
+                  <div className="mt-1 text-gray-400">Ancho del rango: 5% | ADX: 18 (rango confirmado)</div>
+                </div>
+              </div>
+            </details>
+          </div>
+
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             {/* Timeframe */}
             <div className="flex items-center gap-2">
