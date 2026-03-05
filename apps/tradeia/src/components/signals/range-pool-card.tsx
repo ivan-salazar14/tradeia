@@ -19,6 +19,13 @@ interface RangePoolCardProps {
     reward_pct?: number;
     rationale: string;
   };
+  // Protection field for partial close at range floor
+  protection?: {
+    trigger_price: number;
+    close_pct: number;
+    remaining_pct: number;
+    rationale: string;
+  };
 }
 
 export function RangePoolCard({
@@ -29,6 +36,7 @@ export function RangePoolCard({
   tp1,
   stopLoss,
   hedge_short,
+  protection,
 }: RangePoolCardProps) {
   console.log('[RangePoolCard] hedge_short received:', JSON.stringify(hedge_short, null, 2));
   
@@ -263,6 +271,57 @@ export function RangePoolCard({
             {hedge_short.rationale && (
               <div className="mt-2 text-xs text-gray-600 italic">
                 {hedge_short.rationale}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Protection Info - Partial Close at Range Floor */}
+      {protection && protection.trigger_price !== undefined && (
+        <div className="mt-3 pt-3 border-t border-orange-200">
+          <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span className="text-sm font-semibold text-orange-800">🛡️ Protección Parcial</span>
+              <span className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-800 rounded text-xs font-medium">
+                {(protection.close_pct * 100).toFixed(0)}% cierre
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+              <div>
+                <span className="text-gray-500">Trigger Price:</span>
+                <div className="font-mono font-medium text-orange-600">
+                  {protection.trigger_price?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || "-"}
+                </div>
+                <span className="text-xs text-gray-400">(piso del rango)</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Posición restante:</span>
+                <div className="font-mono font-medium text-blue-600">
+                  {(protection.remaining_pct * 100).toFixed(0)}%
+                </div>
+                <span className="text-xs text-gray-400">(por si hay rebote)</span>
+              </div>
+            </div>
+            {/* Visual Progress Bar */}
+            <div className="mt-2">
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Cerrar: {(protection.close_pct * 100).toFixed(0)}%</span>
+                <span>Mantener: {(protection.remaining_pct * 100).toFixed(0)}%</span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-orange-500 rounded-full"
+                  style={{ width: `${(protection.close_pct * 100)}%` }}
+                />
+              </div>
+            </div>
+            {protection.rationale && (
+              <div className="mt-2 text-xs text-gray-600 italic">
+                📖 {protection.rationale}
               </div>
             )}
           </div>

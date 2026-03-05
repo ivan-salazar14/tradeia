@@ -36,6 +36,13 @@ type PoolSignal = {
     reward_pct: number;
     rationale: string;
   };
+  // Protection field for partial close at range floor
+  protection?: {
+    trigger_price: number;
+    close_pct: number;
+    remaining_pct: number;
+    rationale: string;
+  };
 };
 
 type PoolMetrics = {
@@ -79,6 +86,10 @@ export default function PoolsPage() {
   const [confidenceFilter, setConfidenceFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [rangeFilter, setRangeFilter] = useState<'all' | 'small' | 'medium' | 'large'>('all');
 
+  // Strategy parameter states for customization
+  const [protectionClosePct, setProtectionClosePct] = useState<number>(0.75);
+  const [hedgeCoveragePct, setHedgeCoveragePct] = useState<number>(0.75);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const poolsPerPage = 12;
@@ -96,7 +107,10 @@ export default function PoolsPage() {
         initial_balance: 10000,
         risk_per_trade: 1.0,
         symbol: symbol.length > 0 ? symbol[0] : 'BTC/USDT',
-        strategy_id: 'RangeDetection'
+        strategy_id: 'RangeDetection',
+        // Strategy parameters for customization
+        protection_close_pct: protectionClosePct,
+        hedge_coverage_pct: hedgeCoveragePct
       };
 
       console.log('[POOLS] Making POST request to /api/signals/generate for RangeDetection');
@@ -258,6 +272,12 @@ export default function PoolsPage() {
           risk_pct: 2,
           reward_pct: 3,
           rationale: 'Protection against upward breakout'
+        },
+        protection: {
+          trigger_price: 66500,
+          close_pct: 0.75,
+          remaining_pct: 0.25,
+          rationale: 'Protección parcial: cerrar 75% al tocar 66500.00 (piso del rango). Mantener 25% abierto por rebote. Ancho del rango: 2.99%.'
         }
       },
       {
@@ -276,7 +296,22 @@ export default function PoolsPage() {
         range_max: 3520,
         confidence: 'medium',
         marketScenario: 'lateral',
-        source: { provider: 'RangeDetection' }
+        source: { provider: 'RangeDetection' },
+        hedge_short: {
+          entry_price: 3520,
+          stop_price: 3600,
+          target_price: 3420,
+          size_suggestion: '50%',
+          risk_pct: 2.5,
+          reward_pct: 2.5,
+          rationale: 'Hedge short at range ceiling'
+        },
+        protection: {
+          trigger_price: 3380,
+          close_pct: 0.75,
+          remaining_pct: 0.25,
+          rationale: 'Protección parcial: cerrar 75% al tocar 3380.00 (piso del rango). Mantener 25% abierto por rebote.'
+        }
       },
       {
         id: 'demo-3',
@@ -294,7 +329,22 @@ export default function PoolsPage() {
         range_max: 15.2,
         confidence: 'low',
         marketScenario: 'lateral',
-        source: { provider: 'RangeDetection' }
+        source: { provider: 'RangeDetection' },
+        hedge_short: {
+          entry_price: 15.2,
+          stop_price: 15.8,
+          target_price: 13.5,
+          size_suggestion: '50%',
+          risk_pct: 3,
+          reward_pct: 4,
+          rationale: 'Hedge short at range ceiling'
+        },
+        protection: {
+          trigger_price: 13.8,
+          close_pct: 0.50,
+          remaining_pct: 0.50,
+          rationale: 'Protección parcial: cerrar 50% al tocar 13.80 (piso del rango). Mantener 50% abierto por rebote.'
+        }
       }
     ];
   }
@@ -425,7 +475,7 @@ export default function PoolsPage() {
             </div>
 
             {/* Live Signals Toggle */}
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -435,6 +485,42 @@ export default function PoolsPage() {
                 />
                 <span className="text-sm text-gray-700">Señales en Vivo</span>
               </label>
+            </div>
+
+            {/* Strategy Parameters - Protection Close % */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap" title="Porcentaje de la posición a cerrar al tocar el piso del rango">
+                🛡️ Cierre:
+              </label>
+              <select
+                value={protectionClosePct}
+                onChange={(e) => setProtectionClosePct(parseFloat(e.target.value))}
+                className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-20"
+                title="Porcentaje de cierre parcial al tocar el piso del rango"
+              >
+                <option value={0.25}>25%</option>
+                <option value={0.50}>50%</option>
+                <option value={0.75}>75%</option>
+                <option value={1.00}>100%</option>
+              </select>
+            </div>
+
+            {/* Strategy Parameters - Hedge Coverage % */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap" title="Porcentaje de cobertura del hedge short">
+                📉 Cobertura:
+              </label>
+              <select
+                value={hedgeCoveragePct}
+                onChange={(e) => setHedgeCoveragePct(parseFloat(e.target.value))}
+                className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-20"
+                title="Porcentaje de cobertura del hedge short"
+              >
+                <option value={0.25}>25%</option>
+                <option value={0.50}>50%</option>
+                <option value={0.75}>75%</option>
+                <option value={1.00}>100%</option>
+              </select>
             </div>
 
             {/* Generate Range Button */}
@@ -552,6 +638,8 @@ export default function PoolsPage() {
                       stopLoss={pool.stopLoss}
                       // @ts-ignore
                       hedge_short={pool.hedge_short}
+                      // @ts-ignore
+                      protection={pool.protection}
                     />
                   </div>
                 </div>
