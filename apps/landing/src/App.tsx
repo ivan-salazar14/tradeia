@@ -13,6 +13,9 @@ import Pricing from './pages/Pricing';
 import Documentation from './pages/Documentation';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import Guides from './pages/Guides';
+import Privacy from './pages/Privacy';
+import Security from './pages/Security';
 
 function App() {
   return (
@@ -30,6 +33,9 @@ function App() {
               <Route path="/docs" element={<Documentation />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/guides" element={<Guides />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/security" element={<Security />} />
             </Routes>
           </main>
           <Footer />
