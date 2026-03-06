@@ -32,7 +32,14 @@ export class NotificationService {
   private notificationApiUrl: string;
 
   private constructor() {
-    this.notificationApiKey = process.env.NOTIFICATION_API_KEY || '';
+    // Support both legacy API key (Bearer) and new Basic auth format
+    // NOTIFICATION_API_KEY can be:
+    // 1. Just the API key (legacy Bearer format)
+    // 2. client_id:client_secret (Basic auth format)
+    // 3. Full Base64 encoded credentials (if starts with 'base64:')
+    const rawApiKey = process.env.NOTIFICATION_API_KEY || '';
+    
+    this.notificationApiKey = rawApiKey;
     this.notificationApiUrl = process.env.NOTIFICATION_API_URL || 'https://api.notificationapi.com';
 
     // Log NotificationAPI configuration on initialization
@@ -225,11 +232,14 @@ export class NotificationService {
 
       console.log('[NotificationService] NotificationAPI request body:', JSON.stringify(requestBody, null, 2));
 
+      const authHeader = getAuthorizationHeader(this.notificationApiKey);
+      console.log('[NotificationService] Using authorization header:', authHeader.substring(0, 20) + '...');
+
       const response = await fetch(`${this.notificationApiUrl}/sender`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.notificationApiKey}`
+          'Authorization': authHeader
         },
         body: JSON.stringify(requestBody)
       });
@@ -288,11 +298,13 @@ export class NotificationService {
 
       console.log('[NotificationService] Push notification request body:', JSON.stringify(requestBody, null, 2));
 
+      const authHeader = getAuthorizationHeader(this.notificationApiKey);
+
       const response = await fetch(`${this.notificationApiUrl}/sender`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.notificationApiKey}`
+          'Authorization': authHeader
         },
         body: JSON.stringify(requestBody)
       });
@@ -415,11 +427,14 @@ export class NotificationService {
 
       console.log('[NotificationService] Sending test notification...');
 
+      const authHeader = getAuthorizationHeader(this.notificationApiKey);
+      console.log('[NotificationService] Test using authorization header:', authHeader.substring(0, 20) + '...');
+
       const response = await fetch(`${this.notificationApiUrl}/sender`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.notificationApiKey}`
+          'Authorization': authHeader
         },
         body: JSON.stringify(testPayload)
       });
@@ -469,3 +484,37 @@ export class NotificationService {
 
 // Export singleton instance
 export const notificationService = NotificationService.getInstance();
+
+/**
+ * Get the correct Authorization header based on API key format
+ * NotificationAPI supports:
+ * - Basic auth: base64(client_id:client_secret)
+ * - Bearer token (legacy)
+ */
+function getAuthorizationHeader(apiKey: string): string {
+  if (!apiKey) {
+    return '';
+  }
+  
+  // If the key already starts with 'Basic ' or 'Bearer ', use as-is
+  if (apiKey.startsWith('Basic ') || apiKey.startsWith('Bearer ')) {
+    return apiKey;
+  }
+  
+  // If the key is already base64 encoded (starts with base64: prefix)
+  if (apiKey.startsWith('base64:')) {
+    const base64Credentials = apiKey.substring(7); // Remove 'base64:' prefix
+    return `Basic ${base64Credentials}`;
+  }
+  
+  // If the key contains a colon (client_id:client_secret format), encode as Basic auth
+  if (apiKey.includes(':')) {
+    // Use btoa for Base64 encoding (compatible with browser and Node.js)
+    const base64Credentials = btoa(apiKey);
+    return `Basic ${base64Credentials}`;
+  }
+  
+  // Otherwise, assume it's a Bearer token (legacy format)
+  console.warn('[NotificationService] Using legacy Bearer token format. Consider using Basic auth format (client_id:client_secret)');
+  return `Bearer ${apiKey}`;
+}
