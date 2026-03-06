@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { ValidatorStatsItem, ValidatorStatsData } from '@/types/validator-stats';
+import { ValidatorStatsItem, ValidatorStatsData, PoolStats } from '@/types/validator-stats';
 
 export default function ValidatorStats() {
   const { session, loading: authLoading } = useAuth();
@@ -185,6 +185,9 @@ export default function ValidatorStats() {
 
       {/* Market Status Alert */}
       <MarketStatusAlert stats={data.stats} />
+
+      {/* Pool Liquidity Management Section - Only for RangeDetection strategy */}
+      <PoolLiquiditySection stats={data.stats} selectedSymbol={selectedSymbol} />
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -704,6 +707,344 @@ function MarketStatusAlert({ stats }: { stats: ValidatorStatsItem[] }) {
           <span className={`text-2xl font-bold text-${status.color}-600`}>
             {status.level === 'high' ? '⚠️' : status.level === 'moderate' ? '⚡' : status.level === 'low' ? '✓' : '🟢'}
           </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Pool Liquidity Management Section - For RangeDetection strategy
+function PoolLiquiditySection({ stats, selectedSymbol }: { stats: ValidatorStatsItem[]; selectedSymbol: string | null }) {
+  // Filter stats to get RangeDetection strategies with pool_stats
+  const poolStatsData = stats.filter(
+    s => s.strategy_id === 'RangeDetection' && s.pool_stats !== null
+  );
+
+  // If a specific symbol is selected, filter further
+  const filteredStats = selectedSymbol 
+    ? poolStatsData.filter(s => s.symbol === selectedSymbol)
+    : poolStatsData;
+
+  if (filteredStats.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl shadow-sm border border-blue-100 overflow-hidden">
+      <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-500">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/20 rounded-lg">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-white">Pool Liquidity Management</h3>
+            <p className="text-blue-100 text-sm">RangeDetection Strategy - Risk Management Metrics</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
+        {/* Summary Cards for Pool Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {filteredStats.map((stat, idx) => (
+            <PoolStatsCard key={`${stat.symbol}-${idx}`} stat={stat} />
+          ))}
+        </div>
+
+        {/* Detailed Pool Stats Table */}
+        <div className="bg-white rounded-lg border border-blue-100 overflow-hidden">
+          <div className="px-4 py-3 bg-blue-50 border-b border-blue-100">
+            <h4 className="font-semibold text-gray-900">Detailed Pool Analysis</h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Range Width</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Safety Margin</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Hedge Coverage</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Protection</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Hedge RR</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredStats.map((stat, idx) => (
+                  <tr key={`${stat.symbol}-${stat.strategy_id}-${idx}`} className="hover:bg-blue-50/50">
+                    <td className="px-4 py-3">
+                      <span className="font-semibold text-gray-900">{stat.symbol}</span>
+                      <span className="ml-2 text-xs text-gray-500">{stat.timeframe}</span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <RangeWidthIndicator value={stat.pool_stats!.avg_range_width_pct} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="text-sm font-medium text-gray-700">
+                        {stat.pool_stats!.avg_safety_margin_pct.toFixed(2)}%
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <HedgeCoverageIndicator 
+                        covered={stat.pool_stats!.total_with_hedge} 
+                        total={stat.approved_signals} 
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <ProtectionIndicator 
+                        protected={stat.pool_stats!.total_with_protection} 
+                        total={stat.approved_signals} 
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <HedgeRRIndicator value={stat.pool_stats!.avg_hedge_risk_reward} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Risk Assessment */}
+        <PoolRiskAssessment stats={filteredStats} />
+      </div>
+    </div>
+  );
+}
+
+// Individual Pool Stats Card
+function PoolStatsCard({ stat }: { stat: ValidatorStatsItem }) {
+  const poolStats = stat.pool_stats!;
+  
+  return (
+    <div className="bg-white p-4 rounded-lg border border-blue-100 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-3">
+        <span className="font-bold text-gray-900">{stat.symbol}</span>
+        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">{stat.timeframe}</span>
+      </div>
+      
+      <div className="space-y-2">
+        <PoolMetric 
+          label="Range Efficiency"
+          value={`${poolStats.avg_range_width_pct.toFixed(1)}%`}
+          description="Volatility captured"
+          icon="📊"
+          color="blue"
+        />
+        <PoolMetric 
+          label="Hedge Coverage"
+          value={`${poolStats.total_with_hedge}/${stat.approved_signals}`}
+          description="Signals with protection"
+          icon="🛡️"
+          color="green"
+        />
+        <PoolMetric 
+          label="Protection"
+          value={`${poolStats.total_with_protection}/${stat.approved_signals}`}
+          description="Partial exit protection"
+          icon="🔒"
+          color="amber"
+        />
+        <PoolMetric 
+          label="Hedge Risk:Reward"
+          value={poolStats.avg_hedge_risk_reward.toFixed(2)}
+          description={poolStats.avg_hedge_risk_reward > 1.5 ? 'Excellent protection' : 'Moderate protection'}
+          icon="⚖️"
+          color={poolStats.avg_hedge_risk_reward > 1.5 ? 'emerald' : 'amber'}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Pool Metric Display
+function PoolMetric({ 
+  label, 
+  value, 
+  description, 
+  icon, 
+  color 
+}: { 
+  label: string; 
+  value: string; 
+  description: string; 
+  icon: string; 
+  color: 'blue' | 'green' | 'amber' | 'emerald';
+}) {
+  const colorClasses = {
+    blue: 'bg-blue-50 text-blue-600',
+    green: 'bg-green-50 text-green-600',
+    amber: 'bg-amber-50 text-amber-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+  };
+
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="text-sm">{icon}</span>
+        <span className="text-xs text-gray-500">{label}</span>
+      </div>
+      <div className="text-right">
+        <span className={`text-sm font-bold px-2 py-0.5 rounded ${colorClasses[color]}`}>
+          {value}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// Range Width Indicator with color coding
+function RangeWidthIndicator({ value }: { value: number }) {
+  const getColor = () => {
+    if (value >= 10) return 'text-green-600 bg-green-50';
+    if (value >= 5) return 'text-blue-600 bg-blue-50';
+    return 'text-amber-600 bg-amber-50';
+  };
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${getColor()}`}>
+      {value.toFixed(2)}%
+    </span>
+  );
+}
+
+// Hedge Coverage Indicator
+function HedgeCoverageIndicator({ covered, total }: { covered: number; total: number }) {
+  const percentage = total > 0 ? (covered / total) * 100 : 0;
+  const getColor = () => {
+    if (percentage >= 80) return 'text-green-600';
+    if (percentage >= 50) return 'text-blue-600';
+    return 'text-amber-600';
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <span className={`text-sm font-bold ${getColor()}`}>{covered}/{total}</span>
+      <div className="w-16 h-1.5 bg-gray-200 rounded-full mt-1 overflow-hidden">
+        <div 
+          className={`h-full rounded-full transition-all ${percentage >= 80 ? 'bg-green-500' : percentage >= 50 ? 'bg-blue-500' : 'bg-amber-500'}`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Protection Indicator
+function ProtectionIndicator({ protected: prot, total }: { protected: number; total: number }) {
+  const percentage = total > 0 ? (prot / total) * 100 : 0;
+  const getColor = () => {
+    if (percentage >= 80) return 'text-emerald-600';
+    if (percentage >= 50) return 'text-blue-600';
+    return 'text-red-600';
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <span className={`text-sm font-bold ${getColor()}`}>{prot}/{total}</span>
+      <span className="text-xs text-gray-400">{percentage.toFixed(0)}%</span>
+    </div>
+  );
+}
+
+// Hedge Risk:Reward Indicator
+function HedgeRRIndicator({ value }: { value: number }) {
+  const getColor = () => {
+    if (value >= 1.5) return 'text-emerald-600 bg-emerald-50';
+    if (value >= 1.0) return 'text-blue-600 bg-blue-50';
+    return 'text-red-600 bg-red-50';
+  };
+
+  const getLabel = () => {
+    if (value >= 1.5) return 'Excellent';
+    if (value >= 1.0) return 'Good';
+    return 'Low';
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <span className={`text-sm font-bold px-2 py-1 rounded ${getColor()}`}>
+        {value.toFixed(2)}:1
+      </span>
+      <span className="text-xs text-gray-400 mt-1">{getLabel()}</span>
+    </div>
+  );
+}
+
+// Pool Risk Assessment
+function PoolRiskAssessment({ stats }: { stats: ValidatorStatsItem[] }) {
+  // Calculate aggregate metrics
+  let totalSignals = 0;
+  let totalWithHedge = 0;
+  let totalWithProtection = 0;
+  let totalRR = 0;
+
+  stats.forEach(stat => {
+    if (stat.pool_stats) {
+      totalSignals += stat.approved_signals;
+      totalWithHedge += stat.pool_stats.total_with_hedge;
+      totalWithProtection += stat.pool_stats.total_with_protection;
+      totalRR += stat.pool_stats.avg_hedge_risk_reward;
+    }
+  });
+
+  const avgRR = stats.length > 0 ? totalRR / stats.length : 0;
+  const hedgeCoverage = totalSignals > 0 ? (totalWithHedge / totalSignals) * 100 : 0;
+  const protectionCoverage = totalSignals > 0 ? (totalWithProtection / totalSignals) * 100 : 0;
+
+  const getOverallStatus = () => {
+    if (avgRR >= 1.5 && hedgeCoverage >= 80 && protectionCoverage >= 80) {
+      return { level: 'excellent', color: 'emerald', label: 'Excellent Risk Management' };
+    }
+    if (avgRR >= 1.0 && hedgeCoverage >= 50 && protectionCoverage >= 50) {
+      return { level: 'good', color: 'blue', label: 'Good Risk Management' };
+    }
+    if (avgRR >= 0.5) {
+      return { level: 'moderate', color: 'amber', label: 'Moderate Risk Management' };
+    }
+    return { level: 'poor', color: 'red', label: 'Needs Improvement' };
+  };
+
+  const status = getOverallStatus();
+  const colorClasses = {
+    emerald: 'from-emerald-50 to-green-50 border-emerald-200',
+    blue: 'from-blue-50 to-cyan-50 border-blue-200',
+    amber: 'from-amber-50 to-yellow-50 border-amber-200',
+    red: 'from-red-50 to-orange-50 border-red-200',
+  };
+
+  return (
+    <div className={`mt-6 p-4 rounded-lg border bg-gradient-to-br ${colorClasses[status.color as keyof typeof colorClasses]}`}>
+      <div className="flex items-start justify-between">
+        <div>
+          <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+            <span className="text-xl">
+              {status.level === 'excellent' ? '🛡️' : status.level === 'good' ? '✅' : status.level === 'moderate' ? '⚠️' : '❌'}
+            </span>
+            Pool Risk Assessment
+          </h4>
+          <p className="text-sm text-gray-600 mt-1">{status.label}</p>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-gray-900">{stats.length}</div>
+          <div className="text-xs text-gray-500">Active Pools</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 mt-4">
+        <div className="text-center">
+          <div className="text-lg font-bold text-gray-900">{hedgeCoverage.toFixed(0)}%</div>
+          <div className="text-xs text-gray-500">Hedge Coverage</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-bold text-gray-900">{protectionCoverage.toFixed(0)}%</div>
+          <div className="text-xs text-gray-500">Protection Rate</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-bold text-gray-900">{avgRR.toFixed(2)}:1</div>
+          <div className="text-xs text-gray-500">Avg Hedge RR</div>
         </div>
       </div>
     </div>
