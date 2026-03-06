@@ -408,8 +408,21 @@ export class NotificationService {
       if (!this.notificationApiKey) {
         return {
           success: false,
-          message: 'NOTIFICATION_API_KEY environment variable not set',
+          message: 'NOTIFICATION_API_KEY environment variable not set. Get your credentials from https://www.notificationapi.com and add them as client_id:client_secret format.',
           details: { apiKeyConfigured: false }
+        };
+      }
+
+      // Check if the API key has the correct format (must contain ':')
+      if (!this.notificationApiKey.includes(':')) {
+        return {
+          success: false,
+          message: 'NOTIFICATION_API_KEY must be in client_id:client_secret format. Current API key does not contain ":". Get your credentials from https://www.notificationapi.com',
+          details: { 
+            apiKeyConfigured: true,
+            apiKeyFormat: 'invalid',
+            hint: 'The format should be: NOTIFICATION_API_KEY=your_client_id:your_client_secret'
+          }
         };
       }
 
@@ -490,6 +503,9 @@ export const notificationService = NotificationService.getInstance();
  * NotificationAPI supports:
  * - Basic auth: base64(client_id:client_secret)
  * - Bearer token (legacy)
+ * 
+ * IMPORTANT: The API key MUST be in 'client_id:client_secret' format for Basic Auth
+ * Get your credentials from https://www.notificationapi.com
  */
 function getAuthorizationHeader(apiKey: string): string {
   if (!apiKey) {
@@ -514,7 +530,15 @@ function getAuthorizationHeader(apiKey: string): string {
     return `Basic ${base64Credentials}`;
   }
   
-  // Otherwise, assume it's a Bearer token (legacy format)
-  console.warn('[NotificationService] Using legacy Bearer token format. Consider using Basic auth format (client_id:client_secret)');
+  // API key does not contain ':' - this is incorrect for NotificationAPI
+  // Log a clear error about the required format
+  console.error('[NotificationService] ❌ Invalid API key format!');
+  console.error('[NotificationService] ❌ The NOTIFICATION_API_KEY must be in client_id:client_secret format');
+  console.error('[NotificationService] ❌ Get your credentials from https://www.notificationapi.com');
+  console.error('[NotificationService] ❌ Current API key does not contain ":" - it appears to be a raw API key');
+  console.error('[NotificationService] ❌ Please update your .env file with: NOTIFICATION_API_KEY=your_client_id:your_client_secret');
+  
+  // Fall back to Bearer but with a warning (this will likely fail with NotificationAPI)
+  console.warn('[NotificationService] ⚠️  Falling back to Bearer token format - this will likely fail!');
   return `Bearer ${apiKey}`;
 }
