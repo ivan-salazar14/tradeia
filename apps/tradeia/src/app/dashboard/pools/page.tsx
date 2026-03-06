@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { format, subDays } from "date-fns";
 import { useAuth } from "@/contexts/auth-context";
 import { RangePoolCard } from "@/components/signals/range-pool-card";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 type PoolSignal = {
   id: string;
@@ -516,32 +517,13 @@ export default function PoolsPage() {
             {/* Symbols - Multi-select */}
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-gray-700">Símbolos:</label>
-              <div className="relative">
-                <select
-                  multiple
-                  value={symbol}
-                  onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions, option => option.value);
-                    setSymbol(selected.length > 0 ? selected : []);
-                  }}
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[200px] h-10 overflow-hidden"
-                  style={{ height: '2.5rem' }}
-                >
-                  {tradingPairs.map(pair => (
-                    <option key={pair} value={pair}>{pair}</option>
-                  ))}
-                </select>
-                <div className="text-xs text-gray-500 mt-1">
-                  {symbol.length === 0 ? 'Todos' : `${symbol.length} seleccionado(s)`}
-                </div>
-              </div>
-              <button
-                onClick={() => setSymbol([])}
-                className="text-xs text-blue-600 hover:text-blue-800 underline"
-                title="Limpiar selección"
-              >
-                Limpiar
-              </button>
+              <MultiSelect
+                options={tradingPairs.map(pair => ({ value: pair, label: pair }))}
+                value={symbol}
+                onChange={setSymbol}
+                placeholder="Todos los símbolos"
+                className="min-w-[200px]"
+              />
             </div>
 
             {/* Confidence Filter */}
