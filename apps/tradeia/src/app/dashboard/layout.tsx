@@ -13,16 +13,32 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [isClient, setIsClient] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Set client flag on mount
+  // Set client flag and detect mobile on mount
   useEffect(() => {
     setIsClient(true);
+    
+    // Detect mobile screen size
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      // Default: sidebar hidden on mobile, visible on desktop
+      if (localStorage.getItem('sidebarVisible') === null) {
+        setSidebarVisible(!mobile);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
     
     // Load sidebar visibility from localStorage
     const savedVisibility = localStorage.getItem('sidebarVisible');
     if (savedVisibility !== null) {
       setSidebarVisible(JSON.parse(savedVisibility));
     }
+
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Handle authentication state changes
@@ -80,10 +96,38 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // Render the dashboard layout
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar 
-        isVisible={sidebarVisible} 
-        onToggleVisibility={toggleSidebar}
-      />
+      {/* Sidebar */}
+      {!isMobile && (
+        <div className="relative">
+          <Sidebar 
+            isVisible={sidebarVisible} 
+            onToggleVisibility={toggleSidebar}
+            isMobile={false}
+          />
+        </div>
+      )}
+      
+      {/* Mobile Sidebar with overlay */}
+      {isMobile && (
+        <>
+          {/* Overlay */}
+          {sidebarVisible && (
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={toggleSidebar}
+            />
+          )}
+          {/* Sidebar */}
+          <div className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ${sidebarVisible ? 'translate-x-0' : '-translate-x-full'}`}>
+            <Sidebar 
+              isVisible={true} 
+              onToggleVisibility={toggleSidebar}
+              isMobile={true}
+            />
+          </div>
+        </>
+      )}
+      
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarVisible ? '' : 'w-full'}`}>
         <MobileHeader 
           pathname={pathname} 

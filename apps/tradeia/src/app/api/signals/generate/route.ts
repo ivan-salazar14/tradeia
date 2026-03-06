@@ -131,7 +131,10 @@ export async function POST(request: NextRequest) {
       end_date: body.end_date || new Date().toISOString().split('T')[0] + 'T23:59:59',
       strategy_id: strategyId,
       initial_balance: body.initial_balance || 10000,
-      risk_per_trade: body.risk_per_trade || 1.0
+      risk_per_trade: body.risk_per_trade || 1.0,
+      // Pool-specific parameters
+      ...(body.protection_close_pct !== undefined && { protection_close_pct: body.protection_close_pct }),
+      ...(body.hedge_coverage_pct !== undefined && { hedge_coverage_pct: body.hedge_coverage_pct })
     };
 
     console.log('[SIGNALS GENERATE] Calling external API:', apiUrl);
@@ -159,50 +162,85 @@ export async function POST(request: NextRequest) {
     } catch (apiError) {
       console.log('[SIGNALS GENERATE] External API unavailable, falling back to mock data');
       
+      // Handle multiple symbols - convert to array if string with commas
+      let symbolsList: string[] = [];
+      if (Array.isArray(body.symbol)) {
+        symbolsList = body.symbol;
+      } else if (typeof body.symbol === 'string' && body.symbol.includes(',')) {
+        symbolsList = body.symbol.split(',').map((s: string) => s.trim());
+      } else if (typeof body.symbol === 'string') {
+        symbolsList = [body.symbol];
+      } else {
+        symbolsList = ['BTC/USDT'];
+      }
+      
+      console.log('[SIGNALS GENERATE] Processing symbols:', symbolsList);
+      
       // Check if requesting RangeDetection strategy - return specific mock data
       if (strategyId === 'RangeDetection' || strategyId === 'range_detection') {
+        // Generate mock signals for each symbol
+        const mockSignals = symbolsList.map((sym, index) => {
+          // Different mock data for each symbol
+          const mockData: Record<string, { entry: number; tp1: number; stopLoss: number; range_min: number; range_max: number; confidence: 'high' | 'medium' | 'low' }> = {
+            'BTC/USDT': { entry: 60000, tp1: 61250, stopLoss: 58750, range_min: 58750, range_max: 61250, confidence: 'high' },
+            'ETH/USDT': { entry: 3450, tp1: 3520, stopLoss: 3380, range_min: 3380, range_max: 3520, confidence: 'medium' },
+            'LINK/USDT': { entry: 14.5, tp1: 15.2, stopLoss: 13.8, range_min: 13.8, range_max: 15.2, confidence: 'low' },
+            'XRP/USDT': { entry: 0.62, tp1: 0.65, stopLoss: 0.59, range_min: 0.59, range_max: 0.65, confidence: 'high' },
+            'LTC/USDT': { entry: 85, tp1: 88, stopLoss: 82, range_min: 82, range_max: 88, confidence: 'medium' },
+            'SOL/USDT': { entry: 145, tp1: 152, stopLoss: 138, range_min: 138, range_max: 152, confidence: 'high' },
+          };
+          
+          const data = mockData[sym] || { entry: 100 + index * 10, tp1: 105 + index * 10, stopLoss: 95 + index * 10, range_min: 95 + index * 10, range_max: 105 + index * 10, confidence: 'medium' as const };
+          
+          return {
+            id: `generated-${Date.now()}-${index}`,
+            symbol: sym,
+            timeframe: requestBody.timeframe,
+            timestamp: new Date().toISOString(),
+            execution_timestamp: new Date().toISOString(),
+            signal_age_hours: 0.1,
+            signal_source: 'mock_generation',
+            type: 'entry',
+            direction: 'LONG',
+            strategyId: 'RangeDetection',
+            reason: `RANGO DETECTADO (${data.confidence.toUpperCase()}) — Pool: [${data.range_min} – ${data.range_max}] | ADX=18.5 < 23.0`,
+            entry: data.entry,
+            tp1: data.tp1,
+            tp2: data.tp1 * 1.02,
+            stopLoss: data.stopLoss,
+            marketScenario: 'lateral',
+            // Range Detection specific fields
+            range_min: data.range_min,
+            range_max: data.range_max,
+            confidence: data.confidence,
+            hedge_short: {
+              entry_price: data.entry,
+              stop_price: data.range_max,
+              target_price: data.range_min,
+              size_suggestion: '~10-20% del valor total del pool',
+              risk_pct: 2.08,
+              reward_pct: 2.08,
+              rationale: `Short Market @ ${data.entry} | Stop Market @ ${data.range_max} (techo del rango) | Target @ ${data.range_min} (piso del rango)`
+            },
+            protection: requestBody.protection_close_pct ? {
+              trigger_price: data.range_min,
+              close_pct: requestBody.protection_close_pct,
+              remaining_pct: 1 - requestBody.protection_close_pct,
+              rationale: `Protección parcial: cerrar ${requestBody.protection_close_pct * 100}% al tocar ${data.range_min} (piso del rango)`
+            } : undefined,
+            source: { provider: 'mock_provider' },
+            position_size: 1000,
+            risk_amount: 100,
+            reward_to_risk: 2.0
+          };
+        });
+        
         data = {
-          signals: [
-            {
-              id: `generated-${Date.now()}`,
-              symbol: requestBody.symbol,
-              timeframe: requestBody.timeframe,
-              timestamp: new Date().toISOString(),
-              execution_timestamp: new Date().toISOString(),
-              signal_age_hours: 0.1,
-              signal_source: 'mock_generation',
-              type: 'entry',
-              direction: 'LONG',
-              strategyId: 'RangeDetection',
-              reason: 'RANGO DETECTADO (HIGH) — Pool: [58750.0 – 61250.0] | ADX=18.5 < 23.0',
-              entry: 60000,
-              tp1: 61250,
-              tp2: 62500,
-              stopLoss: 58750,
-              marketScenario: 'lateral',
-              // Range Detection specific fields
-              range_min: 58750,
-              range_max: 61250,
-              confidence: 'high',
-              hedge_short: {
-                entry_price: 60000,
-                stop_price: 61250,
-                target_price: 58750,
-                size_suggestion: '~10-20% del valor total del pool',
-                risk_pct: 2.08,
-                reward_pct: 2.08,
-                rationale: 'Short Market @ 60000.0000 | Stop Market @ 61250.0000 (techo del rango) | Target @ 58750.0000 (piso del rango)'
-              },
-              source: { provider: 'mock_provider' },
-              position_size: 1000,
-              risk_amount: 100,
-              reward_to_risk: 2.0
-            }
-          ],
+          signals: mockSignals,
           portfolio_metrics: {
-            total_position_size: 1000,
-            total_risk_amount: 100,
-            remaining_balance: Number(requestBody.initial_balance) - 100,
+            total_position_size: 1000 * mockSignals.length,
+            total_risk_amount: 100 * mockSignals.length,
+            remaining_balance: Number(requestBody.initial_balance) - (100 * mockSignals.length),
             avg_reward_to_risk: 2.0
           },
           risk_parameters: {
@@ -218,34 +256,34 @@ export async function POST(request: NextRequest) {
           ]
         };
       } else {
-        // Return standard mock data for other strategies
+        // Return standard mock data for other strategies - handle multiple symbols
+        const mockSignals = symbolsList.map((sym, index) => ({
+          id: `generated-${Date.now()}-${index}`,
+          symbol: sym,
+          timeframe: requestBody.timeframe,
+          timestamp: new Date().toISOString(),
+          execution_timestamp: new Date().toISOString(),
+          signal_age_hours: 0.1,
+          signal_source: 'mock_generation',
+          type: 'BUY',
+          direction: 'LONG',
+          strategyId: requestBody.strategy_id,
+          entry: 45000 + index * 100,
+          tp1: 46000 + index * 100,
+          tp2: 47000 + index * 100,
+          stopLoss: 44000 + index * 100,
+          source: { provider: 'mock_provider' },
+          position_size: 1000,
+          risk_amount: 100,
+          reward_to_risk: 2.0
+        }));
+
         data = {
-          signals: [
-            {
-              id: `generated-${Date.now()}`,
-              symbol: requestBody.symbol,
-              timeframe: requestBody.timeframe,
-              timestamp: new Date().toISOString(),
-              execution_timestamp: new Date().toISOString(),
-              signal_age_hours: 0.1,
-              signal_source: 'mock_generation',
-              type: 'BUY',
-              direction: 'LONG',
-              strategyId: requestBody.strategy_id,
-              entry: 45000,
-              tp1: 46000,
-              tp2: 47000,
-              stopLoss: 44000,
-              source: { provider: 'mock_provider' },
-              position_size: 1000,
-              risk_amount: 100,
-              reward_to_risk: 2.0
-            }
-          ],
+          signals: mockSignals,
           portfolio_metrics: {
-            total_position_size: 1000,
-            total_risk_amount: 100,
-            remaining_balance: Number(requestBody.initial_balance) - 100,
+            total_position_size: 1000 * mockSignals.length,
+            total_risk_amount: 100 * mockSignals.length,
+            remaining_balance: Number(requestBody.initial_balance) - (100 * mockSignals.length),
             avg_reward_to_risk: 2.0
           },
           risk_parameters: {

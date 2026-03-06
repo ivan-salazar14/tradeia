@@ -61,10 +61,12 @@ const icons: Record<string, React.ReactElement> = {
 
 export default function Sidebar({ 
   isVisible = true, 
-  onToggleVisibility 
+  onToggleVisibility,
+  isMobile = false
 }: { 
   isVisible?: boolean; 
-  onToggleVisibility?: () => void 
+  onToggleVisibility?: () => void;
+  isMobile?: boolean;
 }) {
   const { user, signOut } = useAuth();
   const router = useRouter();

@@ -106,7 +106,8 @@ export default function PoolsPage() {
         end_date: `${dateRange.end}T23:59:59`,
         initial_balance: 10000,
         risk_per_trade: 1.0,
-        symbol: symbol.length > 0 ? symbol[0] : 'BTC/USDT',
+        // Enviar múltiples símbolos - el endpoint acepta array o cadena separada por comas
+        symbol: symbol.length > 0 ? symbol : tradingPairs.slice(0, 4),
         strategy_id: 'RangeDetection',
         // Strategy parameters for customization
         protection_close_pct: protectionClosePct,
@@ -512,19 +513,35 @@ export default function PoolsPage() {
               </select>
             </div>
 
-            {/* Symbols */}
+            {/* Symbols - Multi-select */}
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Símbolo:</label>
-              <select
-                value={symbol.join(',')}
-                onChange={(e) => setSymbol(e.target.value ? e.target.value.split(',') : [])}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[150px]"
+              <label className="text-sm font-medium text-gray-700">Símbolos:</label>
+              <div className="relative">
+                <select
+                  multiple
+                  value={symbol}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.selectedOptions, option => option.value);
+                    setSymbol(selected.length > 0 ? selected : []);
+                  }}
+                  className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[200px] h-10 overflow-hidden"
+                  style={{ height: '2.5rem' }}
+                >
+                  {tradingPairs.map(pair => (
+                    <option key={pair} value={pair}>{pair}</option>
+                  ))}
+                </select>
+                <div className="text-xs text-gray-500 mt-1">
+                  {symbol.length === 0 ? 'Todos' : `${symbol.length} seleccionado(s)`}
+                </div>
+              </div>
+              <button
+                onClick={() => setSymbol([])}
+                className="text-xs text-blue-600 hover:text-blue-800 underline"
+                title="Limpiar selección"
               >
-                <option value="">Todos</option>
-                {tradingPairs.map(pair => (
-                  <option key={pair} value={pair}>{pair}</option>
-                ))}
-              </select>
+                Limpiar
+              </button>
             </div>
 
             {/* Confidence Filter */}
