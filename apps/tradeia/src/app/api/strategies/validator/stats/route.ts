@@ -235,6 +235,63 @@ export async function GET(request: NextRequest) {
       },
       last_validation: new Date().toISOString(),
       risk_score: 24
+    },
+    // RangeDetection strategy with pool_stats for Pool Liquidity section
+    {
+      symbol: 'BTC/USDT',
+      timeframe: '4h',
+      strategy_id: 'RangeDetection',
+      total_signals: 45,
+      approved_signals: 38,
+      rejected_signals: 7,
+      avg_sharpe: 1.95,
+      avg_win_rate: 68.5,
+      avg_expected_return: 2.85,
+      signal_distribution: {
+        BUY: 38,
+        SELL: 0
+      },
+      rejection_reasons: {
+        'LOW_CONFIDENCE: Score below threshold': 4,
+        'RISK_HIGH: Volatility exceeds limit': 3
+      },
+      last_validation: new Date().toISOString(),
+      risk_score: 15,
+      pool_stats: {
+        avg_range_width_pct: 4.25,
+        avg_safety_margin_pct: 2.15,
+        total_with_hedge: 32,
+        total_with_protection: 35,
+        avg_hedge_risk_reward: 2.45
+      }
+    },
+    {
+      symbol: 'ETH/USDT',
+      timeframe: '4h',
+      strategy_id: 'RangeDetection',
+      total_signals: 38,
+      approved_signals: 30,
+      rejected_signals: 8,
+      avg_sharpe: 1.78,
+      avg_win_rate: 65.2,
+      avg_expected_return: 2.45,
+      signal_distribution: {
+        BUY: 30,
+        SELL: 0
+      },
+      rejection_reasons: {
+        'LOW_CONFIDENCE: Score below threshold': 5,
+        'RISK_HIGH: Volatility exceeds limit': 3
+      },
+      last_validation: new Date().toISOString(),
+      risk_score: 18,
+      pool_stats: {
+        avg_range_width_pct: 3.85,
+        avg_safety_margin_pct: 1.95,
+        total_with_hedge: 25,
+        total_with_protection: 28,
+        avg_hedge_risk_reward: 2.25
+      }
     }
   ];
 

@@ -5,7 +5,6 @@ import { format, subDays } from "date-fns";
 import { useAuth } from "@/contexts/auth-context";
 import { RangePoolCard } from "@/components/signals/range-pool-card";
 import { MultiSelect } from "@/components/ui/multi-select";
-import ValidatorStats from "@/components/dashboard/validator-stats";
 
 type PoolSignal = {
   id: string;
@@ -411,13 +410,6 @@ export default function PoolsPage() {
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Validator Stats - Global pool/strategy statistics */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <ValidatorStats />
         </div>
       </div>
 
