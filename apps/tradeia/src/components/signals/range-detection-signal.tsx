@@ -3,6 +3,7 @@
 import React from "react";
 import { RangePoolCard } from "./range-pool-card";
 import { HedgeShortCard } from "./hedge-short-card";
+import { SideProtectionCard } from "./side-protection-card";
 
 interface RangeDetectionSignalProps {
   signal: {
@@ -22,6 +23,19 @@ interface RangeDetectionSignalProps {
       reward_pct?: number;
       rationale: string;
     };
+    // New protection fields
+    suggested_protection?: 'STOP_MARKET_SIDE' | 'STOP_MARKET_SINGLE' | 'PARTIAL_PROTECTION' | 'NONE';
+    side_protection?: {
+      bottom_trigger: number;
+      top_trigger: number;
+      rationale: string;
+    };
+    protection?: {
+      trigger_price: number;
+      close_pct: number;
+      remaining_pct: number;
+      rationale: string;
+    };
   };
 }
 
@@ -37,7 +51,21 @@ export function RangeDetectionSignal({ signal }: RangeDetectionSignalProps) {
         tp1={signal.tp1}
         stopLoss={signal.stopLoss}
         hedge_short={signal.hedge_short}
+        protection={signal.protection}
+        suggested_protection={signal.suggested_protection}
+        side_protection={signal.side_protection}
       />
+
+      {/* Side Protection Card - Shows when side_protection is available */}
+      {signal.side_protection && signal.side_protection.bottom_trigger && (
+        <SideProtectionCard
+          side_protection={signal.side_protection}
+          suggested_protection={signal.suggested_protection}
+          poolEntry={signal.entry}
+          poolRangeMin={signal.range_min}
+          poolRangeMax={signal.range_max}
+        />
+      )}
 
       {/* Hedge Short Card - Shows protection details */}
       {signal.hedge_short && signal.hedge_short.entry_price !== undefined && (

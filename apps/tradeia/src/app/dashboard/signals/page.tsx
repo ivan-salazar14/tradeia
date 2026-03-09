@@ -40,6 +40,19 @@ type Signal = {
     reward_pct?: number;
     rationale: string;
   };
+  // Protection fields
+  suggested_protection?: 'STOP_MARKET_SIDE' | 'STOP_MARKET_SINGLE' | 'PARTIAL_PROTECTION' | 'NONE';
+  side_protection?: {
+    bottom_trigger: number;
+    top_trigger: number;
+    rationale: string;
+  };
+  protection?: {
+    trigger_price: number;
+    close_pct: number;
+    remaining_pct: number;
+    rationale: string;
+  };
 };
 
 type PortfolioMetrics = {
@@ -228,6 +241,18 @@ export default function SignalsPage() {
           position_size: 2000,
           risk_amount: 200,
           reward_to_risk: 1.5,
+          suggested_protection: 'STOP_MARKET_SIDE',
+          side_protection: {
+            bottom_trigger: 62150.50,
+            top_trigger: 68420.75,
+            rationale: 'Side Protection: Abrir Short Stop Market en 62150.50 y Long Stop Market en 68420.75 al momento de activar el pool.'
+          },
+          protection: {
+            trigger_price: 62150.50,
+            close_pct: 0.75,
+            remaining_pct: 0.25,
+            rationale: 'Protección parcial: cerrar 75% al tocar 62150.50 (piso del rango)'
+          },
           hedge_short: {
             entry_price: 65000,
             stop_price: 68000,
@@ -1060,6 +1085,18 @@ export default function SignalsPage() {
                               risk_pct: s.hedge_short.risk_pct,
                               reward_pct: s.hedge_short.reward_pct,
                               rationale: s.hedge_short.rationale
+                            } : undefined,
+                            suggested_protection: s.suggested_protection,
+                            side_protection: s.side_protection ? {
+                              bottom_trigger: s.side_protection.bottom_trigger,
+                              top_trigger: s.side_protection.top_trigger,
+                              rationale: s.side_protection.rationale
+                            } : undefined,
+                            protection: s.protection ? {
+                              trigger_price: s.protection.trigger_price,
+                              close_pct: s.protection.close_pct,
+                              remaining_pct: s.protection.remaining_pct,
+                              rationale: s.protection.rationale
                             } : undefined
                           }} 
                         />

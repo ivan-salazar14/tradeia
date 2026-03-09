@@ -26,6 +26,13 @@ interface RangePoolCardProps {
     remaining_pct: number;
     rationale: string;
   };
+  // Side Protection fields
+  suggested_protection?: 'STOP_MARKET_SIDE' | 'STOP_MARKET_SINGLE' | 'PARTIAL_PROTECTION' | 'NONE';
+  side_protection?: {
+    bottom_trigger: number;
+    top_trigger: number;
+    rationale: string;
+  };
 }
 
 export function RangePoolCard({
@@ -37,6 +44,8 @@ export function RangePoolCard({
   stopLoss,
   hedge_short,
   protection,
+  suggested_protection,
+  side_protection,
 }: RangePoolCardProps) {
   console.log('[RangePoolCard] hedge_short received:', JSON.stringify(hedge_short, null, 2));
   
